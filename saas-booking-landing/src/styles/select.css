@@ -1,0 +1,44 @@
+/* Custom select styles */
+select option {
+  background-color: #1a1f2e !important;
+  color: white !important;
+  padding: 8px !important;
+}
+
+select option:hover,
+select option:focus,
+select option:active,
+select option:checked {
+  background-color: #2d3748 !important;
+  color: white !important;
+}
+
+/* Firefox specific styles */
+@-moz-document url-prefix() {
+  select {
+    color: white !important;
+    background-color: #1a1f2e !important;
+  }
+  
+  select option {
+    background-color: #1a1f2e !important;
+  }
+}
+
+/* Webkit specific styles */
+select::-webkit-scrollbar {
+  width: 8px;
+}
+
+select::-webkit-scrollbar-track {
+  background: #1a1f2e;
+}
+
+select::-webkit-scrollbar-thumb {
+  background-color: #4a5568;
+  border-radius: 4px;
+}
+
+select::-webkit-scrollbar-thumb:hover {
+  background-color: #718096;
+}

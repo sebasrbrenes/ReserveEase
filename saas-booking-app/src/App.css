@@ -1,0 +1,50 @@
+/* Custom scrollbar styles */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.8);
+}
+
+/* Dark mode scrollbar */
+@media (prefers-color-scheme: dark) {
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(75, 85, 99, 0.5);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(75, 85, 99, 0.8);
+  }
+}
+
+/* Calendar styles */
+.calendar-day {
+  @apply relative w-full pt-[100%] border border-gray-200 dark:border-gray-700;
+}
+
+.calendar-day-content {
+  @apply absolute top-0 left-0 w-full h-full p-1;
+}
+
+.calendar-day.selected {
+  @apply border-primary dark:border-primary;
+}
+
+.calendar-day.today {
+  @apply bg-primary/5 dark:bg-primary/10;
+}
+
+.calendar-day.has-appointments::after {
+  content: '';
+  @apply absolute bottom-1 right-1 w-2 h-2 rounded-full bg-primary;
+}
