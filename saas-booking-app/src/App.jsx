@@ -12,6 +12,7 @@ import Settings from './components/settings/Settings'
 import Feedback from './components/feedback/Feedback'
 import PublicBookingForm from './components/appointments/PublicBookingForm'
 import BookingSuccess from './components/appointments/BookingSuccess'
+import Pricing from './components/pricing/PricingPlans'
 import './App.css'
 
 function App() {
@@ -71,6 +72,11 @@ function App() {
               <Route path="/feedback" element={
                 <ProtectedRoute>
                   <Feedback />
+                </ProtectedRoute>
+              } />
+              <Route path="/pricing" element={
+                <ProtectedRoute>
+                  <Pricing />
                 </ProtectedRoute>
               } />
 
