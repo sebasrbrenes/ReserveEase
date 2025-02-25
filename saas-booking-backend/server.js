@@ -37,6 +37,8 @@ const updateUserSubscription = async (userId, subscriptionData) => {
       // Update existing user document
       await userRef.update({
         subscription: subscriptionData,
+        email: subscriptionData.userEmail || userDoc.data().email,
+        name: subscriptionData.userName || userDoc.data().name,
         updatedAt: new Date().toISOString()
       });
       console.log(`Updated subscription for existing user ${userId}`);
@@ -44,12 +46,25 @@ const updateUserSubscription = async (userId, subscriptionData) => {
       // Create new user document with subscription data
       await userRef.set({
         id: userId,
+        email: subscriptionData.userEmail,
+        name: subscriptionData.userName,
         subscription: subscriptionData,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
       console.log(`Created new user ${userId} with subscription data`);
     }
+    
+    // Also store subscription history in a separate collection for tracking
+    const subscriptionHistoryRef = db.collection('subscriptionHistory').doc();
+    await subscriptionHistoryRef.set({
+      userId: userId,
+      email: subscriptionData.userEmail,
+      eventType: subscriptionData.status,
+      subscriptionId: subscriptionData.subscriptionId,
+      timestamp: new Date().toISOString(),
+      data: subscriptionData
+    });
     
     return true;
   } catch (error) {
@@ -79,63 +94,53 @@ app.post('/api/webhooks/lemonsqueezy', async (req, res) => {
     // Log the entire webhook payload for debugging
     console.log('Complete webhook payload:', JSON.stringify(req.body, null, 2));
     
-    const { event, data } = req.body;
-    console.log(`✅ Webhook received: ${event}`);
+    // Extract event name from meta.event_name instead of event
+    const eventName = req.body.meta?.event_name;
+    console.log(`✅ Webhook received: ${eventName}`);
     
-    if (!data) {
+    if (!req.body.data) {
       console.error('No data found in webhook payload');
       return res.status(200).json({ message: 'Webhook received but no data found' });
     }
     
-    // Extract the necessary data from the webhook payload
-    // Lemon Squeezy might be sending the user ID in different locations
-    // Let's check several possible locations
-    let userId;
+    const data = req.body.data;
     
-    // Option 1: Check in custom_data directly
-    if (data.meta?.custom_data?.user_id) {
-      userId = data.meta.custom_data.user_id;
-    } 
-    // Option 2: Check in attributes.custom_data
-    else if (data.attributes?.custom_data?.user_id) {
-      userId = data.attributes.custom_data.user_id;
-    }
-    // Option 3: Check in meta.custom_data as a string that needs parsing
-    else if (data.meta?.custom_data && typeof data.meta.custom_data === 'string') {
-      try {
-        const parsedCustomData = JSON.parse(data.meta.custom_data);
-        userId = parsedCustomData.user_id;
-      } catch (e) {
-        console.log('Failed to parse custom_data string:', e);
-      }
-    }
-    // Option 4: Check if there's a user_id directly in the data
-    else if (data.user_id) {
-      userId = data.user_id;
-    }
+    // Extract user identifier - prefer email as it's consistent across all events
+    let userId = data.attributes?.user_email;
     
-    // If we still don't have a userId, we'll use a default one for testing
-    // In production, you would want to handle this differently
+    // If email not found, try other identifiers
     if (!userId) {
-      console.warn('User ID not found in webhook data, using default user for testing');
-      // For testing only - in production you should handle this case appropriately
-      userId = 'default_test_user';
+      // Try customer_id as fallback
+      userId = data.attributes?.customer_id?.toString();
+    }
+    
+    // If we still don't have a userId, use subscription_id or invoice_id as last resort
+    if (!userId) {
+      userId = data.id ? `subscription_${data.id}` : 'unknown_user';
     }
     
     console.log('Using user ID:', userId);
 
     // Handle different subscription events
-    switch (event) {
+    switch (eventName) {
       case 'subscription_created':
         {
           const subscriptionData = {
-            subscriptionId: data.attributes.id,
+            subscriptionId: data.id,
             planId: data.attributes.product_id,
-            status: 'active',
+            status: data.attributes.status,
             createdAt: new Date().toISOString(),
-            expiresAt: new Date(data.attributes.renews_at).toISOString(),
+            expiresAt: data.attributes.trial_ends_at ? 
+                       new Date(data.attributes.trial_ends_at).toISOString() : 
+                       new Date(data.attributes.renews_at).toISOString(),
             orderId: data.attributes.order_id,
-            renewsAt: data.attributes.renews_at
+            renewsAt: data.attributes.renews_at,
+            productName: data.attributes.product_name,
+            userName: data.attributes.user_name,
+            userEmail: data.attributes.user_email,
+            isOnTrial: data.attributes.status === 'on_trial',
+            trialEndsAt: data.attributes.trial_ends_at,
+            testMode: data.attributes.test_mode
           };
           
           await updateUserSubscription(userId, subscriptionData);
@@ -145,12 +150,20 @@ app.post('/api/webhooks/lemonsqueezy', async (req, res) => {
       case 'subscription_updated':
         {
           const subscriptionData = {
-            subscriptionId: data.attributes.id,
+            subscriptionId: data.id,
             planId: data.attributes.product_id,
             status: data.attributes.status,
             updatedAt: new Date().toISOString(),
-            expiresAt: new Date(data.attributes.renews_at).toISOString(),
-            renewsAt: data.attributes.renews_at
+            expiresAt: data.attributes.trial_ends_at ? 
+                       new Date(data.attributes.trial_ends_at).toISOString() : 
+                       new Date(data.attributes.renews_at).toISOString(),
+            renewsAt: data.attributes.renews_at,
+            productName: data.attributes.product_name,
+            userName: data.attributes.user_name,
+            userEmail: data.attributes.user_email,
+            isOnTrial: data.attributes.status === 'on_trial',
+            trialEndsAt: data.attributes.trial_ends_at,
+            testMode: data.attributes.test_mode
           };
           
           await updateUserSubscription(userId, subscriptionData);
@@ -159,14 +172,21 @@ app.post('/api/webhooks/lemonsqueezy', async (req, res) => {
         
       case 'subscription_payment_success':
         {
+          // For payment_success, the data structure is different (subscription-invoices)
+          const subscriptionId = data.attributes.subscription_id;
+          
           const subscriptionData = {
-            subscriptionId: data.attributes.id,
-            planId: data.attributes.product_id,
+            subscriptionId: subscriptionId,
+            invoiceId: data.id,
             status: 'active',
             updatedAt: new Date().toISOString(),
-            expiresAt: new Date(data.attributes.renews_at).toISOString(),
             lastPaymentAt: new Date().toISOString(),
-            renewsAt: data.attributes.renews_at
+            userName: data.attributes.user_name,
+            userEmail: data.attributes.user_email,
+            billingReason: data.attributes.billing_reason,
+            amount: data.attributes.total,
+            amountFormatted: data.attributes.total_formatted,
+            testMode: data.attributes.test_mode
           };
           
           await updateUserSubscription(userId, subscriptionData);
@@ -176,13 +196,19 @@ app.post('/api/webhooks/lemonsqueezy', async (req, res) => {
       case 'subscription_cancelled':
         {
           const subscriptionData = {
-            subscriptionId: data.attributes.id,
+            subscriptionId: data.id,
             planId: data.attributes.product_id,
             status: 'cancelled',
             updatedAt: new Date().toISOString(),
-            expiresAt: new Date(data.attributes.ends_at).toISOString(),
+            expiresAt: data.attributes.ends_at ? 
+                       new Date(data.attributes.ends_at).toISOString() : 
+                       new Date(data.attributes.renews_at).toISOString(),
             cancelledAt: new Date().toISOString(),
-            endsAt: data.attributes.ends_at
+            endsAt: data.attributes.ends_at,
+            productName: data.attributes.product_name,
+            userName: data.attributes.user_name,
+            userEmail: data.attributes.user_email,
+            testMode: data.attributes.test_mode
           };
           
           await updateUserSubscription(userId, subscriptionData);
@@ -192,12 +218,16 @@ app.post('/api/webhooks/lemonsqueezy', async (req, res) => {
       case 'subscription_expired':
         {
           const subscriptionData = {
-            subscriptionId: data.attributes.id,
+            subscriptionId: data.id,
             planId: data.attributes.product_id,
             status: 'expired',
             updatedAt: new Date().toISOString(),
             expiresAt: new Date().toISOString(),
-            expiredAt: new Date().toISOString()
+            expiredAt: new Date().toISOString(),
+            productName: data.attributes.product_name,
+            userName: data.attributes.user_name,
+            userEmail: data.attributes.user_email,
+            testMode: data.attributes.test_mode
           };
           
           await updateUserSubscription(userId, subscriptionData);
@@ -205,7 +235,7 @@ app.post('/api/webhooks/lemonsqueezy', async (req, res) => {
         break;
         
       default:
-        console.log(`Unhandled webhook event: ${event}`);
+        console.log(`Unhandled webhook event: ${eventName}`);
     }
 
     res.status(200).json({ message: 'Webhook processed successfully' });
