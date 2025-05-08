@@ -80,7 +80,7 @@ const PricingCard = () => {
         </div>
 
         <Link
-          to="/signup"
+          to="https://app.reserveease.com/signup"
           className="w-full flex items-center justify-center py-4 rounded-lg bg-blue-600 text-white font-medium hover:opacity-70 transition-opacity text-lg"
         >
           Start Your Free Trial
