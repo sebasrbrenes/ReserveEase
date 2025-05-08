@@ -67,13 +67,13 @@ const Header = () => {
         
         <div className="flex space-x-4">
           <Link 
-            to="/login"
+            to="https://app.reserveease.com/login"
             className=" px-4 py-2 text-gray-300 duration-300 hover:text-white transition-colors rounded-lg"
           >
             Login
           </Link>
           <Link
-            to="/signup"
+            to="https://app.reserveease.com/signup"
             className="px-4 py-2 rounded-lg bg-gradient-to-br from-pink-100 to-blue-700 text-white duration-300 hover:scale-105 transition-transform"
           >
             Get Started

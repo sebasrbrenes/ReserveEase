@@ -66,7 +66,7 @@ const Hero = () => {
             transition={{ duration: 0.8, delay: 0.6 }}
           >
             <Link
-              to="/signup"
+              to="https://app.reserveease.com/signup"
               className="group cta-button inline-flex items-center gap-2"
             >
               Start Free Trial
