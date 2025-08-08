@@ -28,8 +28,8 @@ const WeeklyCalendar = ({ selectedDate, onDateSelect, appointments }) => {
   };
 
   return (
-    <div className="bg-[#242937] rounded-xl p-6 w-full">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-[#242937] rounded-xl p-4 sm:p-6 w-full overflow-x-auto">
+      <div className="flex items-center justify-between mb-4 min-w-[420px] sm:min-w-0">
         <h2 className="text-lg font-semibold text-white">
           {selectedDate.format('MMMM YYYY')}
         </h2>
@@ -49,7 +49,7 @@ const WeeklyCalendar = ({ selectedDate, onDateSelect, appointments }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1 min-w-[420px] sm:min-w-0">
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
           <div key={day} className="text-center text-xs text-gray-400 mb-2">
             {day}

@@ -466,7 +466,7 @@ const Settings = () => {
           </p>
           <div className="space-y-4">
             <div className="flex flex-col space-y-2">
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 <input
                   type="text"
                   value={getBookingLink()}
@@ -475,7 +475,7 @@ const Settings = () => {
                 />
                 <button
                   onClick={copyBookingLink}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 flex items-center gap-2 w-full sm:w-auto"
                 >
                   <FiCopy className="w-4 h-4" />
                   Copy
@@ -493,7 +493,7 @@ const Settings = () => {
               <label htmlFor="businessName" className="text-sm font-medium">
                 Business Name
               </label>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 <input
                   type="text"
                   name="name"
@@ -510,7 +510,7 @@ const Settings = () => {
               <label htmlFor="timeInterval" className="text-sm font-medium">
                 Appointment Time Interval (minutes)
               </label>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 <select
                   name="timeInterval"
                   id="timeInterval"
@@ -584,8 +584,8 @@ const Settings = () => {
           <h2 className="text-lg font-semibold mb-4">Business Hours</h2>
           <div className="space-y-4">
             {DAYS_OF_WEEK.map(day => (
-              <div key={day} className="flex items-center gap-4">
-                <div className="w-32">
+              <div key={day} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                <div className="w-full sm:w-32">
                   <label className="inline-flex items-center">
                     <input
                       type="checkbox"
@@ -597,9 +597,9 @@ const Settings = () => {
                   </label>
                 </div>
                 
-                <div className="flex items-center gap-2 flex-1">
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:flex-1">
                   <select
-                    className="bg-dark border border-gray-700 text-gray-700 rounded-lg p-2.5 flex-1 disabled:opacity-50"
+                    className="bg-dark border border-gray-700 text-gray-700 rounded-lg p-2.5 w-full sm:flex-1 disabled:opacity-50"
                     value={businessHours[day.toLowerCase()]?.start ?? '9:00 AM'}
                     onChange={(e) => handleUpdateBusinessHours(day.toLowerCase(), 'start', e.target.value)}
                     disabled={!businessHours[day.toLowerCase()]?.enabled}
@@ -612,7 +612,7 @@ const Settings = () => {
                   <span className="text-gray-400">to</span>
                   
                   <select
-                    className="bg-dark border border-gray-700 text-gray-700 rounded-lg p-2.5 flex-1 disabled:opacity-50"
+                    className="bg-dark border border-gray-700 text-gray-700 rounded-lg p-2.5 w-full sm:flex-1 disabled:opacity-50"
                     value={businessHours[day.toLowerCase()]?.end ?? '5:00 PM'}
                     onChange={(e) => handleUpdateBusinessHours(day.toLowerCase(), 'end', e.target.value)}
                     disabled={!businessHours[day.toLowerCase()]?.enabled}

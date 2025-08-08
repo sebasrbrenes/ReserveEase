@@ -394,7 +394,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-[#1a1f2b]">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
           <div>
             <img src={"/src/assets/images/ReserveEaseLogoNObg.png"} alt="ReserveEase Logo" className="w-16 h-16 inline-block rotate-6" />
             <motion.div 
@@ -405,7 +405,7 @@ const Dashboard = () => {
             </motion.div>
             <p className="text-gray-400">Manage your appointments and schedule</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4 w-full sm:w-auto">
             <button
               onClick={() => setIsFeedbackOpen(true)}
               className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
@@ -431,7 +431,7 @@ const Dashboard = () => {
         </div>
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
           {metrics.map(metric => (
             <div
               key={metric.id}
@@ -462,9 +462,9 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <div className="bg-[#242937] rounded-lg p-6">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
                 <h2 className="text-xl font-semibold text-white">{showAllAppointments ? 'All Appointments' : 'Upcoming Appointments'}</h2>
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
                   <button
                     onClick={() => setShowAllAppointments(true)}
                     className="flex items-center gap-2 text-gray-400 hover:text-white text-sm"
@@ -477,7 +477,7 @@ const Dashboard = () => {
                       setShowNewAppointment(true);
                       setAppointmentToEdit(null);
                     }}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 w-full sm:w-auto"
                   >
                     <FiPlus className="w-4 h-4" />
                     New Appointment
@@ -502,7 +502,7 @@ const Dashboard = () => {
                       exit={{ opacity: 0, y: -20 }}
                       className="group bg-[#1a1f2b] p-4 rounded-lg hover:bg-[#2a303c] transition-colors border border-gray-700"
                     >
-                      <div className="flex justify-between items-start">
+                      <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-3">
                         <div>
                           <h3 className="text-lg font-semibold text-white">{appointment.clientName}</h3>
                           <p className="text-gray-400 text-sm">
@@ -510,8 +510,8 @@ const Dashboard = () => {
                           </p>
                           <p className="text-gray-400 text-sm">{appointment.service}</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-gray-400">{getStaffMemberName(appointment.staffMember)}</span>
+                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
+                          <span className="hidden sm:inline text-gray-400">{getStaffMemberName(appointment.staffMember)}</span>
                           <div className="flex items-center gap-2">
                             <AnimatePresence mode="wait">
                               {editingStatus === appointment.id ? (
