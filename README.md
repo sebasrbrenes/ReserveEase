@@ -16,36 +16,58 @@ Agenda de reservas para negocios de servicios (barberías, salones y profesional
 ## Requisitos
 
 - Node 20 o superior (la CI usa Node 22).
-- Un proyecto de Firebase con Authentication y Firestore para la app.
-- Credenciales de servicio de Firebase para el backend.
+- Java 11 o superior, para los emuladores de Firebase.
+
+No hace falta ninguna cuenta ni credencial: el desarrollo local usa los emuladores de Firebase con el proyecto ficticio `demo-reserveease`, que no puede tocar recursos reales.
 
 ## Arranque local
 
-Cada carpeta es un proyecto independiente con su propio `package-lock.json`.
+Cada carpeta es un proyecto independiente con su propio `package-lock.json`. La raíz solo tiene las herramientas de Firebase.
 
-### App
+### 1. Emuladores y datos de prueba
 
 ```bash
-cd saas-booking-app
-npm ci
-cp .env.example .env.local   # ajustar VITE_BACKEND_URL si hace falta
-npm run dev                  # http://localhost:3000
+npm ci                       # en la raíz: instala firebase-tools
+npm run emulators            # Auth :9099, Firestore :8080, interfaz en http://127.0.0.1:4000
 ```
 
-La configuración web de Firebase está en `src/firebase/config.js`. Esos valores son públicos por diseño; la protección real depende de las reglas de Firestore.
-
-### Backend
+En otra terminal, carga dos negocios ficticios (se puede repetir sin duplicar datos):
 
 ```bash
 cd saas-booking-backend
 npm ci
-cp .env.example .env         # completar las credenciales de Firebase Admin
+cp .env.example .env         # ya apunta a los emuladores
+npm run seed
+```
+
+| Negocio | Usuario | Contraseña | Enlace público |
+| --- | --- | --- | --- |
+| Barbería Demo | `barberia@demo.test` | `demo1234` | `/book/demo-owner-barberia` |
+| Salón Demo | `salon@demo.test` | `demo1234` | `/book/demo-owner-salon` |
+
+### 2. Backend
+
+```bash
+cd saas-booking-backend
 npm run dev                  # http://localhost:3001
 ```
 
+Con `APP_ENV=local` el backend se niega a arrancar si no apunta a los emuladores, y el seed se niega a escribir fuera de ellos.
+
+### 3. App
+
+```bash
+cd saas-booking-app
+npm ci
+cp .env.example .env.local   # VITE_USE_EMULATORS=true
+npm run dev                  # http://localhost:3000
+```
+
+Sin `VITE_USE_EMULATORS=true`, la app usa la configuración web de Firebase de `src/firebase/config.js`. Esos valores son públicos por diseño; la protección real depende de las reglas de Firestore.
+
 Por defecto `NOTIFICATIONS_MODE=mock`: las rutas de correo y SMS responden sin contactar a SendGrid ni a Twilio. Para enviar mensajes reales hay que poner `NOTIFICATIONS_MODE=live` y las credenciales correspondientes. Esas rutas tienen además un límite de peticiones por IP.
 
-### Landing
+### 4. Landing
 
 ```bash
 cd saas-booking-landing

@@ -1,6 +1,17 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+
+// Local development: VITE_USE_EMULATORS=true points the app at the Firebase
+// emulators with a "demo-" project, which can never reach real resources.
+const useEmulators = import.meta.env.VITE_USE_EMULATORS === "true";
+
+const emulatorConfig = {
+  apiKey: "demo-api-key",
+  authDomain: "demo-reserveease.firebaseapp.com",
+  projectId: "demo-reserveease",
+  appId: "demo-app-id"
+};
 
 const firebaseConfig = {
   apiKey: "AIzaSyDrZH-OSMSOwpgTk5bDZktFA8pI3cgxyBY",
@@ -13,9 +24,14 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(useEmulators ? emulatorConfig : firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+if (useEmulators) {
+  connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+  connectFirestoreEmulator(db, "127.0.0.1", 8080);
+}
 export const googleProvider = new GoogleAuthProvider();
 
 export default app;

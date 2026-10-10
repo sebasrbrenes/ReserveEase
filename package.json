@@ -1,0 +1,12 @@
+{
+  "name": "reserveease",
+  "private": true,
+  "description": "Local tooling for ReserveEase: Firebase emulators and demo data",
+  "scripts": {
+    "emulators": "firebase emulators:start --project demo-reserveease",
+    "seed": "npm --prefix saas-booking-backend run seed"
+  },
+  "devDependencies": {
+    "firebase-tools": "^15.33.0"
+  }
+}
