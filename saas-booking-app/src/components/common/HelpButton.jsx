@@ -14,39 +14,40 @@ const HelpButton = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute bottom-16 right-0 mb-2 bg-surface border border-gray-800 rounded-lg shadow-xl p-4 w-72"
+            className="absolute bottom-16 right-0 mb-2 hd-card p-4 w-72 max-w-[calc(100vw-3rem)] text-ink"
           >
             <div className="flex justify-between items-start mb-3">
-              <h3 className="text-white font-medium">Need Help?</h3>
+              <h3 className="hd-title text-3xl">Need Help?</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors"
+                aria-label="Close"
+                className="p-1 text-ink-soft hover:text-ink hover:bg-paper-deep rounded-full transition-colors"
               >
-                <FiX />
+                <FiX aria-hidden="true" />
               </button>
             </div>
-            <p className="text-gray-300 text-sm mb-4">
+            <p className="text-ink-soft text-sm mb-4">
               Our support team is here to help! Send us an email to help@reservease.com and we&apos;ll get back to you as soon as possible.
             </p>
             <a
               href="mailto:help@reservease.com"
-              className="flex items-center justify-center gap-2 w-full bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors"
+              className="hd-btn w-full"
             >
-              <FiMail />
+              <FiMail aria-hidden="true" />
               <span>Contact Support</span>
             </a>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+      <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-primary hover:bg-primary/90 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-colors"
+        aria-label="Help"
+        aria-expanded={isOpen}
+        className="hd-btn !rounded-full !p-0 w-12 h-12"
       >
-        <FiHelpCircle size={24} />
-      </motion.button>
+        <FiHelpCircle size={24} aria-hidden="true" />
+      </button>
     </div>
   );
 };

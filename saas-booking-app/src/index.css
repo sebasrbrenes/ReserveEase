@@ -9,14 +9,7 @@
 }
 
 body {
-  @apply bg-[#1a1f2b] text-gray-900 min-h-screen;
-}
-
-/* Dark mode styles */
-@media (prefers-color-scheme: dark) {
-  body {
-    @apply bg-gray-900 text-gray-100;
-  }
+  @apply bg-paper text-ink min-h-screen;
 }
 
 /* Custom scrollbar styles */

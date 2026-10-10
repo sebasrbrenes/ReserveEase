@@ -9,7 +9,7 @@ import {
 } from '../../services/api';
 import { formatTime, fromLocalDateString, toLocalDateString, todayIn } from '../../utils/datetime';
 
-const inputClass = 'w-full p-2 bg-[#1a1f2b] border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+const inputClass = 'hd-input';
 const E164 = /^\+[1-9]\d{7,14}$/;
 
 const emptyForm = (timezone) => ({
@@ -172,30 +172,30 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-ink/40 p-4 overflow-y-auto"
         >
           <motion.div
             initial={{ scale: 0.95 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0.95 }}
-            className="w-full max-w-lg p-6 bg-[#242937] rounded-lg shadow-xl relative my-8"
+            className="hd-card w-full max-w-lg p-5 sm:p-6 relative my-8 text-ink"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="hd-title text-4xl">
                 {appointment ? 'Edit Appointment' : 'New Appointment'}
               </h2>
               <button
                 onClick={onClose}
                 aria-label="Close"
-                className="p-1 text-gray-400 hover:text-white hover:bg-[#2a303c] rounded-full transition duration-200"
+                className="p-1 text-ink-soft hover:text-ink hover:bg-paper-deep rounded-full transition duration-200"
               >
-                <FiX className="w-5 h-5" />
+                <FiX className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="apt-service" className="block text-sm font-medium text-gray-400 mb-1">Service *</label>
+                <label htmlFor="apt-service" className="hd-label">Service *</label>
                 <select
                   id="apt-service" name="serviceId" value={form.serviceId} onChange={handleChange}
                   className={inputClass} required disabled={Boolean(appointment)}
@@ -208,7 +208,7 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
               </div>
 
               <div>
-                <label htmlFor="apt-staff" className="block text-sm font-medium text-gray-400 mb-1">Staff Member *</label>
+                <label htmlFor="apt-staff" className="hd-label">Staff Member *</label>
                 <select
                   id="apt-staff" name="staffId" value={form.staffId} onChange={handleChange}
                   className={inputClass} required disabled={!canMove || !form.serviceId}
@@ -223,10 +223,11 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1 w-full">
-                  <label className="block text-sm font-medium text-gray-400">Date *</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="w-full">
+                  <label htmlFor="apt-date" className="hd-label">Date *</label>
                   <DatePicker
+                    id="apt-date"
                     selected={form.date ? fromLocalDateString(form.date) : null}
                     onChange={(date) => date && update({ date: toLocalDateString(date), startsAt: '' })}
                     minDate={fromLocalDateString(todayIn(timezone))}
@@ -238,8 +239,8 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
                   />
                 </div>
 
-                <div className="space-y-1 w-full">
-                  <label htmlFor="apt-time" className="block text-sm font-medium text-gray-400">Time *</label>
+                <div className="w-full">
+                  <label htmlFor="apt-time" className="hd-label">Time *</label>
                   <select
                     id="apt-time" name="startsAt" value={form.startsAt} onChange={handleChange}
                     className={inputClass} required={canMove} disabled={!canMove || !form.staffId}
@@ -254,42 +255,42 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="apt-name" className="block text-sm font-medium text-gray-400 mb-1">Client Name *</label>
+                  <label htmlFor="apt-name" className="hd-label">Client Name *</label>
                   <input id="apt-name" type="text" name="clientName" value={form.clientName} onChange={handleChange} className={inputClass} maxLength={100} required />
                 </div>
                 <div>
-                  <label htmlFor="apt-email" className="block text-sm font-medium text-gray-400 mb-1">Email *</label>
+                  <label htmlFor="apt-email" className="hd-label">Email *</label>
                   <input id="apt-email" type="email" name="email" value={form.email} onChange={handleChange} className={inputClass} maxLength={200} required />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="apt-phone" className="block text-sm font-medium text-gray-400 mb-1">Phone (with country code)</label>
+                <label htmlFor="apt-phone" className="hd-label">Phone (with country code)</label>
                 <input id="apt-phone" type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="+50688887777" className={inputClass} maxLength={16} />
               </div>
 
               <div>
-                <label htmlFor="apt-notes" className="block text-sm font-medium text-gray-400 mb-1">Notes</label>
+                <label htmlFor="apt-notes" className="hd-label">Notes</label>
                 <textarea
                   id="apt-notes" name="notes" value={form.notes} onChange={handleChange} maxLength={500}
-                  className="w-full p-2 bg-[#1a1f2b] border border-gray-700 text-white rounded-lg resize-none h-20 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="hd-input resize-none h-20"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-gray-400 hover:text-white hover:bg-[#2a303c] rounded-lg transition duration-200"
+                  className="hd-btn hd-btn-secondary"
                 >
                   Close
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className={`w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${submitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className="hd-btn flex-1"
                 >
                   {submitting ? 'Saving...' : (appointment ? 'Save Changes' : 'Create Appointment')}
                 </button>

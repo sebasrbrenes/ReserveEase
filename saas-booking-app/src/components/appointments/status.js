@@ -1,9 +1,10 @@
 // Appointment states of the booking API and what the dashboard can do from each.
+// className holds the Hand-Drawn badge colors; pair it with `hd-badge`.
 export const STATUS = {
-  confirmed: { label: 'Confirmed', className: 'bg-blue-500/20 text-blue-400' },
-  completed: { label: 'Completed', className: 'bg-green-500/20 text-green-500' },
-  no_show: { label: 'No-show', className: 'bg-gray-500/20 text-gray-300' },
-  cancelled: { label: 'Cancelled', className: 'bg-red-500/20 text-red-500' },
+  confirmed: { label: 'Confirmed', className: 'text-marker bg-marker-light' },
+  completed: { label: 'Completed', className: 'text-leaf bg-leaf-light' },
+  no_show: { label: 'No-show', className: 'text-ink bg-sun-light' },
+  cancelled: { label: 'Cancelled', className: 'text-coral bg-coral-light' },
 };
 
 // Actions offered on a confirmed appointment. completed and no_show are only
@@ -15,4 +16,4 @@ export const STATUS_ACTIONS = [
 ];
 
 export const statusLabel = (status) => STATUS[status]?.label || status;
-export const statusClass = (status) => STATUS[status]?.className || 'bg-gray-500/20 text-gray-300';
+export const statusClass = (status) => STATUS[status]?.className || 'text-ink-soft bg-paper-deep';
