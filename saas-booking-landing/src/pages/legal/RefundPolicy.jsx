@@ -8,7 +8,7 @@ const RefundPolicy = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background pt-24 pb-16">
+    <div className="hd-page pt-20 pb-16">
       <BackButton />
       <div className="max-w-4xl mx-auto px-4">
         <motion.div
@@ -18,19 +18,19 @@ const RefundPolicy = () => {
           className="mb-12"
         >
           <h1 className="text-3xl md:text-4xl font-bold mb-4 text-center">
-            <span className="gradient-text">Refund Policy</span>
+            <span className="hd-title text-5xl md:text-6xl">Refund Policy</span>
           </h1>
-          <p className="text-gray-400 text-center">Last updated: February 10, 2025</p>
+          <p className="text-ink-soft text-center">Last updated: February 10, 2025</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="space-y-8 text-gray-300"
+          className="space-y-8 text-ink"
         >
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">Overview</h2>
+            <h2 className="text-2xl font-extrabold mb-4">Overview</h2>
             <p className="mb-4">
               At ReserveEase, we strive to ensure complete satisfaction with our services. This Refund Policy
               outlines the terms and conditions for refunds on our subscription plans and services.
@@ -38,10 +38,10 @@ const RefundPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">Subscription Refunds</h2>
+            <h2 className="text-2xl font-extrabold mb-4">Subscription Refunds</h2>
             <div className="space-y-4">
               <div>
-                <h3 className="text-xl font-semibold mb-2 text-primary">14-Day Money-Back Guarantee</h3>
+                <h3 className="text-xl font-semibold mb-2 text-marker">14-Day Money-Back Guarantee</h3>
                 <p>We offer a 14-day money-back guarantee on all new subscriptions:</p>
                 <ul className="list-disc pl-6 mt-2 space-y-2">
                   <li>Full refund if requested within 14 days of initial purchase</li>
@@ -51,7 +51,7 @@ const RefundPolicy = () => {
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold mb-2 text-primary">Cancellation & Prorated Refunds</h3>
+                <h3 className="text-xl font-semibold mb-2 text-marker">Cancellation & Prorated Refunds</h3>
                 <p>For subscription cancellations after the 14-day period:</p>
                 <ul className="list-disc pl-6 mt-2 space-y-2">
                   <li>Service continues until the end of the current billing period</li>
@@ -63,7 +63,7 @@ const RefundPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">Refund Exceptions</h2>
+            <h2 className="text-2xl font-extrabold mb-4">Refund Exceptions</h2>
             <p className="mb-4">Refunds may not be available in the following cases:</p>
             <ul className="list-disc pl-6 space-y-2">
               <li>Violation of our Terms of Service</li>
@@ -74,7 +74,7 @@ const RefundPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">How to Request a Refund</h2>
+            <h2 className="text-2xl font-extrabold mb-4">How to Request a Refund</h2>
             <p className="mb-4">To request a refund:</p>
             <ul className="list-disc pl-6 space-y-2">
               <li>Contact our support team via email</li>
@@ -84,10 +84,10 @@ const RefundPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">Contact Us</h2>
+            <h2 className="text-2xl font-extrabold mb-4">Contact Us</h2>
             <p>
               If you have questions about our refund policy, please contact us at{' '}
-              <a href="mailto:contact@reservease.com" className="text-primary hover:text-primary/80">
+              <a href="mailto:contact@reservease.com" className="hd-link">
                 contact@reservease.com
               </a>
             </p>

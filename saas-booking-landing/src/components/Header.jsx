@@ -1,86 +1,59 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { FiMenu, FiX } from 'react-icons/fi';
+import { Logo } from './Doodles';
+import { APP_URL } from '../config';
+
+const LINKS = [
+  ['#how-it-works', 'How it works'],
+  ['#features', 'Features'],
+  ['#pricing', 'Pricing'],
+  ['#faq', 'FAQ'],
+];
 
 const Header = () => {
-  const handleScroll = (e, id) => {
-    e.preventDefault();
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }
-  };
+  const [open, setOpen] = useState(false);
 
   return (
-    <motion.header 
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className="fixed top-0 left-0 right-0 h-16 bg-dark/80 backdrop-blur-lg border-b border-gray-800 z-50"
-    >
-      <div className="h-full max-w-[1200px] mx-auto px-4 flex justify-between items-center">
-        <motion.div 
-          className="text-2xl font-bold gradient-text"
-          whileHover={{ scale: 1.05 }}
-        >
-          <Link to="/">ReserveEase</Link>
-        </motion.div>
-        
-        <nav className="hidden md:flex space-x-8">
-          <a
-            href="#features"
-            onClick={(e) => handleScroll(e, 'features')}
-            className="nav-link"
-          >
-            Features
-          </a>
-          <a
-            href="#testimonials"
-            onClick={(e) => handleScroll(e, 'testimonials')}
-            className="nav-link"
-          >
-            Testimonials
-          </a>
-          <a
-            href="#pricing"
-            onClick={(e) => handleScroll(e, 'pricing')}
-            className="nav-link"
-          >
-            Pricing
-          </a>
-          <a
-            href="#faq"
-            onClick={(e) => handleScroll(e, 'faq')}
-            className="nav-link"
-          >
-            FAQ
-          </a>
-          <a
-            href="#contact"
-            onClick={(e) => handleScroll(e, 'contact')}
-            className="nav-link"
-          >
-            Contact
-          </a>
+    <header className="sticky top-0 z-20 bg-paper/95 border-b-2 border-ink">
+      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        <Link to="/" aria-label="ReserveEase home"><Logo /></Link>
+
+        <nav aria-label="Main" className="hidden md:flex items-center gap-6 font-semibold">
+          {LINKS.map(([href, label]) => (
+            <a key={href} href={href} className="hover:text-marker">{label}</a>
+          ))}
         </nav>
-        
-        <div className="flex space-x-4">
-          <Link 
-            to="https://app.reserveease.com/login"
-            className=" px-4 py-2 text-gray-300 duration-300 hover:text-white transition-colors rounded-lg"
-          >
-            Login
-          </Link>
-          <Link
-            to="https://app.reserveease.com/signup"
-            className="px-4 py-2 rounded-lg bg-gradient-to-br from-pink-100 to-blue-700 text-white duration-300 hover:scale-105 transition-transform"
-          >
-            Get Started
-          </Link>
+
+        <div className="hidden md:flex items-center gap-3">
+          <a href={`${APP_URL}/login`} className="hd-link">Sign in</a>
+          <a href={`${APP_URL}/signup`} className="hd-btn py-2">Create account</a>
         </div>
+
+        <button
+          type="button"
+          className="md:hidden hd-btn hd-btn-secondary px-3 py-2"
+          aria-expanded={open}
+          aria-controls="mobile-menu"
+          aria-label={open ? 'Close menu' : 'Open menu'}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? <FiX aria-hidden="true" /> : <FiMenu aria-hidden="true" />}
+        </button>
       </div>
-    </motion.header>
+
+      {open && (
+        <nav id="mobile-menu" aria-label="Main" className="md:hidden border-t-2 border-ink px-4 py-4 space-y-3 font-semibold">
+          {LINKS.map(([href, label]) => (
+            <a key={href} href={href} className="block" onClick={() => setOpen(false)}>{label}</a>
+          ))}
+          <div className="flex items-center gap-4 pt-2">
+            <a href={`${APP_URL}/login`} className="hd-link">Sign in</a>
+            <a href={`${APP_URL}/signup`} className="hd-btn py-2">Create account</a>
+          </div>
+        </nav>
+      )}
+    </header>
   );
 };
 

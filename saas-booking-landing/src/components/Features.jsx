@@ -1,133 +1,65 @@
-import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
-import { 
-  FaCalendarAlt, 
-  FaChartLine, 
-  FaMobileAlt, 
-  FaUsersCog,
-  FaBell,
-  FaLock,
-} from 'react-icons/fa';
+import { FiCalendar, FiClock, FiGlobe, FiLock, FiMail, FiRepeat, FiSmartphone, FiUsers } from 'react-icons/fi';
+import { Sparkle, Underline } from './Doodles';
+import dashboardDesktop from '../assets/images/dashboard-desktop.webp';
 
-const features = [
-  {
-    icon: FaCalendarAlt,
-    title: "Smart Scheduling",
-    description: "AI-powered scheduling system that learns from your preferences and optimizes your calendar automatically.",
-    highlight: "Reduce scheduling time by 85%"
-  },
-  {
-    icon: FaChartLine,
-    title: "Intelligent Analytics",
-    description: "Real-time insights into your business performance with predictive booking trends and revenue forecasts.",
-    highlight: "Make data-driven decisions"
-  },
-  {
-    icon: FaMobileAlt,
-    title: "Mobile-First Design",
-    description: "Beautiful, responsive booking interface that works flawlessly across all devices and screen sizes.",
-    highlight: "Book anywhere, anytime"
-  },
-  {
-    icon: FaUsersCog,
-    title: "Smart Team Management",
-    description: "Automated staff scheduling with workload balancing and real-time availability updates.",
-    highlight: "Optimize team efficiency"
-  },
-  {
-    icon: FaBell,
-    title: "Automated Notifications",
-    description: "Smart reminder system with customizable templates and multi-channel notifications.",
-    highlight: "Reduce no-shows by 50%"
-  },
-  {
-    icon: FaLock,
-    title: "Enterprise Security",
-    description: "Bank-grade encryption and compliance with international data protection standards.",
-    highlight: "Your data, protected"
-  }
+// Only what the product does today. "soon" marks work in progress.
+const FEATURES = [
+  { icon: FiClock, title: 'Only real free times', text: 'Clients see times that fit the service, your opening hours and the appointments you already have.' },
+  { icon: FiLock, title: 'No double bookings', text: 'If two people try to take the same time at once, only one gets it. The other is asked to pick another time.' },
+  { icon: FiRepeat, title: 'Move or cancel in one step', text: 'Change the time or the staff member from your dashboard. A cancelled time is free to book again.' },
+  { icon: FiUsers, title: 'Your team and services', text: 'Each person offers the services they do. Clients choose who attends them.' },
+  { icon: FiGlobe, title: 'Your time zone and currency', text: 'Times and prices show the way your business works, wherever your clients are.' },
+  { icon: FiSmartphone, title: 'Made for phones', text: 'Most clients book from their phone, so the booking page is built and tested for small screens first.' },
+  { icon: FiCalendar, title: 'Your week at a glance', text: 'See today’s appointments, the week ahead and what each day is worth.' },
+  { icon: FiMail, title: 'Email confirmations and reminders', text: 'A confirmation when they book, a notice if anything changes and a reminder the day before.', soon: true },
 ];
 
-const FeatureCard = ({ icon: Icon, title, description, highlight, index }) => {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
+const Features = () => (
+  <section id="features" className="scroll-mt-20">
+    <div className="max-w-6xl mx-auto px-4 py-16 md:py-24">
+      <h2 className="hd-title text-5xl md:text-6xl mb-4 text-center">
+        <span className="relative inline-block">
+          What you get
+          <Underline className="absolute -bottom-2 left-0 w-full h-4 text-sun" />
+        </span>
+      </h2>
+      <p className="text-center text-ink-soft max-w-2xl mx-auto mb-12">
+        No artificial intelligence and no made-up numbers. Just the booking tools a small business needs, working well.
+      </p>
 
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="group hover-card p-5 rounded-xl bg-surface relative overflow-hidden"
-    >
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out origin-left"></div>
-      
-      <div className="relative z-10">
-        <div className="feature-icon mb-4 w-12 h-12">
-          <Icon size={20} className="text-white" />
+      <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {FEATURES.map(({ icon: Icon, title, text, soon }) => (
+          <li key={title} className="hd-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="w-11 h-11 flex items-center justify-center border-2 border-ink rounded-xl bg-marker-light text-marker">
+                <Icon aria-hidden="true" size={20} />
+              </span>
+              {soon && <span className="hd-badge text-ink bg-sun-light">Coming soon</span>}
+            </div>
+            <h3 className="text-lg font-extrabold mb-1">{title}</h3>
+            <p className="text-sm text-ink-soft">{text}</p>
+          </li>
+        ))}
+      </ul>
+
+      <figure className="relative mt-16 max-w-4xl mx-auto">
+        <div className="hd-card p-2 md:-rotate-1">
+          <img
+            src={dashboardDesktop}
+            alt="The ReserveEase dashboard: today's appointments, active staff, booked value, upcoming appointments and the week calendar."
+            width="960"
+            height="330"
+            loading="lazy"
+            className="w-full h-auto rounded-lg border border-ink/10"
+          />
         </div>
-        
-        <h3 className="text-xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
-          {title}
-        </h3>
-        
-        <p className="text-gray-400 mb-3 text-sm">
-          {description}
-        </p>
-        
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-primary">
-            {highlight}
-          </span>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-const Features = () => {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-
-  return (
-    <section id="features" className="py-24 relative overflow-hidden">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-1/2 left-0 w-72 h-72 bg-primary/5 rounded-full filter blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-secondary/5 rounded-full filter blur-3xl"></div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-4 relative z-10">
-        <motion.div
-          ref={ref}
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-12"
-        >
-          <h2 className="text-3xl md:text-4xl font-bold mb-3">
-            <span className="gradient-text">Powerful Features</span>
-            <br />
-            <span className="text-white">for Modern Businesses</span>
-          </h2>
-          <p className="text-lg text-gray-400 max-w-xl mx-auto">
-            Transform your booking process with cutting-edge features designed to save time,
-            reduce stress, and delight your customers.
-          </p>
-        </motion.div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => (
-            <FeatureCard key={index} {...feature} index={index} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
+        <figcaption className="mt-4 text-center font-hand text-2xl text-marker">
+          your dashboard, with the demo business
+        </figcaption>
+        <Sparkle className="absolute -top-6 -left-4 w-10 h-10 text-marker" />
+      </figure>
+    </div>
+  </section>
+);
 
 export default Features;

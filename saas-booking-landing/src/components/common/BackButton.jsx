@@ -1,18 +1,13 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 
-const BackButton = () => {
-  const navigate = useNavigate();
-
-  return (
-    <button
-      onClick={() => navigate('/')}
-      className="fixed top-24 left-4 md:left-8 z-50 flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white transition-colors bg-surface/80 backdrop-blur-sm rounded-lg"
-    >
-      <FiArrowLeft />
+const BackButton = () => (
+  <div className="max-w-4xl mx-auto px-4 mb-8">
+    <Link to="/" className="hd-btn hd-btn-secondary py-2 text-sm">
+      <FiArrowLeft aria-hidden="true" />
       <span>Back to Home</span>
-    </button>
-  );
-};
+    </Link>
+  </div>
+);
 
 export default BackButton;
