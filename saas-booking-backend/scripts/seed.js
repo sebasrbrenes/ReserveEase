@@ -1,6 +1,7 @@
-// Loads two fictitious businesses into the Firebase emulators.
-// Uses the current data shape (users/{uid}/settings/business + appointments)
-// so the existing app works locally. Safe to run repeatedly.
+// Loads two fictitious businesses into the Firebase emulators, in both data
+// shapes: the current one (users/{uid}/settings/business + appointments) used
+// by the existing app, and model v2 (businesses/{id} + publicBusinesses/{slug})
+// used by /api/v1. Safe to run repeatedly.
 
 import 'dotenv/config';
 import dayjs from 'dayjs';
@@ -15,6 +16,7 @@ if (!process.env.FIRESTORE_EMULATOR_HOST || !process.env.FIREBASE_AUTH_EMULATOR_
 
 const { getAuth } = await import('firebase-admin/auth');
 const { db, default: app } = await import('../config/firebase.js');
+const schemas = await import('../src/domain/schemas.js');
 const auth = getAuth(app);
 
 const PASSWORD = 'demo1234';
@@ -27,6 +29,8 @@ const hours = (start, end, closed = []) => Object.fromEntries(
 const BUSINESSES = [
   {
     uid: 'demo-owner-barberia',
+    businessId: 'biz-barberia-demo',
+    slug: 'barberia-demo',
     email: 'barberia@demo.test',
     displayName: 'Dueño Barbería Demo',
     business: {
@@ -55,6 +59,8 @@ const BUSINESSES = [
   },
   {
     uid: 'demo-owner-salon',
+    businessId: 'biz-salon-demo',
+    slug: 'salon-demo',
     email: 'salon@demo.test',
     displayName: 'Dueña Salón Demo',
     business: {
@@ -92,6 +98,63 @@ const upsertUser = async ({ uid, email, displayName }) => {
 
 const now = dayjs().toISOString();
 
+// "9:00 AM" -> "09:00"
+const to24h = (t) => {
+  const [, h, m, period] = t.match(/^(\d{1,2}):(\d{2}) (AM|PM)$/);
+  const hour = (Number(h) % 12) + (period === 'PM' ? 12 : 0);
+  return `${String(hour).padStart(2, '0')}:${m}`;
+};
+
+// Builds and validates the v2 documents for one business.
+const buildV2 = (b) => {
+  const business = schemas.businessSchema.parse({
+    id: b.businessId,
+    ownerUid: b.uid,
+    name: b.business.name,
+    slug: b.slug,
+    timezone: 'America/Costa_Rica',
+    currency: 'CRC',
+    status: 'published',
+    bookingPolicy: {
+      confirmationMode: 'automatic',
+      slotStepMinutes: 15,
+      minNoticeMinutes: 60,
+      maxAdvanceDays: 60,
+      cancellationNoticeMinutes: 120,
+    },
+    weeklySchedule: Object.fromEntries(Object.entries(b.businessHours).map(([day, h]) => [
+      day, h.enabled ? [{ start: to24h(h.start), end: to24h(h.end) }] : [],
+    ])),
+    schemaVersion: schemas.SCHEMA_VERSION,
+  });
+  const services = b.business.services.map((svc) => schemas.serviceSchema.parse({
+    id: svc.id,
+    name: svc.name,
+    durationMinutes: svc.duration,
+    bufferAfterMinutes: 5,
+    priceMinor: svc.price * 100,
+    currency: 'CRC',
+    active: true,
+  }));
+  const staff = b.business.staff.map((m) => schemas.staffSchema.parse({
+    id: m.id,
+    displayName: m.name,
+    active: m.active,
+    serviceIds: m.availableServices,
+  }));
+  const publicBusiness = schemas.publicBusinessSchema.parse({
+    businessId: business.id,
+    slug: business.slug,
+    name: business.name,
+    timezone: business.timezone,
+    currency: business.currency,
+    status: business.status,
+    services: services.filter((svc) => svc.active),
+    staff: staff.filter((m) => m.active),
+  });
+  return { business, services, staff, publicBusiness };
+};
+
 for (const b of BUSINESSES) {
   await upsertUser(b);
 
@@ -123,8 +186,18 @@ for (const b of BUSINESSES) {
   });
   await batch.commit();
 
+  const v2 = buildV2(b);
+  const v2Batch = db.batch();
+  v2Batch.set(db.doc(`businesses/${v2.business.id}`), v2.business);
+  v2Batch.set(db.doc(`businesses/${v2.business.id}/members/${b.uid}`), { role: 'owner' });
+  v2.services.forEach((svc) => v2Batch.set(db.doc(`businesses/${v2.business.id}/services/${svc.id}`), svc));
+  v2.staff.forEach((m) => v2Batch.set(db.doc(`businesses/${v2.business.id}/staff/${m.id}`), m));
+  v2Batch.set(db.doc(`publicBusinesses/${v2.business.slug}`), v2.publicBusiness);
+  await v2Batch.commit();
+
   console.log(`Seeded ${b.business.name}: ${b.email} / ${PASSWORD} (${b.appointments.length} appointments)`);
 }
 
 console.log('Public booking links: /book/demo-owner-barberia and /book/demo-owner-salon');
+console.log('API v1: GET /api/v1/public/businesses/barberia-demo and /salon-demo');
 process.exit(0);
