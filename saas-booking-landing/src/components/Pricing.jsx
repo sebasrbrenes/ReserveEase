@@ -1,123 +1,42 @@
-import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
 import { FiCheck } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { Star } from './Doodles';
+import { APP_URL } from '../config';
 
-const features = [
-  'Unlimited bookings',
-  'Smart scheduling & reminders',
-  'Customer management',
-  'Calendar integrated',
-  'Email and SMS notifications',
-  'Analytics dashboard',
-  'Mobile-friendly booking page',
-  'Security & privacy',
+const INCLUDED = [
+  'Your own booking page',
+  'Unlimited appointments',
+  'Staff, services and opening hours',
+  'Dashboard with your week',
+  'Works on phone and computer',
 ];
 
-const PricingCard = () => {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 50 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5 }}
-      className="relative rounded-2xl p-1 bg-blue-500 max-w-xl mx-auto"
-    >
-      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-500 px-6 py-1.5 rounded-full text-sm font-medium">
-        14-Day Free Trial
+const Pricing = () => (
+  <section id="pricing" className="scroll-mt-20 border-y-2 border-ink bg-white">
+    <div className="max-w-6xl mx-auto px-4 py-16 md:py-20 grid gap-10 md:grid-cols-2 items-center">
+      <div>
+        <h2 className="hd-title text-5xl md:text-6xl mb-4">Free during early access</h2>
+        <p className="text-ink-soft text-lg">
+          ReserveEase is still being finished. While that happens it costs nothing, and you don’t need a card.
+          Before any paid plan starts, you will be told the price and can decide whether to stay.
+        </p>
       </div>
-      
-      <div className="h-full rounded-xl bg-gray-900 p-8">
-        <div className="text-center mb-6">
-          <h3 className="text-xl font-bold mb-2 gradient-text">Everything you need</h3>
-          <p className="text-gray-400 text-base mb-6">Simple, powerful booking solution for your business</p>
-          <div className="flex items-center justify-center gap-10 mb-2">
-            <div className="pricing-option w-56">
-              <div className="flex flex-col items-center">
-                <div className="flex items-start">
-                  <span className="text-2xl font-bold text-primary mt-2">$</span>
-                  <span className="text-6xl font-extrabold text-primary mx-1">29</span>
-                </div>
-                <div className="flex flex-col items-center mt-1">
-                  <span className="text-gray-400 text-base">/month</span>
-                  <span className="text-sm text-gray-400 mb-14">Billed monthly</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="pricing-option mb-9 w-56">
-              <div className="flex flex-col items-center pt-6">
-                <div className="flex items-start">
-                  <span className="text-2xl font-bold text-primary mt-2">$</span>
-                  <span className="text-6xl font-extrabold text-primary mx-1">260</span>
-                </div>
-                <div className="flex flex-col items-center mt-1">
-                  <span className="text-gray-400 text-base">/year</span>
-                  <span className="text-sm text-gray-400">Billed yearly</span>
-                </div>
-                <div className="mt-3">
-                  <span className="inline-block bg-gradient-to-r from-green-400 to-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                  Save $90 yearly! 🎉
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {features.map((feature, i) => (
-            <div key={i} className="flex items-center text-gray-300 text-sm">
-              <FiCheck className="mr-2 text-primary" />
-              {feature}
-            </div>
+      <div className="relative hd-card p-6 md:p-8 bg-paper">
+        <Star className="absolute -top-5 -right-5 w-10 h-10 text-sun" />
+        <p className="font-hand text-3xl font-bold mb-1">Early access</p>
+        <p className="text-5xl font-extrabold mb-6">$0</p>
+        <ul className="space-y-2 mb-8">
+          {INCLUDED.map((item) => (
+            <li key={item} className="flex items-start gap-2">
+              <FiCheck aria-hidden="true" className="mt-1 text-leaf shrink-0" />
+              <span>{item}</span>
+            </li>
           ))}
-        </div>
-
-        <Link
-          to="https://app.reserveease.com/signup"
-          className="w-full flex items-center justify-center py-4 rounded-lg bg-blue-600 text-white font-medium hover:opacity-70 transition-opacity text-lg"
-        >
-          Start Your Free Trial
-        </Link>
+        </ul>
+        <a href={`${APP_URL}/signup`} className="hd-btn w-full text-lg">Create your booking page</a>
       </div>
-    </motion.div>
-  );
-};
-
-const Pricing = () => {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-
-  return (
-    <section id="pricing" className="py-32 relative">
-      <div className="max-w-7xl mx-auto px-4">
-        <motion.div
-          ref={ref}
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">One Simple Plan</span>
-          </h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Try all features free for 14 days.
-          </p>
-        </motion.div>
-
-        <PricingCard />
-      </div>
-    </section>
-  );
-};
+    </div>
+  </section>
+);
 
 export default Pricing;

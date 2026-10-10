@@ -143,4 +143,4 @@ La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobacione
 - Sin SendGrid configurado (`NOTIFICATIONS_MODE=live`) los correos solo se simulan. No hay SMS en el flujo nuevo.
 - Si el proceso se detiene justo después de que el proveedor acepta un correo y antes de guardarlo, ese correo puede enviarse dos veces: SendGrid no deduplica por clave. El id de la tarea viaja en `custom_args` para poder conciliarlo.
 - Las citas guardadas con el modelo anterior (colección raíz `appointments`) no aparecen en el panel; no hay migración.
-- La landing promete funciones (IA, predicciones) que no están implementadas.
+- La landing dice que el servicio es gratis durante el acceso anticipado; no hay cobro conectado al núcleo nuevo.
