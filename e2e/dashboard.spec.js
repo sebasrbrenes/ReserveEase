@@ -84,3 +84,41 @@ test('T29: the client email preference is saved and survives a reload', async ({
   await page.getByRole('switch', { name: 'Email clients about their appointments' }).click({ force: true });
   await expect(page.getByText('Client emails turned on')).toBeVisible();
 });
+
+test('settings sections save on their own and show their errors next to the field', async ({ page }) => {
+  page.on('dialog', (dialog) => dialog.accept());
+  await login(page, 'salon@demo.test');
+  await page.goto('/settings');
+  const name = page.locator('#businessName');
+  await expect(name).toHaveValue('Salón Demo');
+  const save = page.getByRole('button', { name: 'Save Changes' });
+  await expect(save).toBeDisabled();
+
+  await name.fill('');
+  await save.click();
+  await expect(page.getByText('Give your business a name.')).toBeVisible();
+
+  await name.fill('Salón Demo Centro');
+  await expect(page.getByText('You have unsaved changes in this section.')).toBeVisible();
+  await save.click();
+  await expect(page.getByText('Business information saved')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('#businessName')).toHaveValue('Salón Demo Centro');
+  await page.locator('#businessName').fill('Salón Demo');
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+  await expect(page.getByText('Business information saved')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(page.getByText('Give the service a name.')).toBeVisible();
+
+  // Email is optional for staff.
+  const staffName = `Prueba ${Date.now()}`;
+  await page.fill('#staffName', staffName);
+  await page.getByRole('button', { name: 'Add Staff Member' }).click();
+  await expect(page.getByText('Staff member added')).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: staffName })).toBeVisible();
+  await page.getByRole('button', { name: `Delete ${staffName}` }).click();
+  await expect(page.getByText('Staff member deleted')).toBeVisible();
+  await expect(page.getByRole('heading', { name: staffName })).toHaveCount(0);
+});

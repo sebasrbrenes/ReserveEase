@@ -125,168 +125,117 @@ const Settings = () => {
     }
   }, [settings]);
 
-  const handleSaveSettings = async () => {
+  // Each section saves only its own data. Local state changes right away and
+  // goes back to what was saved if the save fails.
+  const saveSection = async (changes, { success, failure, rollback }) => {
     try {
-      const updatedSettings = {
-        business: {
-          ...settings.business,
-          name: businessForm.name || '',
-          email: businessForm.email || '',
-          phone: businessForm.phone || '',
-          address: businessForm.address || '',
-          timeInterval: businessForm.timeInterval || 30,
-          timezone: businessForm.timezone,
-          currency: businessForm.currency,
-          services: services,
-          staff: staff,
-          allowStaffPreference: true
-        },
-        businessHours: businessHours
-      };
-
-      await updateSettings(updatedSettings);
-      toast.success('Settings saved successfully');
+      await updateSettings(changes);
+      if (success) toast.success(success);
+      return true;
     } catch (error) {
-      console.error('Error saving settings:', error);
-      toast.error('Failed to save settings');
+      console.error(failure, error);
+      rollback?.();
+      toast.error(`${failure} Your last change was not saved.`);
+      return false;
     }
+  };
+
+  const savedBusinessForm = {
+    name: settings?.business?.name || '',
+    timeInterval: settings?.business?.timeInterval || 30,
+    timezone: settings?.business?.timezone || '',
+    currency: settings?.business?.currency || 'USD',
+  };
+  const businessFormDirty = ['name', 'timeInterval', 'timezone', 'currency']
+    .some((key) => String(businessForm[key]) !== String(savedBusinessForm[key]));
+  const [businessNameError, setBusinessNameError] = useState('');
+  const [savingBusiness, setSavingBusiness] = useState(false);
+  const [serviceFormError, setServiceFormError] = useState('');
+  const [staffFormError, setStaffFormError] = useState('');
+
+  const emptyService = { name: '', duration: 30, price: 0 };
+  const emptyStaff = { name: '', email: '', phone: '', availableServices: [] };
+
+  const saveServices = (updatedServices, messages) => {
+    const previous = services;
+    setServices(updatedServices);
+    return saveSection(
+      { business: { ...settings.business, services: updatedServices } },
+      { ...messages, rollback: () => setServices(previous) },
+    );
+  };
+
+  const saveStaff = (updatedStaff, messages) => {
+    const previous = staff;
+    setStaff(updatedStaff);
+    return saveSection(
+      { business: { ...settings.business, staff: updatedStaff } },
+      { ...messages, rollback: () => setStaff(previous) },
+    );
+  };
+
+  const saveHours = (updatedHours) => {
+    const previous = businessHours;
+    setBusinessHours(updatedHours);
+    return saveSection(
+      { businessHours: updatedHours },
+      { success: 'Business hours saved', failure: 'Could not save business hours.', rollback: () => setBusinessHours(previous) },
+    );
   };
 
   const handleAddService = async () => {
     const error = serviceError(newService);
-    if (error) {
-      toast.error(error);
-      return;
-    }
-
-    try {
-      const updatedServices = [...services, { ...newService, name: newService.name.trim(), id: Date.now().toString() }];
-      setServices(updatedServices);
-      setNewService({ name: '', duration: '', price: '' });
-      await updateSettings({
-        business: {
-          ...settings.business,
-          services: updatedServices
-        }
-      });
-      toast.success('Service added successfully');
-    } catch (error) {
-      console.error('Error adding service:', error);
-      toast.error('Failed to add service');
-    }
+    setServiceFormError(error || '');
+    if (error) return;
+    const saved = await saveServices(
+      [...services, { ...newService, name: newService.name.trim(), id: Date.now().toString() }],
+      { success: 'Service added', failure: 'Could not add the service.' },
+    );
+    if (saved) setNewService(emptyService);
   };
 
-  const handleDeleteService = async (index) => {
-    try {
-      const updatedServices = services.filter((_, i) => i !== index);
-      setServices(updatedServices);
-      await updateSettings({
-        business: {
-          ...settings.business,
-          services: updatedServices
-        }
-      });
-      toast.success('Service deleted successfully');
-    } catch (error) {
-      console.error('Error deleting service:', error);
-      toast.error('Failed to delete service');
-    }
+  const handleDeleteService = async (service) => {
+    if (!window.confirm(`Delete "${service.name}"? Clients will no longer be able to book it.`)) return;
+    await saveServices(services.filter((s) => s.id !== service.id), { success: 'Service deleted', failure: 'Could not delete the service.' });
   };
 
   const handleAddStaff = async () => {
     if (!newStaff.name.trim()) {
-      toast.error('Give the staff member a name.');
+      setStaffFormError('Give the staff member a name.');
       return;
     }
-
-    try {
-      const updatedStaff = [...staff, { ...newStaff, id: Date.now().toString(), active: true }];
-      setStaff(updatedStaff);
-      setNewStaff({ name: '', email: '', availableServices: [] });
-      await updateSettings({
-        business: {
-          ...settings.business,
-          staff: updatedStaff
-        }
-      });
-      toast.success('Staff member added successfully');
-    } catch (error) {
-      console.error('Error adding staff member:', error);
-      toast.error('Failed to add staff member');
-    }
+    setStaffFormError('');
+    const saved = await saveStaff(
+      [...staff, { ...newStaff, name: newStaff.name.trim(), id: Date.now().toString(), active: true }],
+      { success: 'Staff member added', failure: 'Could not add the staff member.' },
+    );
+    if (saved) setNewStaff(emptyStaff);
   };
 
-  const handleDeleteStaff = async (index) => {
-    try {
-      const updatedStaff = staff.filter((_, i) => i !== index);
-      setStaff(updatedStaff);
-      await updateSettings({
-        business: {
-          ...settings.business,
-          staff: updatedStaff
-        }
-      });
-      toast.success('Staff member deleted successfully');
-    } catch (error) {
-      console.error('Error deleting staff member:', error);
-      toast.error('Failed to delete staff member');
-    }
+  const handleDeleteStaff = async (staffMember) => {
+    if (!window.confirm(`Delete ${staffMember.name}? Clients will no longer be able to book with them.`)) return;
+    await saveStaff(staff.filter((s) => s.id !== staffMember.id), { success: 'Staff member deleted', failure: 'Could not delete the staff member.' });
   };
 
-
-  const handleToggleBusinessHours = async (day) => {
-    try {
-      const updatedHours = {
-        ...businessHours,
-        [day]: {
-          ...businessHours[day],
-          enabled: !businessHours[day].enabled
-        }
-      };
-      setBusinessHours(updatedHours);
-      await updateSettings({
-        businessHours: updatedHours
-      });
-      toast.success('Business hours updated successfully');
-    } catch (error) {
-      console.error('Error updating business hours:', error);
-      toast.error('Failed to update business hours');
-    }
+  const handleToggleBusinessHours = (day) => {
+    saveHours({ ...businessHours, [day]: { ...businessHours[day], enabled: !businessHours[day].enabled } });
   };
 
-  const handleUpdateBusinessHours = async (day, field, value) => {
+  const handleUpdateBusinessHours = (day, field, value) => {
     const updatedDay = { ...businessHours[day], [field]: value };
     if (toMinutes(updatedDay.end) <= toMinutes(updatedDay.start)) {
       toast.error('Closing time must be after opening time.');
       return;
     }
-    try {
-      const updatedHours = {
-        ...businessHours,
-        [day]: updatedDay
-      };
-      setBusinessHours(updatedHours);
-      await updateSettings({
-        businessHours: updatedHours
-      });
-      toast.success('Business hours updated successfully');
-    } catch (error) {
-      console.error('Error updating business hours:', error);
-      toast.error('Failed to update business hours');
-    }
+    saveHours({ ...businessHours, [day]: updatedDay });
   };
 
   // Whether clients get booking emails (confirmation, changes, reminders).
   const clientEmails = settings?.business?.clientEmails !== false;
-  const handleToggleClientEmails = async () => {
-    try {
-      await updateSettings({ business: { ...settings.business, clientEmails: !clientEmails } });
-      toast.success(clientEmails ? 'Client emails turned off' : 'Client emails turned on');
-    } catch (error) {
-      console.error('Error saving email preference:', error);
-      toast.error('Failed to save the email preference');
-    }
-  };
+  const handleToggleClientEmails = () => saveSection(
+    { business: { ...settings.business, clientEmails: !clientEmails } },
+    { success: clientEmails ? 'Client emails turned off' : 'Client emails turned on', failure: 'Could not save the email preference.' },
+  );
 
   const handleBusinessSettingsChange = (e) => {
     const { name, value } = e.target;
@@ -298,41 +247,45 @@ const Settings = () => {
 
   const handleSaveBusinessSettings = async () => {
     if (!businessForm.name.trim()) {
-      toast.error('Give your business a name.');
+      setBusinessNameError('Give your business a name.');
       return;
     }
-    // handleSaveSettings saves the whole form and reports the result.
-    await handleSaveSettings();
+    setBusinessNameError('');
+    setSavingBusiness(true);
+    await saveSection(
+      {
+        business: {
+          ...settings.business,
+          name: businessForm.name.trim(),
+          timeInterval: Number(businessForm.timeInterval) || 30,
+          timezone: businessForm.timezone,
+          currency: businessForm.currency,
+        },
+      },
+      { success: 'Business information saved', failure: 'Could not save the business information.' },
+    );
+    setSavingBusiness(false);
   };
 
 
   const handleUpdateService = async () => {
     const error = serviceError(newService);
-    if (error) {
-      toast.error(error);
-      return;
-    }
-    try {
-      const updatedServices = services.map(s => 
-        s.id === editingService.id ? { ...newService } : s
-      );
-      const newSettings = {
-        ...settings,
-        business: {
-          ...settings?.business,
-          services: updatedServices
-        }
-      };
-      
-      await updateSettings(newSettings);
-      setServices(updatedServices);
+    setServiceFormError(error || '');
+    if (error) return;
+    const saved = await saveServices(
+      services.map((s) => (s.id === editingService.id ? { ...newService, name: newService.name.trim() } : s)),
+      { success: 'Service updated', failure: 'Could not update the service.' },
+    );
+    if (saved) {
       setEditingService(null);
-      setNewService({ name: '', duration: 30, price: 0 });
-      toast.success('Service updated successfully');
-    } catch (error) {
-      console.error('Error updating service:', error);
-      toast.error('Failed to update service');
+      setNewService(emptyService);
     }
+  };
+
+  const cancelServiceEdit = () => {
+    setEditingService(null);
+    setNewService(emptyService);
+    setServiceFormError('');
   };
 
   const handleEditService = (service) => {
@@ -350,59 +303,32 @@ const Settings = () => {
 
   const handleUpdateStaff = async () => {
     if (!newStaff.name.trim()) {
-      toast.error('Give the staff member a name.');
+      setStaffFormError('Give the staff member a name.');
       return;
     }
-    
-    try {
-      const updatedStaff = staff.map(s => 
-        s.id === editingStaff.id ? { ...newStaff } : s
-      );
-      const newSettings = {
-        ...settings,
-        business: {
-          ...settings?.business,
-          staff: updatedStaff
-        }
-      };
-      
-      await updateSettings(newSettings);
-      setStaff(updatedStaff);
+    setStaffFormError('');
+    const saved = await saveStaff(
+      staff.map((s) => (s.id === editingStaff.id ? { ...newStaff, name: newStaff.name.trim() } : s)),
+      { success: 'Staff member updated', failure: 'Could not update the staff member.' },
+    );
+    if (saved) {
       setEditingStaff(null);
-      setNewStaff({ 
-        name: '', 
-        email: '', 
-        phone: '', 
-        availableServices: [] 
-      });
-      toast.success('Staff member updated successfully');
-    } catch (error) {
-      console.error('Error updating staff member:', error);
-      toast.error('Failed to update staff member');
+      setNewStaff(emptyStaff);
     }
   };
 
-  const handleStaffStatusToggle = async (index) => {
-    try {
-      const updatedStaff = [...staff];
-      updatedStaff[index] = {
-        ...updatedStaff[index],
-        active: !updatedStaff[index].active
-      };
-      
-      setStaff(updatedStaff);
-      await updateSettings({
-        business: {
-          ...settings.business,
-          staff: updatedStaff
-        }
-      });
-      
-      toast.success(`Staff member ${updatedStaff[index].active ? 'activated' : 'deactivated'} successfully`);
-    } catch (error) {
-      console.error('Error toggling staff status:', error);
-      toast.error('Failed to update staff status');
-    }
+  const cancelStaffEdit = () => {
+    setEditingStaff(null);
+    setNewStaff(emptyStaff);
+    setStaffFormError('');
+  };
+
+  const handleStaffStatusToggle = (staffMember) => {
+    const active = !staffMember.active;
+    saveStaff(
+      staff.map((s) => (s.id === staffMember.id ? { ...s, active } : s)),
+      { success: `${staffMember.name} is now ${active ? 'active' : 'inactive'}`, failure: 'Could not change the staff status.' },
+    );
   };
 
 
@@ -481,7 +407,10 @@ const Settings = () => {
                 onChange={handleBusinessSettingsChange}
                 className="hd-input"
                 placeholder="Enter your business name"
+                aria-invalid={Boolean(businessNameError)}
+                aria-describedby={businessNameError ? 'businessName-error' : undefined}
               />
+              {businessNameError && <p id="businessName-error" className="hd-error mt-1" role="alert">{businessNameError}</p>}
             </div>
 
             <div>
@@ -535,12 +464,16 @@ const Settings = () => {
               </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">
+              {businessFormDirty && !savingBusiness && (
+                <p className="hd-help" role="status">You have unsaved changes in this section.</p>
+              )}
               <button
                 onClick={handleSaveBusinessSettings}
+                disabled={!businessFormDirty || savingBusiness}
                 className="hd-btn w-full sm:w-auto"
               >
-                Save Changes
+                {savingBusiness ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
@@ -573,7 +506,8 @@ const Settings = () => {
 
         {/* Business Hours */}
         <section className="hd-card p-4 sm:p-5 mb-6">
-          <h2 className="hd-title text-3xl mb-4">Business Hours</h2>
+          <h2 className="hd-title text-3xl mb-1">Business Hours</h2>
+          <p className="hd-help mb-4">Changes here are saved as soon as you make them.</p>
           <div className="space-y-4">
             {DAYS_OF_WEEK.map(day => (
               <div key={day} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 pb-4 sm:pb-0 border-b-2 border-dashed border-paper-deep sm:border-0 last:border-0 last:pb-0">
@@ -624,6 +558,7 @@ const Settings = () => {
         {/* Services */}
         <section className="hd-card p-4 sm:p-5 mb-6">
           <h2 className="hd-title text-3xl mb-4">Services</h2>
+          <h3 className="hd-label mb-2">{editingService ? `Editing ${editingService.name}` : 'Add a service'}</h3>
 
           {/* Add/Edit Service Form */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -635,6 +570,8 @@ const Settings = () => {
                 value={newService.name}
                 onChange={(e) => setNewService(prev => ({ ...prev, name: e.target.value }))}
                 className="hd-input !mt-0"
+                aria-invalid={Boolean(serviceFormError)}
+                aria-describedby={serviceFormError ? 'service-error' : undefined}
               />
             </div>
             <div>
@@ -667,8 +604,12 @@ const Settings = () => {
               >
                 {editingService ? 'Update' : 'Add'}
               </button>
+              {editingService && (
+                <button onClick={cancelServiceEdit} className="hd-btn hd-btn-secondary shrink-0 !px-4">Cancel</button>
+              )}
             </div>
           </div>
+          {serviceFormError && <p id="service-error" className="hd-error -mt-4 mb-6" role="alert">{serviceFormError}</p>}
 
           {/* Services List */}
           <div className="space-y-3">
@@ -683,15 +624,17 @@ const Settings = () => {
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => handleEditService(service)}
+                    aria-label={`Edit ${service.name}`}
                     className="p-2 rounded-lg text-ink-soft hover:text-marker hover:bg-marker-light transition duration-200"
                   >
-                    <FiEdit2 />
+                    <FiEdit2 aria-hidden="true" />
                   </button>
                   <button
-                    onClick={() => handleDeleteService(services.indexOf(service))}
+                    onClick={() => handleDeleteService(service)}
+                    aria-label={`Delete ${service.name}`}
                     className="p-2 rounded-lg text-ink-soft hover:text-coral hover:bg-coral-light transition duration-200"
                   >
-                    <FiTrash2 />
+                    <FiTrash2 aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -707,18 +650,23 @@ const Settings = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="space-y-4">
               <div>
-                <label className="hd-label">Name</label>
+                <label htmlFor="staffName" className="hd-label">Name</label>
                 <input
+                  id="staffName"
                   type="text"
                   value={newStaff.name}
                   onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
                   className="hd-input"
                   placeholder="Enter staff name"
+                  aria-invalid={Boolean(staffFormError)}
+                  aria-describedby={staffFormError ? 'staff-error' : undefined}
                 />
+                {staffFormError && <p id="staff-error" className="hd-error mt-1" role="alert">{staffFormError}</p>}
               </div>
               <div>
-                <label className="hd-label">Email (optional)</label>
+                <label htmlFor="staffEmail" className="hd-label">Email (optional)</label>
                 <input
+                  id="staffEmail"
                   type="email"
                   value={newStaff.email}
                   onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
@@ -727,8 +675,9 @@ const Settings = () => {
                 />
               </div>
               <div>
-                <label className="hd-label">Phone</label>
+                <label htmlFor="staffPhone" className="hd-label">Phone</label>
                 <input
+                  id="staffPhone"
                   type="tel"
                   value={newStaff.phone}
                   onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
@@ -737,8 +686,8 @@ const Settings = () => {
                 />
               </div>
               <div>
-                <label className="hd-label">Available Services</label>
-                <div className="hd-input space-y-2 max-h-48 overflow-y-auto">
+                <p id="staffServices" className="hd-label">Available Services</p>
+                <div role="group" aria-labelledby="staffServices" className="hd-input space-y-2 max-h-48 overflow-y-auto">
                   {services.map(service => (
                     <label key={service.id} className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -761,15 +710,7 @@ const Settings = () => {
                 {editingStaff ? (
                   <>
                     <button
-                      onClick={() => {
-                        setEditingStaff(null);
-                        setNewStaff({
-                          name: '',
-                          email: '',
-                          phone: '',
-                          availableServices: []
-                        });
-                      }}
+                      onClick={cancelStaffEdit}
                       className="hd-btn hd-btn-secondary"
                     >
                       Cancel
@@ -777,7 +718,6 @@ const Settings = () => {
                     <button
                       onClick={handleUpdateStaff}
                       className="hd-btn"
-                      disabled={!newStaff.name || !newStaff.email}
                     >
                       Update Staff Member
                     </button>
@@ -786,7 +726,6 @@ const Settings = () => {
                   <button
                     onClick={handleAddStaff}
                     className="hd-btn"
-                    disabled={!newStaff.name || !newStaff.email}
                   >
                     Add Staff Member
                   </button>
@@ -812,7 +751,8 @@ const Settings = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleStaffStatusToggle(index)}
+                      onClick={() => handleStaffStatusToggle(staffMember)}
+                      aria-label={`${staffMember.name} is ${staffMember.active ? 'active' : 'inactive'}. Change status`}
                       className={`hd-badge !text-sm !px-3 !py-1 transition-colors duration-200 ${
                         staffMember.active
                           ? 'text-leaf bg-leaf-light hover:bg-leaf/20'
@@ -824,17 +764,19 @@ const Settings = () => {
                     <div className="flex gap-1">
                       <button
                         onClick={() => handleEditStaff(staffMember)}
+                        aria-label={`Edit ${staffMember.name}`}
                         className="p-1.5 rounded-lg text-ink-soft hover:text-marker hover:bg-marker-light transition-colors duration-200"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleDeleteStaff(index)}
+                        onClick={() => handleDeleteStaff(staffMember)}
+                        aria-label={`Delete ${staffMember.name}`}
                         className="p-1.5 rounded-lg text-ink-soft hover:text-coral hover:bg-coral-light transition-colors duration-200"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>

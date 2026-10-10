@@ -9,6 +9,7 @@
     "test:e2e": "firebase emulators:exec --only firestore,auth --project demo-reserveease \"playwright test\""
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "^1.56.1",
     "firebase-tools": "^15.33.0"
   }
