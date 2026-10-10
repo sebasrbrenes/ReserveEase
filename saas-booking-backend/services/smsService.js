@@ -5,7 +5,9 @@ dotenv.config();
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
-const client = twilio(accountSid, authToken);
+// Created on first use so the server can start without Twilio credentials
+let client;
+const getClient = () => (client ??= twilio(accountSid, authToken));
 
 // Constants
 const TWILIO_MIN_SECONDS = 300;
@@ -145,12 +147,12 @@ async function sendSMS(phone, clientName, businessName, date, time, businessTime
         
         // Verify phone number
         try {
-            await client.lookups.v2.phoneNumbers(formattedPhone).fetch();
+            await getClient().lookups.v2.phoneNumbers(formattedPhone).fetch();
         } catch (lookupError) {
             throw new Error(`Invalid phone number: ${lookupError.message}`);
         }
 
-        const message = await client.messages.create({
+        const message = await getClient().messages.create({
             body: messageBody,
             messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
             scheduleType: "fixed",

@@ -12,5 +12,3 @@ export default defineConfig({
     }
   }
 })
-
-// Setup key lemon squeezy: EWTNDEO6IU64ZZ7O
