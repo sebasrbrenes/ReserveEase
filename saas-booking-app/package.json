@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource-variable/nunito": "^5.3.0",
+    "@fontsource/caveat": "^5.3.0",
     "@headlessui/react": "^2.2.0",
     "autoprefixer": "^10.4.20",
     "dayjs": "^1.11.10",

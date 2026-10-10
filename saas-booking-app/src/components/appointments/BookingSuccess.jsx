@@ -1,5 +1,6 @@
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { formatLocalDate, formatTime } from '../../utils/datetime';
+import { Scribble, Sparkle } from '../ui/Doodles';
 
 export default function BookingSuccess() {
   const { slug } = useParams();
@@ -10,33 +11,38 @@ export default function BookingSuccess() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center px-4">
-      <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-lg p-8 text-center">
-        <div className="mb-6 flex justify-center">
-          <svg className="h-16 w-16 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    <div className="hd-page flex flex-col items-center justify-center px-4 py-10">
+      <div className="hd-card max-w-md w-full p-8 text-center">
+        <div className="relative mb-6 flex justify-center">
+          <svg className="h-16 w-16 text-leaf" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M10 26 C 14 29, 17 33, 20 37 C 26 25, 32 16, 40 9" />
           </svg>
+          <Sparkle className="absolute left-1/2 ml-8 -top-1 w-6 h-6 text-marker" />
         </div>
 
-        <h2 className="text-2xl font-bold text-white mb-4">Your appointment is confirmed</h2>
+        <h1 className="relative inline-block mb-6">
+          <span className="hd-title text-4xl">Your appointment is confirmed</span>
+        </h1>
         {booking ? (
-          <div className="text-gray-300 mb-8 space-y-1">
-            <p className="text-white font-medium">{state.serviceName} with {state.staffName}</p>
-            <p>{formatLocalDate(localDate)} at {formatTime(booking.startsAt, booking.timezone)}</p>
-            <p className="text-sm text-gray-400">{state.businessName}</p>
-            <p className="text-xs text-gray-500 pt-2">Reference: {booking.bookingReference}</p>
-            <p className="text-sm text-gray-400 pt-2">
+          <div className="mb-8 space-y-1">
+            <p className="font-bold text-lg">{state.serviceName} with {state.staffName}</p>
+            <p className="relative inline-block px-7 py-4 font-semibold">
+              <Scribble className="absolute inset-0 w-full h-full text-sun" />
+              <span className="relative">{formatLocalDate(localDate)} at {formatTime(booking.startsAt, booking.timezone)}</span>
+            </p>
+            <p className="text-ink-soft">{state.businessName}</p>
+            <p className="text-sm pt-2">
+              Reference: <span className="font-mono font-bold">{booking.bookingReference}</span>
+            </p>
+            <p className="hd-help pt-2">
               Your booking is saved. Keep this reference in case you need to contact the business.
             </p>
           </div>
         ) : (
-          <p className="text-gray-300 mb-8">Thank you for your booking.</p>
+          <p className="text-ink-soft mb-8">Thank you for your booking.</p>
         )}
 
-        <Link
-          to={`/book/${slug}`}
-          className="inline-block bg-primary hover:bg-primary-dark text-white font-bold py-2 px-6 rounded-lg transition-colors"
-        >
+        <Link to={`/book/${slug}`} className="hd-btn hd-btn-secondary">
           Book Another Appointment
         </Link>
       </div>

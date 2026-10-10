@@ -12,6 +12,7 @@ import Settings from './components/settings/Settings'
 import Feedback from './components/feedback/Feedback'
 import PublicBookingForm from './components/appointments/PublicBookingForm'
 import BookingSuccess from './components/appointments/BookingSuccess'
+import StyleGuide from './components/ui/StyleGuide'
 import './App.css'
 
 // /feedback opened directly: the feedback dialog over an empty page,
@@ -56,6 +57,7 @@ function App() {
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/book/:slug" element={<PublicBookingForm />} />
               <Route path="/booking/success/:slug" element={<BookingSuccess />} />
+              <Route path="/style-guide" element={<StyleGuide />} />
               
               {/* Protected Routes */}
               <Route path="/" element={

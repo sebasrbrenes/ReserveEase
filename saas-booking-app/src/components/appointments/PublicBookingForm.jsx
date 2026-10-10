@@ -5,12 +5,34 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { createPublicBooking, errorMessage, getPublicAvailability, getPublicBusiness } from '../../services/api';
 import { COUNTRY_CODES, toE164 } from '../../utils/countryCodes';
-import { formatMoney, formatTime, fromLocalDateString, toLocalDateString, todayIn } from '../../utils/datetime';
+import { formatLocalDate, formatMoney, formatTime, fromLocalDateString, toLocalDateString, todayIn } from '../../utils/datetime';
+import { Logo, Star, Underline } from '../ui/Doodles';
 
 // Shown with the form; bump it when the privacy notice text changes.
 const PRIVACY_NOTICE_VERSION = '2026-10';
 
-const inputClass = 'mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2';
+function Step({ number, title, children }) {
+  return (
+    <section className="hd-card p-5 sm:p-6" aria-labelledby={`step-${number}`}>
+      <h2 id={`step-${number}`} className="flex items-center gap-3 mb-4">
+        <span className="font-hand text-2xl font-bold w-9 h-9 flex items-center justify-center border-2 border-ink rounded-full bg-sun" aria-hidden="true">
+          {number}
+        </span>
+        <span className="hd-title text-3xl">{title}</span>
+      </h2>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
+function SummaryRow({ label, value }) {
+  return (
+    <div className="flex justify-between gap-4 py-1.5 border-b border-dashed border-ink-soft/40 last:border-0">
+      <dt className="text-ink-soft">{label}</dt>
+      <dd className="font-semibold text-right">{value || '—'}</dd>
+    </div>
+  );
+}
 
 export default function PublicBookingForm() {
   const navigate = useNavigate();
@@ -109,20 +131,22 @@ export default function PublicBookingForm() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center gap-4">
-        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-        <div className="text-white">Loading...</div>
+      <div className="hd-page flex flex-col items-center justify-center gap-4" role="status">
+        <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin motion-reduce:animate-none" aria-hidden="true"></div>
+        <p className="font-hand text-3xl">Loading...</p>
       </div>
     );
   }
 
   if (!business) {
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
-        <h2 className="text-3xl font-bold text-white mb-2">Booking page not found</h2>
-        <p className="text-gray-400 text-center max-w-md">
-          This link is not active. Check the address or ask the business for its booking link.
-        </p>
+      <div className="hd-page flex flex-col items-center justify-center p-4">
+        <div className="hd-card max-w-md p-8 text-center">
+          <h1 className="hd-title text-4xl mb-3">Booking page not found</h1>
+          <p className="text-ink-soft">
+            This link is not active. Check the address or ask the business for its booking link.
+          </p>
+        </div>
       </div>
     );
   }
@@ -133,132 +157,161 @@ export default function PublicBookingForm() {
     open: 'No free times on this day. Choose another date or staff member.',
   }[availability.status];
 
+  const service = business.services.find((s) => s.id === form.serviceId);
+  const staff = business.staff.find((s) => s.id === form.staffId);
+  const timezone = business.timezone.replace(/_/g, ' ');
+
   return (
-    <div className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-white mb-2 text-center">Book an Appointment</h2>
-        <p className="text-gray-400 text-center mb-6 text-lg">
-          with <span className="font-semibold text-blue-400 inline">{business.name}</span>
-        </p>
+    <div className="hd-page py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        <header className="mb-8 text-center sm:text-left">
+          <p className="text-ink-soft mb-1">Book an appointment with</p>
+          <h1 className="relative inline-block">
+            <span className="hd-title text-5xl sm:text-6xl">{business.name}</span>
+            <Underline className="absolute -bottom-3 left-0 w-full h-4 text-sun" />
+            <Star className="hidden sm:block absolute -right-10 -top-2 w-7 h-7 text-marker rotate-12" />
+          </h1>
+        </header>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="serviceId" className="block text-sm font-medium text-gray-300">Service *</label>
-            <select id="serviceId" name="serviceId" value={form.serviceId} onChange={handleChange} className={inputClass} required>
-              <option value="">Select a service</option>
-              {business.services.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.name} · {service.durationMinutes} min · {formatMoney(service.priceMinor, service.currency)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="staffId" className="block text-sm font-medium text-gray-300">Staff Member *</label>
-            <select id="staffId" name="staffId" value={form.staffId} onChange={handleChange} className={inputClass} required disabled={!form.serviceId}>
-              <option value="">{form.serviceId ? 'Select staff member' : 'Select a service first'}</option>
-              {availableStaff.map((staff) => (
-                <option key={staff.id} value={staff.id}>{staff.displayName}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300">Date *</label>
-            <DatePicker
-              selected={form.date ? fromLocalDateString(form.date) : null}
-              onChange={(date) => date && update({ date: toLocalDateString(date), startsAt: '' })}
-              minDate={fromLocalDateString(todayIn(business.timezone))}
-              className={inputClass}
-              dateFormat="MMM d, yyyy"
-              wrapperClassName="w-full"
-              required
-            />
-          </div>
-
-          <fieldset>
-            <legend className="block text-sm font-medium text-gray-300">
-              Time * <span className="text-gray-500 font-normal">({business.timezone.replace('_', ' ')})</span>
-            </legend>
-            {!form.staffId ? (
-              <p className="mt-2 text-sm text-gray-400">Choose a service and staff member to see free times.</p>
-            ) : availability.loading ? (
-              <p className="mt-2 text-sm text-gray-400">Looking for free times...</p>
-            ) : availability.slots.length === 0 ? (
-              <p className="mt-2 text-sm text-gray-400">{noSlotsMessage}</p>
-            ) : (
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {availability.slots.map((slot) => (
-                  <button
-                    type="button"
-                    key={slot.startsAt}
-                    onClick={() => update({ startsAt: slot.startsAt })}
-                    aria-pressed={form.startsAt === slot.startsAt}
-                    className={`px-2 py-2 rounded-md text-sm border ${form.startsAt === slot.startsAt
-                      ? 'bg-blue-600 border-blue-500 text-white'
-                      : 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600'}`}
-                  >
-                    {formatTime(slot.startsAt, business.timezone)}
-                  </button>
-                ))}
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
+          <form id="booking-form" onSubmit={handleSubmit} className="space-y-6">
+            <Step number={1} title="What would you like?">
+              <div>
+                <label htmlFor="serviceId" className="hd-label">Service *</label>
+                <select id="serviceId" name="serviceId" value={form.serviceId} onChange={handleChange} className="hd-input" required>
+                  <option value="">Select a service</option>
+                  {business.services.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} · {s.durationMinutes} min · {formatMoney(s.priceMinor, s.currency)}
+                    </option>
+                  ))}
+                </select>
               </div>
-            )}
-          </fieldset>
+              <div>
+                <label htmlFor="staffId" className="hd-label">Staff Member *</label>
+                <select id="staffId" name="staffId" value={form.staffId} onChange={handleChange} className="hd-input" required disabled={!form.serviceId}>
+                  <option value="">{form.serviceId ? 'Select staff member' : 'Select a service first'}</option>
+                  {availableStaff.map((s) => (
+                    <option key={s.id} value={s.id}>{s.displayName}</option>
+                  ))}
+                </select>
+              </div>
+            </Step>
 
-          <div>
-            <label htmlFor="clientName" className="block text-sm font-medium text-gray-300">Full Name *</label>
-            <input id="clientName" type="text" name="clientName" value={form.clientName} onChange={handleChange} className={inputClass} maxLength={100} required />
-          </div>
+            <Step number={2} title="When?">
+              <div>
+                <label htmlFor="date" className="hd-label">Date *</label>
+                <DatePicker
+                  id="date"
+                  selected={form.date ? fromLocalDateString(form.date) : null}
+                  onChange={(date) => date && update({ date: toLocalDateString(date), startsAt: '' })}
+                  minDate={fromLocalDateString(todayIn(business.timezone))}
+                  className="hd-input"
+                  dateFormat="MMM d, yyyy"
+                  wrapperClassName="w-full"
+                  required
+                />
+              </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email *</label>
-            <input id="email" type="email" name="email" value={form.email} onChange={handleChange} className={inputClass} maxLength={200} required />
-          </div>
+              <fieldset>
+                <legend className="hd-label">
+                  Time * <span className="font-normal text-ink-soft">({timezone})</span>
+                </legend>
+                {!form.staffId ? (
+                  <p className="mt-2 hd-help">Choose a service and staff member to see free times.</p>
+                ) : availability.loading ? (
+                  <p className="mt-2 hd-help" role="status">Looking for free times...</p>
+                ) : availability.slots.length === 0 ? (
+                  <p className="mt-2 hd-help">{noSlotsMessage}</p>
+                ) : (
+                  <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {availability.slots.map((slot) => (
+                      <button
+                        type="button"
+                        key={slot.startsAt}
+                        onClick={() => update({ startsAt: slot.startsAt })}
+                        aria-pressed={form.startsAt === slot.startsAt}
+                        className="hd-choice"
+                      >
+                        {formatTime(slot.startsAt, business.timezone)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </fieldset>
+            </Step>
 
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-300">Phone</label>
-            <div className="mt-1 grid grid-cols-3 gap-2">
-              <select
-                aria-label="Country code"
-                value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                className="block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2"
-              >
-                {COUNTRY_CODES.map((country) => (
-                  <option key={country.code} value={country.code}>{country.name} ({country.code})</option>
-                ))}
-              </select>
-              <input
-                id="phone"
-                type="tel"
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                className="col-span-2 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2"
-                placeholder="88887777"
-                maxLength={14}
-              />
-            </div>
-          </div>
+            <Step number={3} title="About you">
+              <div>
+                <label htmlFor="clientName" className="hd-label">Full Name *</label>
+                <input id="clientName" type="text" name="clientName" value={form.clientName} onChange={handleChange} className="hd-input" maxLength={100} autoComplete="name" required />
+              </div>
 
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-300">Notes</label>
-            <textarea id="notes" name="notes" value={form.notes} onChange={handleChange} rows="3" maxLength={500} className={inputClass} />
-          </div>
+              <div>
+                <label htmlFor="email" className="hd-label">Email *</label>
+                <input id="email" type="email" name="email" value={form.email} onChange={handleChange} className="hd-input" maxLength={200} autoComplete="email" required />
+              </div>
 
-          <p className="text-xs text-gray-400">
-            {business.name} uses your name, email and phone only to manage this appointment and contact you about it.
-          </p>
+              <div>
+                <label htmlFor="phone" className="hd-label">Phone</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <select
+                    aria-label="Country code"
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="hd-input"
+                  >
+                    {COUNTRY_CODES.map((country) => (
+                      <option key={country.code} value={country.code}>{country.name} ({country.code})</option>
+                    ))}
+                  </select>
+                  <input
+                    id="phone"
+                    type="tel"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    className="hd-input col-span-2"
+                    placeholder="88887777"
+                    autoComplete="tel-national"
+                    maxLength={14}
+                  />
+                </div>
+              </div>
 
-          <button
-            type="submit"
-            disabled={submitting || !form.startsAt}
-            className={`w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${submitting || !form.startsAt ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {submitting ? 'Booking...' : 'Book Appointment'}
-          </button>
-        </form>
+              <div>
+                <label htmlFor="notes" className="hd-label">Notes</label>
+                <textarea id="notes" name="notes" value={form.notes} onChange={handleChange} rows="3" maxLength={500} className="hd-input" />
+              </div>
+            </Step>
+          </form>
+
+          <aside className="hd-card p-5 sm:p-6 lg:sticky lg:top-6" aria-labelledby="summary-title">
+            <h2 id="summary-title" className="hd-title text-3xl mb-3">Your booking</h2>
+            <dl className="text-sm mb-5">
+              <SummaryRow label="Service" value={service?.name} />
+              <SummaryRow label="Duration" value={service && `${service.durationMinutes} min`} />
+              <SummaryRow label="Price" value={service && formatMoney(service.priceMinor, service.currency)} />
+              <SummaryRow label="With" value={staff?.displayName} />
+              <SummaryRow label="Date" value={form.date && formatLocalDate(form.date)} />
+              <SummaryRow label="Time" value={form.startsAt && `${formatTime(form.startsAt, business.timezone)} (${timezone})`} />
+            </dl>
+
+            <button type="submit" form="booking-form" disabled={submitting || !form.startsAt} className="hd-btn w-full text-lg">
+              {submitting ? 'Booking...' : 'Book Appointment'}
+            </button>
+            {!form.startsAt && <p className="mt-2 hd-help text-center">Pick a time to book.</p>}
+
+            <p className="mt-4 text-xs text-ink-soft">
+              {business.name} uses your name, email and phone only to manage this appointment and contact you about it.
+            </p>
+          </aside>
+        </div>
+
+        <footer className="mt-10 flex justify-center opacity-70">
+          <span className="text-xs text-ink-soft mr-2 self-center">Bookings by</span>
+          <Logo className="scale-75 origin-left" />
+        </footer>
       </div>
     </div>
   );
