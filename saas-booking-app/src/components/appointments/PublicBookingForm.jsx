@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { addDoc, collection, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 import { db } from '../../firebase/config';
 import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
@@ -243,7 +242,6 @@ export default function PublicBookingForm() {
       const now = new Date();
       if (dayjs(formData.date).isSame(dayjs(now), 'day')) {
         // For current day, start time should be the later of business start time or current time
-        const currentHour = now.getHours();
         const currentMinute = now.getMinutes();
         
         // Round up current time to next interval

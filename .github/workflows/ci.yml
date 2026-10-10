@@ -25,9 +25,7 @@ jobs:
           cache-dependency-path: ${{ matrix.project }}/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npm run build
-      # Known lint errors are reported but do not fail CI until they are fixed.
       - run: npm run lint
-        continue-on-error: true
 
   backend:
     runs-on: ubuntu-latest

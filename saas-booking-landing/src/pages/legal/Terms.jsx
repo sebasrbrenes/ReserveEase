@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import BackButton from '../../components/common/BackButton';
 
@@ -32,7 +32,7 @@ const Terms = () => {
           <section>
             <h2 className="text-2xl font-bold mb-4 text-white">1. Agreement to Terms</h2>
             <p>
-              By accessing or using ReserveEase's services, you agree to be bound by these Terms of Service
+              By accessing or using ReserveEase&apos;s services, you agree to be bound by these Terms of Service
               and all applicable laws and regulations. If you do not agree with any of these terms, you
               are prohibited from using or accessing our service.
             </p>
@@ -42,7 +42,7 @@ const Terms = () => {
             <h2 className="text-2xl font-bold mb-4 text-white">2. Use License</h2>
             <div className="space-y-4">
               <p>
-                Permission is granted to temporarily access and use ReserveEase's services for personal
+                Permission is granted to temporarily access and use ReserveEase&apos;s services for personal
                 or business use, subject to the following restrictions:
               </p>
               <ul className="list-disc pl-6 space-y-2">
@@ -77,7 +77,7 @@ const Terms = () => {
           <section>
             <h2 className="text-2xl font-bold mb-4 text-white">4. Disclaimer</h2>
             <p>
-              ReserveEase's services are provided "as is". We make no warranties, expressed or implied,
+              ReserveEase&apos;s services are provided &quot;as is&quot;. We make no warranties, expressed or implied,
               and hereby disclaim and negate all other warranties including, without limitation,
               implied warranties or conditions of merchantability, fitness for a particular purpose,
               or non-infringement of intellectual property or other violation of rights.

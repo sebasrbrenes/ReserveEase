@@ -66,7 +66,7 @@ const TestimonialCard = ({ testimonial, index }) => {
           className="w-16 h-16 rounded-full mb-3 object-cover border-2 border-primary/50"
         />
         <p className="text-gray-300 mb-3 text-sm">
-          "{testimonial.content}"
+          &quot;{testimonial.content}&quot;
         </p>
         <div>
           <h4 className="font-semibold text-white text-base">{testimonial.name}</h4>
@@ -98,7 +98,7 @@ const Testimonials = () => {
             <span className="gradient-text">What Our Clients Say</span>
           </h2>
           <p className="text-lg text-gray-400 max-w-xl mx-auto">
-            Don't just take our word for it. Here's what professionals across
+            Don&apos;t just take our word for it. Here&apos;s what professionals across
             different industries have to say about ReserveEase.
           </p>
         </motion.div>

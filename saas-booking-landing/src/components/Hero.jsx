@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { Link } from 'react-router-dom';
-import { FaRegCalendarAlt, FaArrowRight } from 'react-icons/fa';
+import { FaArrowRight } from 'react-icons/fa';
 import SvgReserveEase from '../assets/images/svgReserveEase.svg';
 
 const Hero = () => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,7 +14,7 @@ const SignUp = () => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
-  const { signup, signInWithGoogle } = useAuth();
+  const { signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 import { Link, useNavigate } from 'react-router-dom';
@@ -93,7 +93,7 @@ const Login = () => {
             Welcome back
           </h2>
           <p className="mt-2 text-center text-sm text-gray-400">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link to="/signup" className="font-medium text-blue-500 hover:text-blue-400">
               Sign up
             </Link>

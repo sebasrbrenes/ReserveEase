@@ -10,8 +10,6 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 import { syncUserData } from '../services/userService';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
 
 const AuthContext = createContext();
 

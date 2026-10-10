@@ -12,7 +12,7 @@ import { sendAppointmentConfirmation } from '../../services/emailService';
 import { sendAppointmentReminder } from '../../services/smsService';
 import { sendBusinessNotification } from '../../services/appointmentService';
 
-const AppointmentModal = ({ isOpen, onClose, onSave, appointment, existingAppointments }) => {
+const AppointmentModal = ({ isOpen, onClose, appointment, existingAppointments }) => {
   const [user] = useAuthState(auth);
   const [loading, setLoading] = useState(true);
   const [businessData, setBusinessData] = useState(null);

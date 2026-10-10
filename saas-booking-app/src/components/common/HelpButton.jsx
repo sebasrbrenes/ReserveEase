@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiHelpCircle, FiMail, FiX } from 'react-icons/fi';
 
@@ -26,7 +26,7 @@ const HelpButton = () => {
               </button>
             </div>
             <p className="text-gray-300 text-sm mb-4">
-              Our support team is here to help! Send us an email to help@reservease.com and we'll get back to you as soon as possible.
+              Our support team is here to help! Send us an email to help@reservease.com and we&apos;ll get back to you as soon as possible.
             </p>
             <a
               href="mailto:help@reservease.com"

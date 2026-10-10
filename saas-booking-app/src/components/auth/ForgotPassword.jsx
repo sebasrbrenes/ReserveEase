@@ -51,7 +51,7 @@ const ForgotPassword = () => {
             Reset Password
           </h2>
           <p className="mt-2 text-center text-gray-400">
-            Enter your email address and we'll send you a link to reset your password
+            Enter your email address and we&apos;ll send you a link to reset your password
           </p>
         </div>
 
@@ -67,7 +67,7 @@ const ForgotPassword = () => {
               </div>
               <h3 className="text-xl font-semibold text-white mb-2">Check your email</h3>
               <p className="text-gray-400 mb-4">
-                We've sent a password reset link to {email}
+                We&apos;ve sent a password reset link to {email}
               </p>
               <Link
                 to="/login"

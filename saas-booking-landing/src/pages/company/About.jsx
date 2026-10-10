@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import BackButton from '../../components/common/BackButton';
 
@@ -41,7 +41,7 @@ const About = () => {
           <div className="bg-surface rounded-xl p-6">
             <h2 className="text-2xl font-bold mb-4 text-white">Our Mission</h2>
             <p className="text-gray-300">
-              We're on a mission to revolutionize appointment booking by providing businesses with powerful, yet simple-to-use 
+              We&apos;re on a mission to revolutionize appointment booking by providing businesses with powerful, yet simple-to-use 
               digital tools. We believe that every business, regardless of size, deserves access to modern booking technology 
               that can help them grow and better serve their clients.
             </p>
@@ -60,7 +60,7 @@ const About = () => {
                 <strong className="text-primary">Reliability:</strong> Providing a stable and secure platform you can count on
               </li>
               <li>
-                <strong className="text-primary">Customer Focus:</strong> Putting our users' needs at the heart of everything we do
+                <strong className="text-primary">Customer Focus:</strong> Putting our users&apos; needs at the heart of everything we do
               </li>
             </ul>
           </div>
