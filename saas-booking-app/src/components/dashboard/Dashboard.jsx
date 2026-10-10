@@ -25,8 +25,9 @@ import Feedback from '../feedback/Feedback';
 import HelpButton from '../common/HelpButton';
 import './select.css';
 import {
-  cancelAppointment, errorMessage, listAppointments, transitionAppointment,
+  cancelAppointment, errorMessage, listAppointments, retryNotifications, transitionAppointment,
 } from '../../services/api';
+import NotificationStatus from '../appointments/NotificationStatus';
 import { STATUS_ACTIONS, statusClass, statusLabel } from '../appointments/status';
 import { formatLocalDate, formatMoney, formatTime, shiftDate, todayIn } from '../../utils/datetime';
 
@@ -118,6 +119,11 @@ const Dashboard = () => {
       'Status updated'
     );
   };
+
+  const handleRetryEmail = (appointment) => runChange(
+    () => retryNotifications(businessId, appointment.id),
+    'Email queued again'
+  );
 
   const selectedLocalDate = selectedDate.format('YYYY-MM-DD');
 
@@ -305,6 +311,7 @@ const Dashboard = () => {
                             {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} at {formatTime(appointment.startsAt, timezone)}
                           </p>
                           <p className="text-gray-400 text-sm">{appointment.serviceSnapshot?.name}</p>
+                          <NotificationStatus notification={appointment.notification} onRetry={() => handleRetryEmail(appointment)} />
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
                           <span className="hidden sm:inline text-gray-400">{appointment.staffSnapshot?.displayName}</span>
@@ -390,6 +397,7 @@ const Dashboard = () => {
           onEdit={handleEditAppointment}
           onCancel={setAppointmentToCancel}
           onStatusChange={handleStatusChange}
+          onRetryEmail={handleRetryEmail}
         />
 
         {/* Delete Confirmation Dialog */}

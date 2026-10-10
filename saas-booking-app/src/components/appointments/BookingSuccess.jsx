@@ -25,6 +25,9 @@ export default function BookingSuccess() {
             <p>{formatLocalDate(localDate)} at {formatTime(booking.startsAt, booking.timezone)}</p>
             <p className="text-sm text-gray-400">{state.businessName}</p>
             <p className="text-xs text-gray-500 pt-2">Reference: {booking.bookingReference}</p>
+            <p className="text-sm text-gray-400 pt-2">
+              Your booking is saved. Keep this reference in case you need to contact the business.
+            </p>
           </div>
         ) : (
           <p className="text-gray-300 mb-8">Thank you for your booking.</p>

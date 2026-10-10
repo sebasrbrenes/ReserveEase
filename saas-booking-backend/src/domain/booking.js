@@ -17,6 +17,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { computeAvailability, DomainError, occupancyOf } from './availability.js';
 import { businessSchema, SCHEMA_VERSION, serviceSchema, staffSchema } from './schemas.js';
 import { localDateOf, MINUTE } from './time.js';
+import { queueNotifications } from '../notifications/jobs.js';
 
 const BLOCK_MS = 5 * MINUTE;
 const IDEMPOTENCY_TTL_MS = 7 * 24 * 60 * MINUTE;
@@ -140,22 +141,21 @@ export const createBooking = async (db, { businessId, command, idempotencyKey, s
       privacyNoticeVersion: command.privacyNoticeVersion,
       smsConsent: command.smsConsent,
       version: 1,
+      // Version whose notifications are current; contact or note edits keep it.
+      notificationVersion: 1,
+      notification: { template: 'confirmation_email', status: 'queued', lastErrorCode: null, updatedAt: now },
       schemaVersion: SCHEMA_VERSION,
       createdAt: now,
       updatedAt: now,
     });
     lockRefs.forEach((ref) => tx.create(ref, { appointmentId: appointmentRef.id, staffId: staff.id, createdAt: now }));
-    tx.create(db.collection('notificationJobs').doc(`${appointmentRef.id}_v1_confirmation_email`), {
+    queueNotifications(tx, db, {
       businessId,
       appointmentId: appointmentRef.id,
-      appointmentVersion: 1,
-      channel: 'email',
-      template: 'booking_confirmation',
-      runAt: now,
-      status: 'queued',
-      attempts: 0,
-      createdAt: now,
-      updatedAt: now,
+      version: 1,
+      template: 'confirmation_email',
+      startsAtMs,
+      nowMs: clock(),
     });
     tx.create(base.collection('auditEvents').doc(), {
       type: 'appointment.created',

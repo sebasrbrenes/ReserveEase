@@ -7,6 +7,7 @@ import {
   cancelAppointment, listAppointments, rescheduleAppointment, toApi, transitionAppointment, updateAppointmentDetails,
 } from '../domain/appointments.js';
 import { syncLegacyBusiness } from '../domain/legacySync.js';
+import { retryFailedJobs } from '../notifications/worker.js';
 import { requireAuth, requireMember } from './auth.js';
 import { createRateLimiter } from '../../middleware/rateLimit.js';
 import {
@@ -238,6 +239,15 @@ priv.post('/appointments/:appointmentId/transition', validate(appointmentParams,
       ...req.validated.body, actorUid: req.user.uid,
     });
     res.json({ data: toApi(apt), requestId: req.requestId });
+  }));
+
+// Puts the failed notifications of an appointment back in the queue.
+priv.post('/appointments/:appointmentId/notifications/retry', validate(appointmentParams, 'params'),
+  handle(async (req, res) => {
+    const requeued = await retryFailedJobs(db, {
+      businessId: req.member.businessId, appointmentId: req.validated.params.appointmentId,
+    });
+    res.json({ data: { requeued }, requestId: req.requestId });
   }));
 
 // The signed-in owner's business, rebuilt from the settings screen (see

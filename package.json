@@ -1,13 +1,15 @@
 {
   "name": "reserveease",
   "private": true,
-  "description": "Local tooling for ReserveEase: Firebase emulators and demo data",
+  "description": "Local tooling for ReserveEase: Firebase emulators, demo data and end-to-end tests",
   "scripts": {
     "emulators": "firebase emulators:start --project demo-reserveease",
     "seed": "npm --prefix saas-booking-backend run seed",
-    "test:backend": "firebase emulators:exec --only firestore,auth --project demo-reserveease \"npm --prefix saas-booking-backend test\""
+    "test:backend": "firebase emulators:exec --only firestore,auth --project demo-reserveease \"npm --prefix saas-booking-backend test\"",
+    "test:e2e": "firebase emulators:exec --only firestore,auth --project demo-reserveease \"playwright test\""
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "firebase-tools": "^15.33.0"
   }
 }
