@@ -42,7 +42,7 @@ test('the owner sees a new booking, moves it and cancels it; another business ne
 
   await moved.hover();
   await moved.getByRole('button', { name: 'Cancel appointment' }).click();
-  await page.getByRole('button', { name: 'Cancel appointment' }).last().click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel appointment' }).click();
   await expect(page.getByText('Appointment cancelled')).toBeVisible();
   await expect(list.locator(':scope > div', { hasText: name }).getByText('Cancelled')).toBeVisible();
 
