@@ -1,5 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { TimeProvider } from './context/TimeContext'
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { SettingsProvider } from './context/SettingsContext'
 import { AuthProvider } from './context/AuthContext'
 import { Toaster } from 'react-hot-toast'
@@ -15,13 +14,17 @@ import PublicBookingForm from './components/appointments/PublicBookingForm'
 import BookingSuccess from './components/appointments/BookingSuccess'
 import './App.css'
 
-function App() {
-  const currentTime = new Date().toISOString()
+// /feedback opened directly: the feedback dialog over an empty page,
+// returning to the dashboard when closed.
+function FeedbackPage() {
+  const navigate = useNavigate()
+  return <Feedback isOpen onClose={() => navigate('/dashboard')} />
+}
 
+function App() {
   return (
     <Router>
       <AuthProvider>
-        <TimeProvider currentTime={currentTime}>
           <SettingsProvider>
             <Toaster
               position="top-right"
@@ -72,7 +75,7 @@ function App() {
               } />
               <Route path="/feedback" element={
                 <ProtectedRoute>
-                  <Feedback />
+                  <FeedbackPage />
                 </ProtectedRoute>
               } />
 
@@ -80,7 +83,6 @@ function App() {
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </SettingsProvider>
-        </TimeProvider>
       </AuthProvider>
     </Router>
   )

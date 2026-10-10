@@ -121,6 +121,7 @@ export const legacyToV2 = ({ uid, settings = {}, existingSlug }) => {
       cancellationNoticeMinutes: 120,
     },
     weeklySchedule,
+    clientEmails: legacy.clientEmails !== false,
     schemaVersion: SCHEMA_VERSION,
   });
 

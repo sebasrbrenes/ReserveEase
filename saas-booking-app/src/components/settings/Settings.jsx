@@ -12,6 +12,23 @@ const PUBLISH_PROBLEMS = {
   NO_OPENING_HOURS: 'Open at least one day in Business Hours.',
 };
 const TIME_ZONES = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [];
+// "9:30 AM" -> minutes since midnight
+const toMinutes = (time) => {
+  const [clock, period] = time.split(' ');
+  const [h, m] = clock.split(':').map(Number);
+  return ((h % 12) + (period === 'PM' ? 12 : 0)) * 60 + m;
+};
+
+// The booking engine works in 5-minute blocks, up to 8 hours per service.
+const serviceError = ({ name, duration, price }) => {
+  if (!String(name || '').trim()) return 'Give the service a name.';
+  if (!Number.isInteger(duration) || duration < 5 || duration > 480 || duration % 5 !== 0) {
+    return 'Duration must be between 5 and 480 minutes, in steps of 5.';
+  }
+  if (!Number.isFinite(price) || price < 0) return 'Price must be 0 or more.';
+  return null;
+};
+
 const CURRENCIES = ['USD', 'CRC', 'MXN', 'COP', 'EUR', 'GBP', 'CAD', 'ARS', 'CLP', 'PEN', 'GTQ', 'HNL', 'NIO', 'PAB', 'DOP', 'BRL'];
 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -40,12 +57,6 @@ const Settings = () => {
       toast.error('Failed to copy link');
     }
   };
-
-  // UI Settings State
-  const [uiForm] = useState({
-    language: settings?.ui?.language || 'en',
-    notifications: settings?.ui?.notifications ?? true,
-  });
 
   // Business Settings State
   const [businessForm, setBusinessForm] = useState({
@@ -141,13 +152,14 @@ const Settings = () => {
   };
 
   const handleAddService = async () => {
-    if (!newService.name || !newService.duration || !newService.price) {
-      toast.error('Please fill in all service fields');
+    const error = serviceError(newService);
+    if (error) {
+      toast.error(error);
       return;
     }
 
     try {
-      const updatedServices = [...services, { ...newService, id: Date.now().toString() }];
+      const updatedServices = [...services, { ...newService, name: newService.name.trim(), id: Date.now().toString() }];
       setServices(updatedServices);
       setNewService({ name: '', duration: '', price: '' });
       await updateSettings({
@@ -181,8 +193,8 @@ const Settings = () => {
   };
 
   const handleAddStaff = async () => {
-    if (!newStaff.name || !newStaff.email) {
-      toast.error('Please fill in all staff fields');
+    if (!newStaff.name.trim()) {
+      toast.error('Give the staff member a name.');
       return;
     }
 
@@ -242,13 +254,15 @@ const Settings = () => {
   };
 
   const handleUpdateBusinessHours = async (day, field, value) => {
+    const updatedDay = { ...businessHours[day], [field]: value };
+    if (toMinutes(updatedDay.end) <= toMinutes(updatedDay.start)) {
+      toast.error('Closing time must be after opening time.');
+      return;
+    }
     try {
       const updatedHours = {
         ...businessHours,
-        [day]: {
-          ...businessHours[day],
-          [field]: value
-        }
+        [day]: updatedDay
       };
       setBusinessHours(updatedHours);
       await updateSettings({
@@ -261,17 +275,16 @@ const Settings = () => {
     }
   };
 
-  const handleUIChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const newValue = type === 'checkbox' ? checked : value;
-    const newSettings = {
-      ...settings,
-      ui: {
-        ...settings.ui,
-        [name]: newValue,
-      },
-    };
-    handleSaveSettings(newSettings);
+  // Whether clients get booking emails (confirmation, changes, reminders).
+  const clientEmails = settings?.business?.clientEmails !== false;
+  const handleToggleClientEmails = async () => {
+    try {
+      await updateSettings({ business: { ...settings.business, clientEmails: !clientEmails } });
+      toast.success(clientEmails ? 'Client emails turned off' : 'Client emails turned on');
+    } catch (error) {
+      console.error('Error saving email preference:', error);
+      toast.error('Failed to save the email preference');
+    }
   };
 
   const handleBusinessSettingsChange = (e) => {
@@ -283,23 +296,21 @@ const Settings = () => {
   };
 
   const handleSaveBusinessSettings = async () => {
-    try {
-      await handleSaveSettings({
-        ...settings,
-        business: {
-          ...settings.business,
-          ...businessForm
-        }
-      });
-      toast.success('Business settings saved successfully');
-    } catch (error) {
-      console.error('Error saving business settings:', error);
-      toast.error('Failed to save business settings');
+    if (!businessForm.name.trim()) {
+      toast.error('Give your business a name.');
+      return;
     }
+    // handleSaveSettings saves the whole form and reports the result.
+    await handleSaveSettings();
   };
 
 
   const handleUpdateService = async () => {
+    const error = serviceError(newService);
+    if (error) {
+      toast.error(error);
+      return;
+    }
     try {
       const updatedServices = services.map(s => 
         s.id === editingService.id ? { ...newService } : s
@@ -337,7 +348,10 @@ const Settings = () => {
   };
 
   const handleUpdateStaff = async () => {
-    if (!newStaff.name || !newStaff.email) return;
+    if (!newStaff.name.trim()) {
+      toast.error('Give the staff member a name.');
+      return;
+    }
     
     try {
       const updatedStaff = staff.map(s => 
@@ -529,46 +543,25 @@ const Settings = () => {
           </div>
         </section>
 
-        {/* User Interface */}
+        {/* Client emails */}
         <section className="bg-dark-lighter rounded-lg p-5 mb-6">
-          <h2 className="text-lg font-semibold mb-4">User Interface</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Language</label>
-              <select
-                value={uiForm.language}
-                onChange={handleUIChange}
-                className="w-full bg-dark border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              >
-                <option value="en">English</option>
-              </select>
-            </div>
-
-            <div className="flex items-center">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="notifications"
-                  checked={uiForm.notifications}
-                  onChange={(e) => handleUIChange({
-                    target: {
-                      name: 'notifications',
-                      value: e.target.checked
-                    }
-                  })}
-                  className="sr-only"
-                />
-                <div className={`relative w-10 h-6 transition-colors duration-200 ease-in-out rounded-full ${
-                  uiForm.notifications ? 'bg-blue-600' : 'bg-gray-300'
-                }`}>
-                  <div className={`absolute left-1 top-1 w-4 h-4 transition-transform duration-200 ease-in-out transform bg-white rounded-full ${
-                    uiForm.notifications ? 'translate-x-4' : 'translate-x-0'
-                  }`} />
-                </div>
-                <span className="ml-3 text-sm font-medium text-gray-400">Notifications</span>
-              </label>
-            </div>
-          </div>
+          <h2 className="text-lg font-semibold mb-2">Client Emails</h2>
+          <label className="flex items-center justify-between gap-4 cursor-pointer">
+            <span className="text-sm text-gray-400">
+              Email clients when they book, when you move or cancel their appointment, and a reminder the day before.
+            </span>
+            <input
+              type="checkbox"
+              role="switch"
+              aria-label="Email clients about their appointments"
+              checked={clientEmails}
+              onChange={handleToggleClientEmails}
+              className="sr-only peer"
+            />
+            <span aria-hidden="true" className={`relative shrink-0 w-10 h-6 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 ${clientEmails ? 'bg-blue-600' : 'bg-gray-500'}`}>
+              <span className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${clientEmails ? 'translate-x-4' : ''}`} />
+            </span>
+          </label>
         </section>
 
         {/* Business Hours */}
@@ -591,7 +584,7 @@ const Settings = () => {
                 
                 <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:flex-1">
                   <select
-                    className="bg-dark border border-gray-700 text-gray-700 rounded-lg p-2.5 w-full sm:flex-1 disabled:opacity-50"
+                    className="bg-dark border border-gray-700 text-white rounded-lg p-2.5 w-full sm:flex-1 disabled:opacity-50"
                     value={businessHours[day.toLowerCase()]?.start ?? '9:00 AM'}
                     onChange={(e) => handleUpdateBusinessHours(day.toLowerCase(), 'start', e.target.value)}
                     disabled={!businessHours[day.toLowerCase()]?.enabled}
@@ -604,7 +597,7 @@ const Settings = () => {
                   <span className="text-gray-400">to</span>
                   
                   <select
-                    className="bg-dark border border-gray-700 text-gray-700 rounded-lg p-2.5 w-full sm:flex-1 disabled:opacity-50"
+                    className="bg-dark border border-gray-700 text-white rounded-lg p-2.5 w-full sm:flex-1 disabled:opacity-50"
                     value={businessHours[day.toLowerCase()]?.end ?? '5:00 PM'}
                     onChange={(e) => handleUpdateBusinessHours(day.toLowerCase(), 'end', e.target.value)}
                     disabled={!businessHours[day.toLowerCase()]?.enabled}
@@ -628,6 +621,7 @@ const Settings = () => {
             <div>
               <input
                 type="text"
+                aria-label="Service name"
                 placeholder="Service Name"
                 value={newService.name}
                 onChange={(e) => setNewService(prev => ({ ...prev, name: e.target.value }))}
@@ -637,6 +631,10 @@ const Settings = () => {
             <div>
               <input
                 type="number"
+                aria-label="Duration in minutes"
+                min={5}
+                max={480}
+                step={5}
                 placeholder="Duration (minutes)"
                 value={newService.duration}
                 onChange={(e) => setNewService(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
@@ -646,6 +644,9 @@ const Settings = () => {
             <div className="flex gap-2">
               <input
                 type="number"
+                aria-label="Price"
+                min={0}
+                step="0.01"
                 placeholder="Price"
                 value={newService.price}
                 onChange={(e) => setNewService(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
@@ -707,7 +708,7 @@ const Settings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Email (optional)</label>
                 <input
                   type="email"
                   value={newStaff.email}

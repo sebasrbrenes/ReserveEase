@@ -44,6 +44,8 @@ describe('legacyToV2', () => {
     expect(v2.staff[0]).toMatchObject({ id: 's1', displayName: 'Ana', serviceIds: ['1712345678901'] });
     expect(v2.publicBusiness.staff.map((s) => s.id)).toEqual(['s1']);
     expect(v2.problems).toEqual([]);
+    expect(v2.business.clientEmails).toBe(true);
+    expect(legacyToV2({ uid: 'uid-1', settings: { ...settings, business: { ...settings.business, clientEmails: false } } }).business.clientEmails).toBe(false);
     expect(JSON.stringify(v2.publicBusiness)).not.toContain('uid-1');
   });
 

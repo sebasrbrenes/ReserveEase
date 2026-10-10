@@ -61,6 +61,8 @@ export const businessSchema = z.object({
   status: z.enum(['draft', 'published']),
   bookingPolicy: bookingPolicySchema,
   weeklySchedule: weeklyScheduleSchema,
+  // Whether clients receive booking emails (confirmation, changes, reminders).
+  clientEmails: z.boolean().default(true),
   schemaVersion: z.literal(SCHEMA_VERSION),
 });
 
