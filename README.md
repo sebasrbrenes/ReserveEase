@@ -67,6 +67,15 @@ Sin `VITE_USE_EMULATORS=true`, la app usa la configuración web de Firebase de `
 
 Por defecto `NOTIFICATIONS_MODE=mock`: las rutas de correo y SMS responden sin contactar a SendGrid ni a Twilio. Para enviar mensajes reales hay que poner `NOTIFICATIONS_MODE=live` y las credenciales correspondientes. Esas rutas tienen además un límite de peticiones por IP.
 
+Los correos de las reservas no salen del navegador. Cada reserva, cambio de hora o cancelación deja una tarea en `notificationJobs` dentro de la misma transacción, y el proceso del backend (`server.js`) las envía:
+
+- Confirmación al reservar, aviso de nueva hora al reprogramar y aviso al cancelar.
+- Recordatorio 24 horas antes. Si la reserva se hace dentro de esas 24 horas, solo se envía la confirmación.
+- Un recordatorio de una hora anterior o de una cita cancelada nunca se envía.
+- Si el proveedor falla, se reintenta a los 1, 5, 25 y 125 minutos; después queda como fallido y el panel ofrece reintentar.
+- En modo `mock` las tareas quedan como `simulated` y el panel lo dice ("Email simulated"); con `live`, `SENDGRID_API_KEY` y `FROM_EMAIL` se envían por SendGrid y quedan como `accepted` (aceptado por el proveedor, que no es lo mismo que entregado).
+- `NOTIFICATIONS_WORKER=off` desactiva el envío en ese proceso.
+
 ### 4. Landing
 
 ```bash
@@ -115,6 +124,7 @@ Rutas privadas del panel: requieren `Authorization: Bearer <ID token de Firebase
 | `npm run lint` | app y landing |
 | `node --check <archivo>` | backend (sintaxis) |
 | `npm run test:backend` | raíz: pruebas del backend con los emuladores de Firestore y Auth |
+| `npm run test:e2e` | raíz: reserva pública (escritorio y móvil), panel, reprogramar, cancelar y aislamiento entre negocios en un navegador, con los emuladores y el seed. La primera vez: `npx playwright install chromium` |
 
 La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobaciones en cada push a `main` y en cada PR. Un error de lint hace fallar la CI.
 
@@ -124,11 +134,12 @@ La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobacione
 | --- | --- | --- |
 | App | Vercel | `vercel.json` reescribe todas las rutas a la SPA; definir `VITE_BACKEND_URL` en las variables del proyecto |
 | Backend | Render | Variables de `saas-booking-backend/.env.example` |
-| Reglas de Firestore | Firebase | `npx firebase deploy --only firestore:rules --project <id-del-proyecto>` desde la raíz |
+| Reglas de Firestore | Firebase | `npx firebase deploy --only firestore:rules,firestore:indexes --project <id-del-proyecto>` desde la raíz |
 | Landing | Firebase Hosting | `firebase deploy --only hosting` desde `saas-booking-landing/` tras `npm run build` |
 
 ## Limitaciones conocidas
 
-- Los correos de confirmación quedan en la cola `notificationJobs`, pero todavía no hay un proceso que los envíe (etapa E del plan). Mientras tanto no se envía ningún correo ni SMS al reservar.
+- Sin SendGrid configurado (`NOTIFICATIONS_MODE=live`) los correos solo se simulan. No hay SMS en el flujo nuevo.
+- Si el proceso se detiene justo después de que el proveedor acepta un correo y antes de guardarlo, ese correo puede enviarse dos veces: SendGrid no deduplica por clave. El id de la tarea viaja en `custom_args` para poder conciliarlo.
 - Las citas guardadas con el modelo anterior (colección raíz `appointments`) no aparecen en el panel; no hay migración.
 - La landing promete funciones (IA, predicciones) que no están implementadas.

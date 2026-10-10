@@ -7,12 +7,11 @@ import { computeAvailability, DomainError, occupancyOf } from './availability.js
 import { lockIdsFor, readExceptions } from './booking.js';
 import { businessSchema, staffSchema } from './schemas.js';
 import { localDateOf, MINUTE } from './time.js';
+import { cancelJobs, queueNotifications, readPendingJobs } from '../notifications/jobs.js';
 
 // A no-show can be recorded once this long has passed since the start.
 export const NO_SHOW_GRACE_MINUTES = 15;
 
-const jobId = (appointmentId, version, template) => `${appointmentId}_v${version}_${template}`;
-const TEMPLATE_BY_VERSION_SOURCE = { created: 'confirmation_email', rescheduled: 'reschedule_email' };
 
 const readAppointment = async (tx, ref, expectedVersion) => {
   const snap = await tx.get(ref);
@@ -22,14 +21,6 @@ const readAppointment = async (tx, ref, expectedVersion) => {
     throw new DomainError('VERSION_CONFLICT', 'The appointment changed. Reload and try again.');
   }
   return apt;
-};
-
-// Pending notification jobs of a version stop being eligible to send.
-const cancelPendingJobs = async (tx, db, appointmentId, version) => {
-  const refs = Object.values(TEMPLATE_BY_VERSION_SOURCE)
-    .map((template) => db.collection('notificationJobs').doc(jobId(appointmentId, version, template)));
-  const snaps = await tx.getAll(...refs);
-  return snaps.filter((s) => s.exists && s.data().status === 'queued').map((s) => s.ref);
 };
 
 const audit = (tx, base, type, appointmentId, actorUid, extra = {}) => {
@@ -51,19 +42,24 @@ export const cancelAppointment = (db, { businessId, appointmentId, expectedVersi
     if (current.status !== 'confirmed') {
       throw new DomainError('INVALID_TRANSITION', `A ${current.status} appointment cannot be cancelled`);
     }
-    const jobs = await cancelPendingJobs(tx, db, appointmentId, current.version);
+    const jobs = await readPendingJobs(tx, db, appointmentId, current.notificationVersion ?? current.version);
 
     const occupied = { from: current.occupiedFrom.toMillis(), until: current.occupiedUntil.toMillis() };
     lockIdsFor(current.staffId, occupied).forEach((id) => tx.delete(base.collection('slotLocks').doc(id)));
-    jobs.forEach((jobRef) => tx.update(jobRef, { status: 'cancelled', updatedAt: FieldValue.serverTimestamp() }));
+    cancelJobs(tx, jobs);
     const update = {
       status: 'cancelled',
       cancelledAt: FieldValue.serverTimestamp(),
       cancellationReason: reason,
       version: current.version + 1,
+      notificationVersion: current.version + 1,
+      notification: { template: 'cancellation_email', status: 'queued', lastErrorCode: null, updatedAt: FieldValue.serverTimestamp() },
       updatedAt: FieldValue.serverTimestamp(),
     };
     tx.update(ref, update);
+    queueNotifications(tx, db, {
+      businessId, appointmentId, version: update.version, template: 'cancellation_email', withReminder: false,
+    });
     audit(tx, base, 'appointment.cancelled', appointmentId, actorUid);
     return { ...current, ...update, cancelledAt: null, updatedAt: null };
   });
@@ -109,7 +105,7 @@ export const rescheduleAppointment = (db, {
     if (lockSnaps.some((s) => s.exists)) {
       throw new DomainError('SLOT_UNAVAILABLE', 'This time was just taken. Choose another option.');
     }
-    const jobs = await cancelPendingJobs(tx, db, appointmentId, current.version);
+    const jobs = await readPendingJobs(tx, db, appointmentId, current.notificationVersion ?? current.version);
 
     // Writes: one operation, so a failure leaves the original appointment intact (T11).
     const now = FieldValue.serverTimestamp();
@@ -118,10 +114,9 @@ export const rescheduleAppointment = (db, {
     toAcquire.forEach((id) => tx.create(base.collection('slotLocks').doc(id), {
       appointmentId, staffId: staff.id, createdAt: now,
     }));
-    jobs.forEach((jobRef) => tx.update(jobRef, { status: 'cancelled', updatedAt: now }));
-    tx.create(db.collection('notificationJobs').doc(jobId(appointmentId, version, TEMPLATE_BY_VERSION_SOURCE.rescheduled)), {
-      businessId, appointmentId, appointmentVersion: version, channel: 'email',
-      template: TEMPLATE_BY_VERSION_SOURCE.rescheduled, runAt: now, status: 'queued', attempts: 0, createdAt: now, updatedAt: now,
+    cancelJobs(tx, jobs);
+    queueNotifications(tx, db, {
+      businessId, appointmentId, version, template: 'reschedule_email', startsAtMs, nowMs: clock(),
     });
     const update = {
       staffId: staff.id,
@@ -132,6 +127,8 @@ export const rescheduleAppointment = (db, {
       occupiedUntil: Timestamp.fromMillis(occupied.until),
       localDate,
       version,
+      notificationVersion: version,
+      notification: { template: 'reschedule_email', status: 'queued', lastErrorCode: null, updatedAt: now },
       updatedAt: now,
     };
     tx.update(ref, update);
@@ -210,5 +207,8 @@ export const toApi = (apt) => {
     version: apt.version,
     createdAt: iso(apt.createdAt),
     cancellationReason: apt.cancellationReason,
+    notification: apt.notification
+      ? { template: apt.notification.template, status: apt.notification.status, lastErrorCode: apt.notification.lastErrorCode ?? null }
+      : null,
   };
 };

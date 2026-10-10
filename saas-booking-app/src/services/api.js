@@ -90,3 +90,5 @@ export const errorMessage = (error) => {
     default: return error?.message || 'Something went wrong. Please try again.';
   }
 };
+export const retryNotifications = (businessId, id) =>
+  request('POST', apt(businessId, id, '/notifications/retry'), { signedIn: true });

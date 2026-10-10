@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { STATUS, STATUS_ACTIONS, statusClass, statusLabel } from "./status";
 import { formatLocalDate, formatTime } from "../../utils/datetime";
+import NotificationStatus from "./NotificationStatus";
 
 const AppointmentsView = ({
   isOpen,
@@ -13,6 +14,7 @@ const AppointmentsView = ({
   onEdit,
   onCancel,
   onStatusChange,
+  onRetryEmail,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingStatus, setEditingStatus] = useState(null);
@@ -170,6 +172,7 @@ const AppointmentsView = ({
                       {appointment.notes && (
                         <p className="text-sm text-gray-500 mt-1">{appointment.notes}</p>
                       )}
+                      <NotificationStatus notification={appointment.notification} onRetry={() => onRetryEmail(appointment)} />
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-gray-400">

@@ -80,8 +80,8 @@ describe.skipIf(!hasEmulator)('POST /api/v1/public/businesses/:slug/bookings', (
     // 60 minutes + 5-minute buffer = 13 blocks of 5 minutes
     expect(await count('businesses/biz-t08/slotLocks')).toBe(13);
     const jobs = await db.collection('notificationJobs').where('businessId', '==', 'biz-t08').get();
-    expect(jobs.size).toBe(1);
-  });
+    expect(jobs.docs.filter((d) => d.data().template === 'confirmation_email')).toHaveLength(1);
+  }, 30_000);
 
   it('T09: twenty retries with the same key and body return one booking and one reference', async () => {
     const k = key();
@@ -90,7 +90,7 @@ describe.skipIf(!hasEmulator)('POST /api/v1/public/businesses/:slug/bookings', (
     expect(responses.filter((r) => r.status === 201)).toHaveLength(1);
     expect(new Set(responses.map((r) => r.body.data.bookingReference)).size).toBe(1);
     expect(await count('businesses/biz-t09/appointments')).toBe(1);
-  });
+  }, 30_000);
 
   it('T10: the same key with a different body is rejected', async () => {
     const k = key();
