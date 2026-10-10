@@ -92,6 +92,7 @@ Errores con el formato `{ "error": { "code", "message", "fields" }, "requestId" 
 | --- | --- |
 | `GET /api/v1/public/businesses/:slug` | Disponible: perfil y catálogo públicos (`barberia-demo`, `salon-demo` en el seed) |
 | `GET /api/v1/public/businesses/:slug/availability?serviceId=&staffId=&date=YYYY-MM-DD` | Disponible: horarios libres según duración, buffers, antelación mínima, bloqueos y zona horaria del negocio. Solo devuelve horarios, nunca datos de otros clientes |
+| `POST /api/v1/public/businesses/:slug/bookings` | Disponible: crea una reserva confirmada de forma atómica. Requiere la cabecera `Idempotency-Key`; un reintento con la misma clave devuelve la misma reserva. Responde `409 SLOT_UNAVAILABLE` si el horario se acaba de ocupar |
 
 ## Comprobaciones
 
