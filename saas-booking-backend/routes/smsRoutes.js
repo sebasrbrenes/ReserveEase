@@ -13,7 +13,7 @@ router.post("/send", async (req, res) => {
         }
 
         const response = await smsService.sendSMS(phone, clientName, businessName, date, time);
-        res.status(200).json({ message: "SMS sent successfully", data: response });
+        res.status(200).json({ success: true, message: "SMS sent successfully", data: response });
     } catch (error) {
         res.status(500).json({ error: "Failed to send SMS", details: error.message });
     }

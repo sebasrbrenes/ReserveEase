@@ -6,11 +6,15 @@ import emailRoutes from './routes/emailRoutes.js';
 import smsRoutes from './routes/smsRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
 import { db } from './config/firebase.js';
+import { notificationGuard } from './middleware/notificationGuard.js';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3001;
+
+// Behind Render's proxy: use the client IP for rate limiting
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(cors({
@@ -18,7 +22,7 @@ app.use(cors({
   methods: ['GET', 'POST'],
   credentials: true
 }));
-app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf; } })); // To access rawBody
+app.use(express.json({ limit: '20kb', verify: (req, res, buf) => { req.rawBody = buf; } })); // To access rawBody
 
 // Health check endpoint
 app.get('/', (req, res) => {
@@ -248,9 +252,9 @@ app.post('/api/webhooks/lemonsqueezy', async (req, res) => {
 });
 
 // Email routes
-app.use('/api/email', emailRoutes);
-app.use('/api/appointments', appointmentRoutes);
-app.use('/api/sms', smsRoutes);
+app.use('/api/email', notificationGuard, emailRoutes);
+app.use('/api/appointments', notificationGuard, appointmentRoutes);
+app.use('/api/sms', notificationGuard, smsRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
