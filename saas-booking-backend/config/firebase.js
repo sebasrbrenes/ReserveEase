@@ -15,6 +15,11 @@ if (process.env.APP_ENV === 'local' && !usingEmulator) {
   );
 }
 
+// Hosting dashboards often store the key as one line with literal "\n", or
+// keep the quotes copied from the service-account JSON. Accept both.
+const normalizePrivateKey = (key = '') =>
+  key.trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+
 // Initialize Firebase Admin
 const app = usingEmulator
   ? initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID || 'demo-reserveease' })
@@ -22,7 +27,7 @@ const app = usingEmulator
     credential: cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY
+      privateKey: normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY)
     })
   });
 
