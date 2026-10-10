@@ -125,7 +125,7 @@ Rutas privadas del panel: requieren `Authorization: Bearer <ID token de Firebase
 | `npm run lint` | app y landing |
 | `node --check <archivo>` | backend (sintaxis) |
 | `npm run test:backend` | raíz: pruebas del backend con los emuladores de Firestore y Auth |
-| `npm run test:e2e` | raíz: reserva pública (escritorio y móvil), panel, reprogramar, cancelar y aislamiento entre negocios en un navegador, con los emuladores y el seed. La primera vez: `npx playwright install chromium` |
+| `npm run test:e2e` | raíz: reserva pública (escritorio y móvil), panel, reprogramar, cancelar, aislamiento entre negocios, guardado por secciones de la configuración y accesibilidad (axe, sin problemas graves ni críticos, y sin desplazamiento lateral con zoom al 200 %), con los emuladores y el seed. La primera vez: `npx playwright install chromium` |
 
 La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobaciones en cada push a `main` y en cada PR. Un error de lint hace fallar la CI.
 

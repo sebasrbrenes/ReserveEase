@@ -14,7 +14,7 @@ export default {
         marker: { DEFAULT: '#2450B8', dark: '#1B3E91', light: '#DCE5F8' },
         sun: { DEFAULT: '#FFD35C', light: '#FFF1C7' },
         coral: { DEFAULT: '#B83A2A', light: '#FBE3DE' },
-        leaf: { DEFAULT: '#2F7D57', light: '#DDF1E5' },
+        leaf: { DEFAULT: '#256B48', light: '#DDF1E5' },
         primary: {
           DEFAULT: '#3B82F6',
           dark: '#2563EB',
