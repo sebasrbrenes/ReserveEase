@@ -38,6 +38,17 @@ export const lockIdsFor = (staffId, occupied) => {
   return ids;
 };
 
+const toMs = (value) => (typeof value?.toMillis === 'function' ? value.toMillis() : Date.parse(value));
+
+// Schedule exceptions (closures, blocks) of a local date that apply to a staff member.
+export const readExceptions = async (tx, base, localDate, staffId) => {
+  const snap = await tx.get(base.collection('scheduleExceptions').where('localDate', '==', localDate));
+  return snap.docs
+    .map((doc) => doc.data())
+    .filter((e) => e.staffId == null || e.staffId === staffId)
+    .map((e) => ({ from: toMs(e.from), until: toMs(e.until) }));
+};
+
 const parseSnap = (schema, snap, code, message) => {
   if (!snap.exists) throw new DomainError(code, message);
   return schema.parse(snap.data());
@@ -83,14 +94,7 @@ export const createBooking = async (db, { businessId, command, idempotencyKey, s
 
     const startsAtMs = Date.parse(command.startsAt);
     const localDate = localDateOf(startsAtMs, business.timezone);
-    const exceptions = await tx.get(base.collection('scheduleExceptions').where('localDate', '==', localDate));
-    const busy = [];
-    exceptions.forEach((doc) => {
-      const e = doc.data();
-      if (e.staffId == null || e.staffId === staff.id) {
-        busy.push({ from: e.from.toMillis?.() ?? Date.parse(e.from), until: e.until.toMillis?.() ?? Date.parse(e.until) });
-      }
-    });
+    const busy = await readExceptions(tx, base, localDate, staff.id);
 
     // Schedule, grid, closing time, notice and horizon: the start must be one
     // the availability rules would offer, ignoring other bookings (locks cover those).

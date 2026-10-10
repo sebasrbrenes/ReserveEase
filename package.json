@@ -5,7 +5,7 @@
   "scripts": {
     "emulators": "firebase emulators:start --project demo-reserveease",
     "seed": "npm --prefix saas-booking-backend run seed",
-    "test:backend": "firebase emulators:exec --only firestore --project demo-reserveease \"npm --prefix saas-booking-backend test\""
+    "test:backend": "firebase emulators:exec --only firestore,auth --project demo-reserveease \"npm --prefix saas-booking-backend test\""
   },
   "devDependencies": {
     "firebase-tools": "^15.33.0"

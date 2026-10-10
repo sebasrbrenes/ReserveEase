@@ -19,7 +19,7 @@ app.set('trust proxy', 1);
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PATCH'],
   credentials: true
 }));
 app.use(express.json({ limit: '20kb', verify: (req, res, buf) => { req.rawBody = buf; } })); // To access rawBody
