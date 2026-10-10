@@ -63,7 +63,7 @@ cp .env.example .env.local   # VITE_USE_EMULATORS=true
 npm run dev                  # http://localhost:3000
 ```
 
-Sin `VITE_USE_EMULATORS=true`, la app usa la configuración web de Firebase de `src/firebase/config.js`. Esos valores son públicos por diseño; la protección real depende de las reglas de Firestore (`firestore.rules`): el navegador solo lee y escribe el perfil y la configuración de su propia cuenta, y todo lo relacionado con reservas pasa por la API.
+Sin `VITE_USE_EMULATORS=true`, la app usa la configuración web de Firebase de las variables `VITE_FIREBASE_*` (ver `.env.example`). Esos valores son públicos por diseño; la protección real depende de las reglas de Firestore (`firestore.rules`): el navegador solo lee y escribe el perfil y la configuración de su propia cuenta, y todo lo relacionado con reservas pasa por la API.
 
 Por defecto `NOTIFICATIONS_MODE=mock`: las rutas de correo y SMS responden sin contactar a SendGrid ni a Twilio. Para enviar mensajes reales hay que poner `NOTIFICATIONS_MODE=live` y las credenciales correspondientes. Esas rutas tienen además un límite de peticiones por IP.
 
@@ -133,10 +133,10 @@ La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobacione
 
 | Parte | Dónde | Configuración |
 | --- | --- | --- |
-| App | Vercel | `vercel.json` reescribe todas las rutas a la SPA; definir `VITE_BACKEND_URL` en las variables del proyecto |
+| App | Vercel | `vercel.json` reescribe todas las rutas a la SPA; definir `VITE_BACKEND_URL` y las `VITE_FIREBASE_*` de `.env.example` en las variables del proyecto |
 | Backend | Render | Variables de `saas-booking-backend/.env.example` |
 | Reglas de Firestore | Firebase | `npx firebase deploy --only firestore:rules,firestore:indexes --project <id-del-proyecto>` desde la raíz |
-| Landing | Firebase Hosting | `firebase deploy --only hosting` desde `saas-booking-landing/` tras `npm run build` |
+| Landing | Firebase Hosting | `npx firebase deploy --only hosting` desde `saas-booking-landing/` tras `npm run build` (proyecto `reserveease-prod`) |
 
 ## Limitaciones conocidas
 

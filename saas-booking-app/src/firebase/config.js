@@ -13,15 +13,24 @@ const emulatorConfig = {
   appId: "demo-app-id"
 };
 
+// Production: the web config of the Firebase project, set in Vercel. These
+// values are public by design; Firestore rules are what protect the data.
+const env = import.meta.env;
 const firebaseConfig = {
-  apiKey: "AIzaSyDrZH-OSMSOwpgTk5bDZktFA8pI3cgxyBY",
-  authDomain: "boo-king-app.firebaseapp.com",
-  projectId: "boo-king-app",
-  storageBucket: "boo-king-app.firebasestorage.app",
-  messagingSenderId: "445312816620",
-  appId: "1:445312816620:web:51c73010410fbeb23b5cc9",
-  measurementId: "G-9VZ2SB8P17"
+  apiKey: env.VITE_FIREBASE_API_KEY,
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: env.VITE_FIREBASE_APP_ID
 };
+
+if (!useEmulators && !firebaseConfig.projectId) {
+  throw new Error(
+    "Missing Firebase config: set the VITE_FIREBASE_* variables " +
+    "(or VITE_USE_EMULATORS=true for local development)."
+  );
+}
 
 // Initialize Firebase
 const app = initializeApp(useEmulators ? emulatorConfig : firebaseConfig);
