@@ -63,9 +63,9 @@ test('the settings page shows the public booking link', async ({ page }) => {
 
 test('T22: each date in the weekly calendar sits under its own weekday', async ({ page }) => {
   await login(page, 'salon@demo.test');
-  const headers = await page.locator('.grid-cols-7 > div:not(.cursor-pointer)').allTextContents();
+  const headers = await page.locator('.grid-cols-7 > div').allTextContents();
   expect(headers).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
-  const days = page.locator('.grid-cols-7 > div.cursor-pointer');
+  const days = page.locator('.grid-cols-7 > button');
   await expect(days).toHaveCount(7);
   const today = new Date();
   const column = (today.getDay() + 6) % 7; // Monday = 0

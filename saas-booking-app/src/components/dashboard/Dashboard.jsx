@@ -23,8 +23,7 @@ import { useSettings } from '../../context/SettingsContext';
 import WeeklyCalendar from '../calendar/WeeklyCalendar';
 import Feedback from '../feedback/Feedback';
 import HelpButton from '../common/HelpButton';
-import './select.css';
-import logo from '../../assets/images/ReserveEaseLogoNObg.png';
+import { Logo, Sparkle, Star, Underline } from '../ui/Doodles';
 import {
   cancelAppointment, errorMessage, listAppointments, retryNotifications, transitionAppointment,
 } from '../../services/api';
@@ -36,6 +35,8 @@ import { formatLocalDate, formatMoney, formatTime, shiftDate, todayIn } from '..
 const PAST_DAYS = 60;
 const FUTURE_DAYS = 120;
 const REFRESH_MS = 60 * 1000;
+// The cancel dialog renders in a portal, outside .hd-page and its focus ring.
+const dialogFocus = 'focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker focus-visible:outline-offset-2';
 
 const Dashboard = () => {
   const { business } = useSettings();
@@ -183,50 +184,47 @@ const Dashboard = () => {
   }, [appointments, timezone, currency, activeStaff.length, staffList.length]);
 
   return (
-    <div className="min-h-screen bg-[#1a1f2b]">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+    <div className="hd-page">
+      <div className="container mx-auto px-4 py-8 pb-24">
+        <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
           <div>
-            <img src={logo} alt="ReserveEase logo" className="w-16 h-16 inline-block rotate-6" />
-            <motion.div 
-              className="text-2xl font-bold gradient-text text-white inline-block align-middle ml-2 transition duration-300 ease-in-out"
-              whileHover={{ scale: 1.05 }}
-            >
-              <h1>ReserveEase</h1>
-            </motion.div>
-            <p className="text-gray-400">Manage your appointments and schedule</p>
+            <h1 className="relative inline-block">
+              <Logo />
+              <Sparkle className="absolute -right-7 -top-2 w-6 h-6 text-marker" />
+            </h1>
+            <p className="text-ink-soft mt-1">Manage your appointments and schedule</p>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4 w-full sm:w-auto">
+          <nav className="flex flex-wrap items-center sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={() => setIsFeedbackOpen(true)}
-              className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+              className="hd-btn hd-btn-secondary !px-3 !py-1.5 text-sm"
             >
-              <FiMessageSquare className="w-5 h-5" />
-              <span className="text-sm">Feedback</span>
+              <FiMessageSquare className="w-4 h-4" aria-hidden="true" />
+              <span>Feedback</span>
             </button>
             <Link
               to="/settings"
-              className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+              className="hd-btn hd-btn-secondary !px-3 !py-1.5 text-sm"
             >
-              <FiSettings className="w-5 h-5" />
-              <span className="text-sm">Settings</span>
+              <FiSettings className="w-4 h-4" aria-hidden="true" />
+              <span>Settings</span>
             </Link>
             <button
               onClick={() => signOut(auth)}
-              className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+              className="hd-btn hd-btn-secondary !px-3 !py-1.5 text-sm"
             >
-              <FiLogOut className="w-5 h-5" />
-              <span className="text-sm">Logout</span>
+              <FiLogOut className="w-4 h-4" aria-hidden="true" />
+              <span>Logout</span>
             </button>
-          </div>
-        </div>
+          </nav>
+        </header>
 
         {!business.loading && business.data?.status !== 'published' && (
-          <div className="mb-6 rounded-lg border border-yellow-600/50 bg-yellow-500/10 p-4 text-sm text-yellow-200">
+          <div className="hd-alert mb-6 border-ink bg-sun-light text-ink">
             {business.error
               ? errorMessage(business.error)
               : 'Your booking page is not live yet. Finish your services, staff and hours in '}
-            {!business.error && <Link to="/settings" className="underline">Settings</Link>}
+            {!business.error && <Link to="/settings" className="hd-link">Settings</Link>}
           </div>
         )}
 
@@ -235,21 +233,21 @@ const Dashboard = () => {
           {metrics.map(metric => (
             <div
               key={metric.id}
-              className="bg-[#242937] p-6 rounded-lg border border-gray-700"
+              className="hd-card p-5"
             >
               <div className="flex items-start gap-4">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <metric.icon className="w-6 h-6 text-blue-500" />
+                <div className="p-2 bg-marker-light border-2 border-ink rounded-lg shrink-0">
+                  <metric.icon className="w-6 h-6 text-marker" aria-hidden="true" />
                 </div>
-                <div>
-                  <p className="text-sm text-gray-400">{metric.title}</p>
-                  <span className="text-2xl font-bold text-white">{metric.value}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-ink-soft">{metric.title}</p>
+                  <span className="text-2xl font-extrabold text-ink">{metric.value}</span>
                   <p className={`text-sm ${
-                    metric.type === 'neutral' 
-                      ? 'text-gray-400' 
+                    metric.type === 'neutral'
+                      ? 'text-ink-soft'
                       : metric.type === 'positive'
-                      ? 'text-green-500'
-                      : 'text-red-500'
+                      ? 'text-leaf font-semibold'
+                      : 'text-coral font-semibold'
                   }`}>
                     {metric.subtext}
                   </p>
@@ -261,16 +259,19 @@ const Dashboard = () => {
 
         {/* Appointments Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="bg-[#242937] rounded-lg p-6">
+          <div className="lg:col-span-2 min-w-0">
+            <div className="hd-card p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-                <h2 className="text-xl font-semibold text-white">{showAllAppointments ? 'All Appointments' : 'Upcoming Appointments'}</h2>
-                <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
+                <h2 className="relative inline-block self-start">
+                  <span className="hd-title text-4xl">{showAllAppointments ? 'All Appointments' : 'Upcoming Appointments'}</span>
+                  <Underline className="absolute -bottom-2 left-0 w-full h-3 text-sun" />
+                </h2>
+                <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
                   <button
                     onClick={() => setShowAllAppointments(true)}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white text-sm"
+                    className="hd-btn hd-btn-secondary !px-4 !py-2 text-sm flex-1 sm:flex-none"
                   >
-                    <FiCalendar className="w-4 h-4" />
+                    <FiCalendar className="w-4 h-4" aria-hidden="true" />
                     View All
                   </button>
                   <button
@@ -280,9 +281,9 @@ const Dashboard = () => {
                     }}
                     disabled={business.data?.status !== 'published'}
                     title={business.data?.status !== 'published' ? 'Finish your settings to take bookings' : undefined}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="hd-btn !px-4 !py-2 text-sm flex-1 sm:flex-none"
                   >
-                    <FiPlus className="w-4 h-4" />
+                    <FiPlus className="w-4 h-4" aria-hidden="true" />
                     New Appointment
                   </button>
                 </div>
@@ -290,12 +291,15 @@ const Dashboard = () => {
 
               {isLoading ? (
                 <div className="flex justify-center items-center h-36">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                  <div className="w-8 h-8 border-4 border-ink border-t-transparent rounded-full animate-spin motion-reduce:animate-none" aria-hidden="true"></div>
                 </div>
               ) : currentViewAppointments.length === 0 ? (
-                <p className="text-gray-400">No appointments scheduled for this date</p>
+                <div className="text-center py-8">
+                  <Star className="mx-auto w-8 h-8 text-sun mb-2" />
+                  <p className="hd-title text-3xl text-ink">No appointments scheduled for this date</p>
+                </div>
               ) : (
-                <div className="space-y-3 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
                   {currentViewAppointments.map((appointment) => (
                     <motion.div
                       key={`appointment-${appointment.id}`}
@@ -303,25 +307,25 @@ const Dashboard = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="group bg-[#1a1f2b] p-4 rounded-lg hover:bg-[#2a303c] transition-colors border border-gray-700"
+                      className="group bg-paper p-4 rounded-xl border-2 border-ink-soft/30 hover:border-ink transition-colors"
                     >
                       <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-3">
-                        <div>
-                          <h3 className="text-lg font-semibold text-white">{appointment.client?.name}</h3>
-                          <p className="text-gray-400 text-sm">
+                        <div className="min-w-0 break-words">
+                          <h3 className="text-lg font-bold text-ink">{appointment.client?.name}</h3>
+                          <p className="text-ink text-sm">
                             {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} at {formatTime(appointment.startsAt, timezone)}
                           </p>
-                          <p className="text-gray-400 text-sm">{appointment.serviceSnapshot?.name}</p>
+                          <p className="text-ink-soft text-sm">{appointment.serviceSnapshot?.name}</p>
                           <NotificationStatus notification={appointment.notification} onRetry={() => handleRetryEmail(appointment)} />
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
-                          <span className="hidden sm:inline text-gray-400">{appointment.staffSnapshot?.displayName}</span>
+                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
+                          <span className="hidden sm:inline text-ink-soft">{appointment.staffSnapshot?.displayName}</span>
                           <div className="flex items-center gap-2">
                             {editingStatus === appointment.id ? (
                               <select
                                 autoFocus
                                 aria-label="Change status"
-                                className="px-3 py-1 rounded-full text-xs bg-[#1a1f2b] text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="hd-input !mt-0 !w-auto !py-1 text-xs"
                                 value=""
                                 onChange={(e) => handleStatusChange(appointment, e.target.value)}
                                 onBlur={() => setEditingStatus(null)}
@@ -334,27 +338,27 @@ const Dashboard = () => {
                             ) : (
                               <button
                                 onClick={() => appointment.status === 'confirmed' && setEditingStatus(appointment.id)}
-                                className={`px-3 py-1 rounded-full text-xs ${statusClass(appointment.status)} ${appointment.status === 'confirmed' ? '' : 'cursor-default'}`}
+                                className={`hd-badge ${statusClass(appointment.status)} ${appointment.status === 'confirmed' ? 'hover:opacity-80' : 'cursor-default'}`}
                                 title={appointment.status === 'confirmed' ? 'Change status' : undefined}
                               >
                                 {statusLabel(appointment.status)}
                               </button>
                             )}
-                            <div className="flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
                               <button
                                 onClick={() => handleEditAppointment(appointment)}
-                                className="text-blue-500 hover:text-blue-400 transition-colors"
+                                className="p-1.5 rounded-lg text-marker hover:bg-marker-light transition-colors"
                                 aria-label="Edit appointment"
                               >
-                                <FiEdit2 className="w-4 h-4" />
+                                <FiEdit2 className="w-4 h-4" aria-hidden="true" />
                               </button>
                               {appointment.status === 'confirmed' && (
                                 <button
                                   onClick={() => setAppointmentToCancel(appointment)}
-                                  className="text-gray-400 hover:text-red-500 transition-colors"
+                                  className="p-1.5 rounded-lg text-ink-soft hover:text-coral hover:bg-coral-light transition-colors"
                                   aria-label="Cancel appointment"
                                 >
-                                  <FiXCircle className="w-4 h-4" />
+                                  <FiXCircle className="w-4 h-4" aria-hidden="true" />
                                 </button>
                               )}
                             </div>
@@ -367,7 +371,7 @@ const Dashboard = () => {
               )}
             </div>
           </div>
-          <div>
+          <div className="min-w-0">
             <WeeklyCalendar
               appointments={calendarAppointments}
               selectedDate={selectedDate}
@@ -414,7 +418,7 @@ const Dashboard = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 bg-black/30"
+                className="fixed inset-0 bg-ink/40"
                 aria-hidden="true"
               />
 
@@ -428,32 +432,28 @@ const Dashboard = () => {
                     duration: 0.2,
                     ease: [0.4, 0, 0.2, 1]
                   }}
-                  className="mx-auto max-w-sm rounded-lg bg-gray-800 p-6"
+                  className="hd-card mx-auto w-full max-w-sm p-6 font-sans text-ink"
                 >
-                  <Dialog.Title className="text-xl font-medium text-white mb-4">
+                  <Dialog.Title className="hd-title text-3xl mb-3">
                     Cancel appointment
                   </Dialog.Title>
-                  <Dialog.Description className="text-gray-300 mb-6">
+                  <Dialog.Description className="text-ink-soft mb-6">
                     Cancel {appointmentToCancel.client?.name}&apos;s appointment? The time becomes available to other clients.
                   </Dialog.Description>
 
-                  <div className="flex justify-end gap-3">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="px-4 py-2 rounded-md bg-gray-600 text-white hover:bg-gray-500 transition-colors"
+                  <div className="flex flex-wrap justify-end gap-3">
+                    <button
+                      className={`hd-btn hd-btn-secondary !px-4 ${dialogFocus}`}
                       onClick={() => setAppointmentToCancel(null)}
                     >
                       Keep it
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-500 transition-colors"
+                    </button>
+                    <button
+                      className={`hd-btn !bg-coral !px-4 ${dialogFocus}`}
                       onClick={handleConfirmCancel}
                     >
                       Cancel appointment
-                    </motion.button>
+                    </button>
                   </div>
                 </Dialog.Panel>
               </div>

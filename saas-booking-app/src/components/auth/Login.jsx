@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
+import { Logo, Star, Underline } from '../ui/Doodles';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -86,23 +87,28 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#1a1f2b] flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-[#252b3b] p-8 rounded-xl shadow-lg">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Welcome back
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-400">
-            Don&apos;t have an account?{' '}
-            <Link to="/signup" className="font-medium text-blue-500 hover:text-blue-400">
-              Sign up
-            </Link>
-          </p>
+    <div className="hd-page flex flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="mb-6 flex justify-center">
+          <Logo />
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+        <div className="hd-card p-6 sm:p-8">
+          <div className="text-center">
+            <h2 className="relative inline-block">
+              <span className="hd-title text-4xl sm:text-5xl">Welcome back</span>
+              <Underline className="absolute -bottom-3 left-0 w-full h-4 text-sun" />
+              <Star className="hidden sm:block absolute -right-9 -top-2 w-6 h-6 text-marker rotate-12" />
+            </h2>
+            <p className="mt-5 hd-help">
+              Don&apos;t have an account?{' '}
+              <Link to="/signup" className="hd-link">
+                Sign up
+              </Link>
+            </p>
+          </div>
+          <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email-address" className="sr-only">
+              <label htmlFor="email-address" className="hd-label">
                 Email address
               </label>
               <input
@@ -113,12 +119,12 @@ const Login = () => {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-[#1a1f2b]"
+                className="hd-input"
                 placeholder="Email address"
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="hd-label">
                 Password
               </label>
               <input
@@ -129,42 +135,32 @@ const Login = () => {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-[#1a1f2b]"
+                className="hd-input"
                 placeholder="Password"
               />
             </div>
-          </div>
 
-          <div className="flex items-center justify-between">
             <div className="text-sm">
-              <Link to="/forgot-password" className="font-medium text-blue-500 hover:text-blue-400">
+              <Link to="/forgot-password" className="hd-link">
                 Forgot your password?
               </Link>
             </div>
-          </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading} className="hd-btn w-full">
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
-          </div>
 
-          <div className="mt-4">
             <button
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-gray-700 text-sm font-medium rounded-md text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="hd-btn hd-btn-secondary w-full"
             >
-              <FcGoogle className="w-5 h-5 mr-2" />
+              <FcGoogle className="w-5 h-5" aria-hidden="true" />
               Sign in with Google
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

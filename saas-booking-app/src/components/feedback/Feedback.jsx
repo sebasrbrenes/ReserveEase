@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
+import { Underline } from '../ui/Doodles';
 import { db } from '../../firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
 
@@ -41,50 +42,58 @@ const Feedback = ({ isOpen, onClose }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50"
           onClick={(e) => e.target === e.currentTarget && onClose()}
         >
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-md p-6 bg-gray-800 rounded-lg shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-title"
+            className="hd-card relative w-full max-w-md p-5 sm:p-6 font-sans text-ink"
           >
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              aria-label="Close"
+              className="absolute top-3 right-3 p-1 rounded-lg text-ink-soft hover:text-ink hover:bg-paper-deep focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
             >
               <FiX size={24} />
             </button>
 
-            <h2 className="text-2xl font-bold text-white mb-4">Send Feedback</h2>
+            <h2 id="feedback-title" className="relative inline-block mb-6 pr-8">
+              <span className="hd-title text-4xl">Send Feedback</span>
+              <Underline className="absolute -bottom-2 left-0 w-full h-3 text-sun" />
+            </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="feedback-text" className="hd-label">
                   Your Feedback
                 </label>
                 <textarea
+                  id="feedback-text"
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="hd-input focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
                   rows="4"
                   placeholder="Tell us what you think..."
                 />
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-wrap justify-end gap-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition duration-200"
+                  className="hd-btn hd-btn-secondary focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                  className="hd-btn focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
                 >
                   {isSubmitting ? 'Sending...' : 'Send Feedback'}
                 </button>
