@@ -39,7 +39,7 @@ const FAQ = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-100 mb-4">Frequently Asked Questions</h2>
-          <p className="text-xl text-gray-300">Have questions? We're here to help.</p>
+          <p className="text-xl text-gray-300">Have questions? We&apos;re here to help.</p>
         </div>
         
         <div className="max-w-3xl mx-auto">

@@ -58,10 +58,10 @@ npm run dev
 | Comando | Dónde |
 | --- | --- |
 | `npm run build` | app y landing |
-| `npm run lint` | app y landing (todavía con errores conocidos) |
+| `npm run lint` | app y landing |
 | `node --check <archivo>` | backend (sintaxis) |
 
-La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobaciones en cada push y PR. El lint se informa pero aún no bloquea, hasta que se corrijan los errores existentes.
+La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobaciones en cada push a `main` y en cada PR. Un error de lint hace fallar la CI.
 
 ## Despliegue
 

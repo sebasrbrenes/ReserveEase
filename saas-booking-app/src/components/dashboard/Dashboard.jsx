@@ -6,23 +6,17 @@ import { Dialog } from '@headlessui/react';
 import dayjs from 'dayjs';
 import { 
   FiCalendar, 
-  FiClock, 
   FiLogOut, 
   FiUsers, 
   FiDollarSign,
   FiSettings,
-  FiPlusCircle,
-  FiChevronLeft,
-  FiChevronRight,
-  FiX,
   FiEdit2,
   FiTrash2,
   FiPlus,
   FiMessageSquare
 } from 'react-icons/fi';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
-import { appointmentsService } from '../../services/appointments';
 import { toast } from 'react-hot-toast';
 import AppointmentModal from '../appointments/AppointmentModal';
 import AppointmentsView from '../appointments/AppointmentsView';
@@ -35,7 +29,6 @@ import {
   collection, 
   query, 
   where, 
-  getDocs,
   orderBy,
   onSnapshot,
   doc,
@@ -43,21 +36,17 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import { sendAppointmentConfirmation } from '../../services/emailService';
 
 const Dashboard = () => {
   const [user] = useAuthState(auth);
-  const navigate = useNavigate();
   const { settings } = useSettings();
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [showNewAppointment, setShowNewAppointment] = useState(false);
   const [showAllAppointments, setShowAllAppointments] = useState(false);
-  const [showDayView, setShowDayView] = useState(false);
   const [appointmentToEdit, setAppointmentToEdit] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState(null);
   const [appointments, setAppointments] = useState([]);
-  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingStatus, setEditingStatus] = useState(null);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -97,17 +86,6 @@ const Dashboard = () => {
 
         // Store all appointments for the view all modal
         setAppointments(sortedAppointments);
-
-        // Filter future appointments with 5-minute grace period
-        const now = dayjs();
-        const upcomingAppointments = sortedAppointments.filter(apt => {
-          const aptDateTime = dayjs(`${apt.date} ${apt.time}`, 'YYYY-MM-DD HH:mm A');
-          // Add 5-minute grace period
-          return aptDateTime.add(-5, 'minute').isAfter(now);
-        });
-
-        console.log('Upcoming appointments:', upcomingAppointments);
-        setUpcomingAppointments(upcomingAppointments);
         setIsLoading(false);
       }, (error) => {
         console.error('Error loading appointments:', error);
@@ -162,85 +140,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleSaveAppointment = async (formData) => {
-    try {
-      if (!user) {
-        console.error('No user logged in');
-        toast.error('Please log in to create appointments');
-        return;
-      }
-
-      // Convert 12-hour time format to 24-hour format for storage
-      const [hours, minutes] = formData.time.match(/(\d+):(\d+)/).slice(1);
-      const period = formData.time.includes('PM') ? 'PM' : 'AM';
-      let hour24 = parseInt(hours);
-      
-      if (period === 'PM' && hour24 !== 12) {
-        hour24 += 12;
-      } else if (period === 'AM' && hour24 === 12) {
-        hour24 = 0;
-      }
-      
-      const time24 = `${hour24.toString().padStart(2, '0')}:${minutes}`;
-
-      console.log('Creating/updating appointment for user:', user.uid);
-      if (appointmentToEdit) {
-        await appointmentsService.update(appointmentToEdit.id, {
-          clientName: formData.clientName,
-          email: formData.email,
-          phone: formData.phone,
-          date: formData.date,
-          time: time24,
-          service: formData.service,
-          staffMember: formData.staffMember || 'No preference',
-          notes: formData.notes,
-          createdBy: user.displayName || user.email,
-          creatorId: user.uid
-        }, user.uid);
-
-        // Send confirmation email for updated appointment
-        await sendAppointmentConfirmation({
-          email: formData.email,
-          clientName: formData.clientName,
-          businessName: settings?.business?.name || 'Our Business',
-          date: dayjs(formData.date).format('MMMM D, YYYY'),
-          time: formData.time
-        });
-
-        toast.success('Appointment updated successfully');
-      } else {
-        await appointmentsService.create({
-          clientName: formData.clientName,
-          email: formData.email,
-          phone: formData.phone,
-          date: formData.date,
-          time: time24,
-          service: formData.service,
-          staffMember: formData.staffMember || 'No preference',
-          notes: formData.notes,
-          status: "Pending",
-          createdBy: user.displayName || user.email,
-          creatorId: user.uid
-        }, user.uid);
-
-        // Send confirmation email for new appointment
-        await sendAppointmentConfirmation({
-          email: formData.email,
-          clientName: formData.clientName,
-          businessName: settings?.business?.name || 'Our Business',
-          date: dayjs(formData.date).format('MMMM D, YYYY'),
-          time: formData.time
-        });
-
-        toast.success('Appointment created successfully');
-      }
-      setShowNewAppointment(false);
-      setAppointmentToEdit(null);
-    } catch (error) {
-      console.error('Error saving appointment:', error);
-      toast.error('Failed to save appointment');
-    }
-  };
 
   const handleStatusChange = async (appointmentId, newStatus) => {
     setEditingStatus(appointmentId);
@@ -345,7 +244,7 @@ const Dashboard = () => {
         icon: FiDollarSign
       }
     ];
-  }, [appointments, settings?.business?.staff, settings?.business?.services]);
+  }, [appointments, activeStaff.length, settings?.business?.staff, settings?.business?.services]);
 
   const formatTime = (time) => {
     return dayjs(`2000-01-01 ${time}`, 'YYYY-MM-DD HH:mm A').format('h:mm A');
@@ -361,11 +260,6 @@ const Dashboard = () => {
     return statusOptions.find(option => option.value === status)?.label || status;
   };
 
-  const getServiceName = (serviceId) => {
-    if (!serviceId) return 'Unknown Service';
-    const service = settings?.business?.services?.find(s => s.name === serviceId);
-    return service?.name || serviceId;
-  };
 
   const getStaffMemberName = (staffId) => {
     if (!staffId || staffId === 'No preference') return 'No preference';
@@ -373,23 +267,7 @@ const Dashboard = () => {
     return staff?.name || staffId;
   };
 
-  const sortAppointments = (appointments) => {
-    return appointments.sort((a, b) => {
-      // Create full datetime strings for comparison
-      const dateTimeA = `${a.date} ${a.time}`;
-      const dateTimeB = `${b.date} ${b.time}`;
-      
-      // Parse into dayjs objects for accurate comparison
-      const momentA = dayjs(dateTimeA, 'YYYY-MM-DD HH:mm A');
-      const momentB = dayjs(dateTimeB, 'YYYY-MM-DD HH:mm A');
-      
-      return momentA.diff(momentB);
-    });
-  };
 
-  const filteredAppointments = useMemo(() => {
-    return showAllAppointments ? appointments : upcomingAppointments;
-  }, [showAllAppointments, appointments, upcomingAppointments]);
 
   return (
     <div className="min-h-screen bg-[#1a1f2b]">
@@ -580,10 +458,6 @@ const Dashboard = () => {
         <AppointmentModal
           isOpen={showNewAppointment}
           onClose={() => {
-            setShowNewAppointment(false);
-            setAppointmentToEdit(null);
-          }}
-          onSave={() => {
             setShowNewAppointment(false);
             setAppointmentToEdit(null);
           }}

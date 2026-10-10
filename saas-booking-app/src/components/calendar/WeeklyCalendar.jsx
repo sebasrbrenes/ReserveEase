@@ -1,4 +1,3 @@
-import React from 'react';
 import dayjs from 'dayjs';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
@@ -50,7 +49,7 @@ const WeeklyCalendar = ({ selectedDate, onDateSelect, appointments }) => {
       </div>
 
       <div className="grid grid-cols-7 gap-1 min-w-[420px] sm:min-w-0">
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
           <div key={day} className="text-center text-xs text-gray-400 mb-2">
             {day}
           </div>

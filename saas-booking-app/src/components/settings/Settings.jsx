@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
-import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2, FiX, FiSave, FiLink, FiCopy } from 'react-icons/fi';
-import { motion, AnimatePresence } from 'framer-motion';
+import { FiArrowLeft, FiEdit2, FiTrash2, FiLink, FiCopy } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { auth } from '../../firebase/config';
 
@@ -35,7 +34,7 @@ const Settings = () => {
   };
 
   // UI Settings State
-  const [uiForm, setUIForm] = useState({
+  const [uiForm] = useState({
     language: settings?.ui?.language || 'en',
     notifications: settings?.ui?.notifications ?? true,
   });
@@ -207,26 +206,6 @@ const Settings = () => {
     }
   };
 
-  const handleUpdateStaffServices = async (staffIndex, serviceIds) => {
-    try {
-      const updatedStaff = [...staff];
-      updatedStaff[staffIndex] = {
-        ...updatedStaff[staffIndex],
-        availableServices: serviceIds
-      };
-      setStaff(updatedStaff);
-      await updateSettings({
-        business: {
-          ...settings.business,
-          staff: updatedStaff
-        }
-      });
-      toast.success('Staff services updated successfully');
-    } catch (error) {
-      console.error('Error updating staff services:', error);
-      toast.error('Failed to update staff services');
-    }
-  };
 
   const handleToggleBusinessHours = async (day) => {
     try {
@@ -305,20 +284,6 @@ const Settings = () => {
     }
   };
 
-  const handleBusinessHoursChange = (day, field, value) => {
-    const newBusinessHours = {
-      ...businessHours,
-      [day.toLowerCase()]: {
-        ...businessHours[day.toLowerCase()],
-        [field]: value,
-      },
-    };
-    setBusinessHours(newBusinessHours);
-    handleSaveSettings({
-      ...settings,
-      businessHours: newBusinessHours
-    });
-  };
 
   const handleUpdateService = async () => {
     try {
@@ -411,38 +376,7 @@ const Settings = () => {
     }
   };
 
-  const handleStaffServiceChange = (staffId, serviceId, isChecked) => {
-    const updatedStaff = staff.map(s => {
-      if (s.id === staffId) {
-        const availableServices = isChecked 
-          ? [...s.availableServices, serviceId]
-          : s.availableServices.filter(id => id !== serviceId);
-        return { ...s, availableServices };
-      }
-      return s;
-    });
-    setStaff(updatedStaff);
-    handleSaveSettings();
-  };
 
-  const handleSaveBusinessInfo = async (e) => {
-    e.preventDefault();
-    try {
-      await updateSettings({
-        business: {
-          ...settings.business,
-          name: businessForm.name,
-          email: businessForm.email,
-          phone: businessForm.phone,
-          address: businessForm.address
-        }
-      });
-      toast.success('Business information updated successfully');
-    } catch (error) {
-      console.error('Error saving business info:', error);
-      toast.error('Failed to update business information');
-    }
-  };
 
   return (
     <div className="min-h-screen bg-dark text-white p-6">
@@ -591,7 +525,7 @@ const Settings = () => {
                       type="checkbox"
                       className="form-checkbox h-5 w-5 text-primary rounded border-gray-300 bg-white focus:ring-primary"
                       checked={businessHours[day.toLowerCase()]?.enabled ?? true}
-                      onChange={(e) => handleToggleBusinessHours(day.toLowerCase())}
+                      onChange={() => handleToggleBusinessHours(day.toLowerCase())}
                     />
                     <span className="ml-2 capitalize">{day}</span>
                   </label>

@@ -29,7 +29,7 @@ export default function BookingSuccess() {
           Booking Successful!
         </h2>
         <p className="text-gray-300 mb-8">
-          Thank you for your booking. We'll review your
+          Thank you for your booking. We&apos;ll review your
           <br />
           appointment request and send you a confirmation
           <br />

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { FiSearch, FiX, FiEdit2, FiTrash2 } from "react-icons/fi";
 import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,7 +22,7 @@ const AppointmentsView = ({
     staff: "all",
     service: "all",
   });
-  const [sortConfig, setSortConfig] = useState({
+  const [sortConfig] = useState({
     key: "date",
     direction: "asc",
   });
@@ -44,13 +44,6 @@ const AppointmentsView = ({
     setFilters((prev) => ({
       ...prev,
       [filterType]: value,
-    }));
-  };
-
-  const handleSort = (key) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
   };
 

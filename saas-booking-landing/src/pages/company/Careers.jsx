@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiMapPin, FiClock, FiCode, FiTrendingUp, FiUsers, FiHeadphones } from 'react-icons/fi';
+import { FiCode, FiTrendingUp, FiUsers, FiHeadphones } from 'react-icons/fi';
 import BackButton from '../../components/common/BackButton';
 
 const Careers = () => {
@@ -45,7 +45,7 @@ const Careers = () => {
             <span className="gradient-text">Join Our Team</span>
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Help us transform the future of appointment booking. We're looking for passionate
+            Help us transform the future of appointment booking. We&apos;re looking for passionate
             individuals who want to make a difference.
           </p>
         </motion.div>
@@ -76,7 +76,7 @@ const Careers = () => {
         >
           <h2 className="text-2xl font-bold mb-4 text-white">Currently Not Recruiting</h2>
           <p className="text-gray-400 text-lg mb-6">
-            We're not actively hiring at the moment, but we're always interested in meeting talented people.
+            We&apos;re not actively hiring at the moment, but we&apos;re always interested in meeting talented people.
           </p>
           <div className="flex flex-col items-center gap-4">
             <p className="text-gray-300">
@@ -86,7 +86,7 @@ const Careers = () => {
               </a>
             </p>
             <p className="text-sm text-gray-400">
-              We'll keep your profile in our talent pool and contact you when relevant positions open up.
+              We&apos;ll keep your profile in our talent pool and contact you when relevant positions open up.
             </p>
           </div>
         </motion.div>
