@@ -24,13 +24,13 @@ const Login = () => {
       
       if (!user.emailVerified) {
         toast.error('Please verify your email before logging in');
+        // Stay signed in so the verification screen can resend the email.
         navigate('/verify-email', { 
           state: { 
             email: user.email,
             displayName: user.displayName 
           } 
         });
-        await auth.signOut();
         return;
       }
 

@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// Client access to Firestore (master document, section 14).
+// Bookings, slot locks, businesses, public projections and the notification
+// outbox are written only by the API with the Admin SDK, which these rules do
+// not apply to. The browser keeps access to the owner's own profile and
+// settings, and may leave feedback.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read, create, update: if isSelf(uid);
+
+      match /settings/{docId} {
+        allow read, create, update: if isSelf(uid);
+      }
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['feedback', 'createdAt'])
+        && request.resource.data.feedback is string
+        && request.resource.data.feedback.size() <= 2000;
+    }
+
+    // Everything else is server-only. No rule above matches it, so it is denied.
+  }
+}

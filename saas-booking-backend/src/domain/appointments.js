@@ -180,7 +180,7 @@ export const transitionAppointment = (db, {
   });
 };
 
-export const listAppointments = async (db, { businessId, fromDate, toDate, limit = 200 }) => {
+export const listAppointments = async (db, { businessId, fromDate, toDate, limit = 1000 }) => {
   const snap = await db.collection(`businesses/${businessId}/appointments`)
     .where('localDate', '>=', fromDate)
     .where('localDate', '<=', toDate)

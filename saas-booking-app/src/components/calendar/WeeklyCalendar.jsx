@@ -2,13 +2,12 @@ import dayjs from 'dayjs';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 const WeeklyCalendar = ({ selectedDate, onDateSelect, appointments }) => {
-  const startOfWeek = selectedDate.startOf('week');
+  // Weeks start on Monday, matching the column headers (dayjs counts from Sunday).
+  const startOfWeek = selectedDate.subtract((selectedDate.day() + 6) % 7, 'day').startOf('day');
 
   const days = Array.from({ length: 7 }).map((_, index) => {
     const date = startOfWeek.add(index, 'day');
-    const dayAppointments = appointments?.filter(apt => 
-      dayjs(apt.date).format('YYYY-MM-DD') === date.format('YYYY-MM-DD')
-    ) || [];
+    const dayAppointments = appointments?.filter(apt => apt.localDate === date.format('YYYY-MM-DD')) || [];
 
     return {
       date,

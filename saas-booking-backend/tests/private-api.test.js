@@ -107,6 +107,17 @@ describe.skipIf(!hasEmulators)('private appointment API', () => {
     expect(res.body.data[0]).toMatchObject({ status: 'confirmed', startsAt: local('09:00'), client: { name: 'Cliente Privado' }, version: 1 });
   });
 
+  it('offers the moved appointment its own time when rescheduling', async () => {
+    const id = (await api('get', `biz-priv-a/appointments?from=${date}&to=${date}`, tokens.a)).body.data[0].id;
+    const query = `serviceId=svc-60&staffId=ana&date=${date}`;
+    const plain = await api('get', `biz-priv-a/availability?${query}`, tokens.a);
+    const excluding = await api('get', `biz-priv-a/availability?${query}&excludeAppointmentId=${id}`, tokens.a);
+    expect(plain.status).toBe(200);
+    expect(plain.body.data.slots.map((s) => s.startsAt)).not.toContain(local('09:00'));
+    expect(excluding.body.data.slots.map((s) => s.startsAt)).toContain(local('09:00'));
+    expect((await api('get', `biz-priv-a/availability?${query}`, tokens.b)).status).toBe(403);
+  });
+
   it('T11: rescheduling onto a taken slot leaves the original intact', async () => {
     const first = await book(local('11:00'));
     const second = await book(local('13:00'));

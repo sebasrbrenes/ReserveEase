@@ -7,6 +7,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 import Login from './components/auth/Login'
 import SignUp from './components/auth/SignUp'
 import ForgotPassword from './components/auth/ForgotPassword'
+import VerifyEmail from './components/auth/VerifyEmail'
 import Dashboard from './components/dashboard/Dashboard'
 import Settings from './components/settings/Settings'
 import Feedback from './components/feedback/Feedback'
@@ -49,8 +50,9 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/book/:providerId" element={<PublicBookingForm />} />
-              <Route path="/booking/success/:providerId" element={<BookingSuccess />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/book/:slug" element={<PublicBookingForm />} />
+              <Route path="/booking/success/:slug" element={<BookingSuccess />} />
               
               {/* Protected Routes */}
               <Route path="/" element={

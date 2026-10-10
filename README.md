@@ -8,8 +8,8 @@ Agenda de reservas para negocios de servicios (barberías, salones y profesional
 
 | Carpeta | Qué es | Stack |
 | --- | --- | --- |
-| `saas-booking-app/` | Panel del negocio y página pública de reservas (`/book/:providerId`) | React 18, Vite, Tailwind, Firebase Auth y Firestore |
-| `saas-booking-backend/` | API para correo, SMS y webhook de suscripciones | Node, Express, firebase-admin, SendGrid, Twilio |
+| `saas-booking-app/` | Panel del negocio y página pública de reservas (`/book/:slug`), ambos sobre la API v1 | React 18, Vite, Tailwind, Firebase Auth y Firestore |
+| `saas-booking-backend/` | API v1 de reservas, además de las rutas antiguas de correo, SMS y webhook de suscripciones | Node, Express, firebase-admin, SendGrid, Twilio |
 | `saas-booking-landing/` | Web promocional | React 18, Vite, Tailwind |
 | `Logos/` | Identidad visual | PNG y SVG |
 
@@ -42,8 +42,8 @@ npm run seed
 
 | Negocio | Usuario | Contraseña | Enlace público |
 | --- | --- | --- | --- |
-| Barbería Demo | `barberia@demo.test` | `demo1234` | `/book/demo-owner-barberia` |
-| Salón Demo | `salon@demo.test` | `demo1234` | `/book/demo-owner-salon` |
+| Barbería Demo | `barberia@demo.test` | `demo1234` | `/book/barberia-demo` |
+| Salón Demo | `salon@demo.test` | `demo1234` | `/book/salon-demo` |
 
 ### 2. Backend
 
@@ -63,7 +63,7 @@ cp .env.example .env.local   # VITE_USE_EMULATORS=true
 npm run dev                  # http://localhost:3000
 ```
 
-Sin `VITE_USE_EMULATORS=true`, la app usa la configuración web de Firebase de `src/firebase/config.js`. Esos valores son públicos por diseño; la protección real depende de las reglas de Firestore.
+Sin `VITE_USE_EMULATORS=true`, la app usa la configuración web de Firebase de `src/firebase/config.js`. Esos valores son públicos por diseño; la protección real depende de las reglas de Firestore (`firestore.rules`): el navegador solo lee y escribe el perfil y la configuración de su propia cuenta, y todo lo relacionado con reservas pasa por la API.
 
 Por defecto `NOTIFICATIONS_MODE=mock`: las rutas de correo y SMS responden sin contactar a SendGrid ni a Twilio. Para enviar mensajes reales hay que poner `NOTIFICATIONS_MODE=live` y las credenciales correspondientes. Esas rutas tienen además un límite de peticiones por IP.
 
@@ -98,6 +98,8 @@ Rutas privadas del panel: requieren `Authorization: Bearer <ID token de Firebase
 
 | Método y ruta | Estado |
 | --- | --- |
+| `POST /api/v1/me/business/sync` | Disponible: reconstruye el negocio v2 del usuario a partir de su configuración (servicios, personal, horario, zona horaria y moneda) y devuelve su enlace público. Lo publica cuando tiene nombre, un servicio, alguien que lo atienda y un día abierto. La app lo llama al cargar y al guardar la configuración |
+| `GET /api/v1/businesses/:businessId/availability?serviceId=&staffId=&date=&excludeAppointmentId=` | Disponible: horarios libres para el panel; al reprogramar, la propia cita no bloquea su horario |
 | `GET /api/v1/businesses/:businessId/appointments?from=&to=` | Disponible: citas del negocio entre dos fechas locales |
 | `POST /api/v1/businesses/:businessId/appointments` | Disponible: reserva creada desde el panel, con las mismas reglas que la pública e `Idempotency-Key` |
 | `PATCH /api/v1/businesses/:businessId/appointments/:id` | Disponible: edita contacto o notas sin tocar estado, horario ni fecha de creación |
@@ -122,13 +124,11 @@ La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobacione
 | --- | --- | --- |
 | App | Vercel | `vercel.json` reescribe todas las rutas a la SPA; definir `VITE_BACKEND_URL` en las variables del proyecto |
 | Backend | Render | Variables de `saas-booking-backend/.env.example` |
+| Reglas de Firestore | Firebase | `npx firebase deploy --only firestore:rules --project <id-del-proyecto>` desde la raíz |
 | Landing | Firebase Hosting | `firebase deploy --only hosting` desde `saas-booking-landing/` tras `npm run build` |
 
 ## Limitaciones conocidas
 
-- La reserva pública se guarda desde el navegador sin transacción; dos personas pueden reservar el mismo horario.
-- La disponibilidad compara solo la hora de inicio, no la duración del servicio.
-- No hay reglas de Firestore versionadas ni pruebas automáticas.
-- Los estados de cita (`Pending`, `Canceled`, `Cancelled`, `Confirmed`) no son consistentes entre pantallas.
-- La ruta `/verify-email` a la que redirigen registro y login no existe.
+- Los correos de confirmación quedan en la cola `notificationJobs`, pero todavía no hay un proceso que los envíe (etapa E del plan). Mientras tanto no se envía ningún correo ni SMS al reservar.
+- Las citas guardadas con el modelo anterior (colección raíz `appointments`) no aparecen en el panel; no hay migración.
 - La landing promete funciones (IA, predicciones) que no están implementadas.

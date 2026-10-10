@@ -34,7 +34,8 @@ const toMs = (value) => (typeof value?.toMillis === 'function' ? value.toMillis(
 // Intervals in which a staff member is not bookable around a local date:
 // confirmed appointments (buffers included) and schedule exceptions.
 // The neighbouring days are included so buffers that cross midnight count.
-export const getBusyIntervals = async (db, businessId, staffId, localDates) => {
+// excludeAppointmentId leaves out the appointment being rescheduled.
+export const getBusyIntervals = async (db, businessId, staffId, localDates, excludeAppointmentId) => {
   const base = db.doc(`businesses/${businessId}`);
   const [appointments, exceptions] = await Promise.all([
     base.collection('appointments')
@@ -48,7 +49,7 @@ export const getBusyIntervals = async (db, businessId, staffId, localDates) => {
   const busy = [];
   appointments.forEach((doc) => {
     const a = doc.data();
-    if (a.status === 'confirmed') busy.push({ from: toMs(a.occupiedFrom), until: toMs(a.occupiedUntil) });
+    if (a.status === 'confirmed' && doc.id !== excludeAppointmentId) busy.push({ from: toMs(a.occupiedFrom), until: toMs(a.occupiedUntil) });
   });
   exceptions.forEach((doc) => {
     const e = doc.data();
