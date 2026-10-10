@@ -75,6 +75,23 @@ npm ci
 npm run dev
 ```
 
+## API v1
+
+El núcleo nuevo de reservas se construye en `saas-booking-backend/src/` con el modelo de datos v2 del documento maestro:
+
+| Carpeta | Contenido |
+| --- | --- |
+| `src/domain/` | Esquemas (zod) de negocio, servicio, personal y reserva |
+| `src/repositories/` | Acceso a Firestore |
+| `src/http/` | Rutas `/api/v1`, validación y formato único de errores |
+| `tests/` | Pruebas con Vitest |
+
+Errores con el formato `{ "error": { "code", "message", "fields" }, "requestId" }`.
+
+| Método y ruta | Estado |
+| --- | --- |
+| `GET /api/v1/public/businesses/:slug` | Disponible: perfil y catálogo públicos (`barberia-demo`, `salon-demo` en el seed) |
+
 ## Comprobaciones
 
 | Comando | Dónde |
@@ -82,6 +99,7 @@ npm run dev
 | `npm run build` | app y landing |
 | `npm run lint` | app y landing |
 | `node --check <archivo>` | backend (sintaxis) |
+| `npm run test:backend` | raíz: pruebas del backend con el emulador de Firestore |
 
 La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobaciones en cada push a `main` y en cada PR. Un error de lint hace fallar la CI.
 

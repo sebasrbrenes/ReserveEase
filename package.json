@@ -4,7 +4,8 @@
   "description": "Local tooling for ReserveEase: Firebase emulators and demo data",
   "scripts": {
     "emulators": "firebase emulators:start --project demo-reserveease",
-    "seed": "npm --prefix saas-booking-backend run seed"
+    "seed": "npm --prefix saas-booking-backend run seed",
+    "test:backend": "firebase emulators:exec --only firestore --project demo-reserveease \"npm --prefix saas-booking-backend test\""
   },
   "devDependencies": {
     "firebase-tools": "^15.33.0"
