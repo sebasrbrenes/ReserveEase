@@ -94,6 +94,17 @@ Errores con el formato `{ "error": { "code", "message", "fields" }, "requestId" 
 | `GET /api/v1/public/businesses/:slug/availability?serviceId=&staffId=&date=YYYY-MM-DD` | Disponible: horarios libres según duración, buffers, antelación mínima, bloqueos y zona horaria del negocio. Solo devuelve horarios, nunca datos de otros clientes |
 | `POST /api/v1/public/businesses/:slug/bookings` | Disponible: crea una reserva confirmada de forma atómica. Requiere la cabecera `Idempotency-Key`; un reintento con la misma clave devuelve la misma reserva. Responde `409 SLOT_UNAVAILABLE` si el horario se acaba de ocupar |
 
+Rutas privadas del panel: requieren `Authorization: Bearer <ID token de Firebase>` de una cuenta con correo verificado que sea miembro del negocio (`businesses/{id}/members/{uid}`). Sin token: `401 UNAUTHENTICATED`; otro negocio: `403 FORBIDDEN`. Cada cambio envía `expectedVersion`; si la cita cambió entretanto responde `409 VERSION_CONFLICT`.
+
+| Método y ruta | Estado |
+| --- | --- |
+| `GET /api/v1/businesses/:businessId/appointments?from=&to=` | Disponible: citas del negocio entre dos fechas locales |
+| `POST /api/v1/businesses/:businessId/appointments` | Disponible: reserva creada desde el panel, con las mismas reglas que la pública e `Idempotency-Key` |
+| `PATCH /api/v1/businesses/:businessId/appointments/:id` | Disponible: edita contacto o notas sin tocar estado, horario ni fecha de creación |
+| `POST /api/v1/businesses/:businessId/appointments/:id/reschedule` | Disponible: mueve la cita (y opcionalmente cambia de profesional) en una sola operación; si el horario nuevo está ocupado la original queda intacta |
+| `POST /api/v1/businesses/:businessId/appointments/:id/cancel` | Disponible: cancela, libera el horario y detiene los avisos pendientes; repetirla es seguro |
+| `POST /api/v1/businesses/:businessId/appointments/:id/transition` | Disponible: marca `completed` (desde la hora de inicio) o `no_show` (15 minutos después) |
+
 ## Comprobaciones
 
 | Comando | Dónde |
@@ -101,7 +112,7 @@ Errores con el formato `{ "error": { "code", "message", "fields" }, "requestId" 
 | `npm run build` | app y landing |
 | `npm run lint` | app y landing |
 | `node --check <archivo>` | backend (sintaxis) |
-| `npm run test:backend` | raíz: pruebas del backend con el emulador de Firestore |
+| `npm run test:backend` | raíz: pruebas del backend con los emuladores de Firestore y Auth |
 
 La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobaciones en cada push a `main` y en cada PR. Un error de lint hace fallar la CI.
 
