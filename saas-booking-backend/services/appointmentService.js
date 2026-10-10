@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import sgMail from '@sendgrid/mail';
 
 dotenv.config();
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+if (process.env.SENDGRID_API_KEY) sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Funtion to build the HTML content of the email by using placeholders
 const buildHtmlContent = (data) => {
