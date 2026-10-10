@@ -91,6 +91,7 @@ Errores con el formato `{ "error": { "code", "message", "fields" }, "requestId" 
 | Método y ruta | Estado |
 | --- | --- |
 | `GET /api/v1/public/businesses/:slug` | Disponible: perfil y catálogo públicos (`barberia-demo`, `salon-demo` en el seed) |
+| `GET /api/v1/public/businesses/:slug/availability?serviceId=&staffId=&date=YYYY-MM-DD` | Disponible: horarios libres según duración, buffers, antelación mínima, bloqueos y zona horaria del negocio. Solo devuelve horarios, nunca datos de otros clientes |
 
 ## Comprobaciones
 
