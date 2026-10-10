@@ -9,6 +9,7 @@ const LABELS = {
   accepted: { text: 'Email sent', className: 'text-green-500' },
   delivered: { text: 'Email delivered', className: 'text-green-500' },
   failed: { text: 'Email failed', className: 'text-red-400' },
+  disabled: { text: 'Client emails off', className: 'text-gray-500' },
 };
 
 const TEMPLATE = {

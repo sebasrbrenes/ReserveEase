@@ -24,6 +24,7 @@ import WeeklyCalendar from '../calendar/WeeklyCalendar';
 import Feedback from '../feedback/Feedback';
 import HelpButton from '../common/HelpButton';
 import './select.css';
+import logo from '../../assets/images/ReserveEaseLogoNObg.png';
 import {
   cancelAppointment, errorMessage, listAppointments, retryNotifications, transitionAppointment,
 } from '../../services/api';
@@ -186,7 +187,7 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
           <div>
-            <img src={"/src/assets/images/ReserveEaseLogoNObg.png"} alt="ReserveEase Logo" className="w-16 h-16 inline-block rotate-6" />
+            <img src={logo} alt="ReserveEase logo" className="w-16 h-16 inline-block rotate-6" />
             <motion.div 
               className="text-2xl font-bold gradient-text text-white inline-block align-middle ml-2 transition duration-300 ease-in-out"
               whileHover={{ scale: 1.05 }}

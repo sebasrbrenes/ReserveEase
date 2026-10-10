@@ -173,6 +173,20 @@ describe.skipIf(!hasEmulator)('notification worker', () => {
     expect(ours.sort()).toEqual(ids.map((id) => `${id}_v1_confirmation_email`).sort());
   });
 
+  it('T29: with client emails turned off nothing is sent and the appointment says so', async () => {
+    await db.doc(`businesses/${BIZ}`).update({ clientEmails: false });
+    try {
+      const id = await book(at('18:00'));
+      const adapter = createMockAdapter();
+      await run(adapter);
+      expect(adapter.sent.some((m) => m.idempotencyKey.startsWith(id))).toBe(false);
+      expect((await job(`${id}_v1_confirmation_email`)).status).toBe('disabled');
+      expect((await apt(id)).notification.status).toBe('disabled');
+    } finally {
+      await db.doc(`businesses/${BIZ}`).update({ clientEmails: true });
+    }
+  });
+
   it('renders every template with absolute dates', () => {
     const appointment = {
       id: 'apt', client: { name: 'Luis', email: 'l@example.com' }, businessTimezone: TZ,

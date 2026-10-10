@@ -60,3 +60,27 @@ test('the settings page shows the public booking link', async ({ page }) => {
   await page.goto('/settings');
   await expect(page.locator('input[readonly]').first()).toHaveValue(/\/book\/salon-demo$/);
 });
+
+test('T22: each date in the weekly calendar sits under its own weekday', async ({ page }) => {
+  await login(page, 'salon@demo.test');
+  const headers = await page.locator('.grid-cols-7 > div:not(.cursor-pointer)').allTextContents();
+  expect(headers).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+  const days = page.locator('.grid-cols-7 > div.cursor-pointer');
+  await expect(days).toHaveCount(7);
+  const today = new Date();
+  const column = (today.getDay() + 6) % 7; // Monday = 0
+  await expect(days.nth(column)).toHaveText(String(today.getDate()));
+});
+
+test('T29: the client email preference is saved and survives a reload', async ({ page }) => {
+  await login(page, 'salon@demo.test');
+  await page.goto('/settings');
+  const toggle = page.getByRole('switch', { name: 'Email clients about their appointments' });
+  await expect(toggle).toBeChecked();
+  await toggle.click({ force: true });
+  await expect(page.getByText('Client emails turned off')).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('switch', { name: 'Email clients about their appointments' })).not.toBeChecked();
+  await page.getByRole('switch', { name: 'Email clients about their appointments' }).click({ force: true });
+  await expect(page.getByText('Client emails turned on')).toBeVisible();
+});

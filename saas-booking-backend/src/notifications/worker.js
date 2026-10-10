@@ -93,6 +93,13 @@ const processJob = async (db, ref, { adapter, nowMs, workerId }) => {
     return 'skipped';
   }
 
+  // The business turned client emails off (T29): nothing is sent, and the
+  // dashboard says so instead of showing a pending email.
+  if (bizSnap.data()?.clientEmails === false) {
+    await finish(db, ref, { workerId, job, outcome: { status: 'disabled', lastErrorCode: null } });
+    return 'disabled';
+  }
+
   let outcome;
   try {
     const message = renderEmail(job.template, { appointment: apt, businessName: bizSnap.data()?.name ?? '' });
