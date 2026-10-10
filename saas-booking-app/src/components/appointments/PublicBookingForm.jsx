@@ -1,361 +1,107 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { addDoc, collection, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase/config';
 import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-import dayjs from 'dayjs';
-import { sendAppointmentConfirmation } from '../../services/emailService';
-import { sendAppointmentReminder } from '../../services/smsService';
-import { sendBusinessNotification } from '../../services/appointmentService';
-import { getUserData } from '../../services/userService';
+import { createPublicBooking, errorMessage, getPublicAvailability, getPublicBusiness } from '../../services/api';
+import { COUNTRY_CODES, toE164 } from '../../utils/countryCodes';
+import { formatMoney, formatTime, fromLocalDateString, toLocalDateString, todayIn } from '../../utils/datetime';
+
+// Shown with the form; bump it when the privacy notice text changes.
+const PRIVACY_NOTICE_VERSION = '2026-10';
+
+const inputClass = 'mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2';
 
 export default function PublicBookingForm() {
   const navigate = useNavigate();
-  const { providerId } = useParams();
+  const { slug } = useParams();
   const [loading, setLoading] = useState(true);
-  const [businessData, setBusinessData] = useState(null);
-  const [existingAppointments, setExistingAppointments] = useState([]);
-  const [formData, setFormData] = useState({
-    staffMember: '',
-    service: '',
-    date: new Date(),
-    time: '',
-    clientName: '',
-    email: '',
-    phone: '',
-    notes: '',
-    status: 'Pending'
-  });
-  const [countryCode, setCountryCode] = useState('+1'); // Default to US/Canada
+  const [business, setBusiness] = useState(null);
+  const [form, setForm] = useState({ serviceId: '', staffId: '', date: '', startsAt: '', clientName: '', email: '', phone: '', notes: '' });
+  const [countryCode, setCountryCode] = useState('+1');
+  const [availability, setAvailability] = useState({ loading: false, status: null, slots: [] });
+  const [refreshSlots, setRefreshSlots] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  // One key per booking attempt: a retry after a network error reuses it, so
+  // the server returns the same booking instead of creating a second one.
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
-  const countryCodes = [
-    { code: '+1', name: 'USA/Canada' },
-    { code: '+54', name: 'Argentina' },
-    { code: '+61', name: 'Australia' },
-    { code: '+43', name: 'Austria' },
-    { code: '+973', name: 'Bahrain' },
-    { code: '+880', name: 'Bangladesh' },
-    { code: '+32', name: 'Belgium' },
-    { code: '+591', name: 'Bolivia' },
-    { code: '+55', name: 'Brazil' },
-    { code: '+56', name: 'Chile' },
-    { code: '+86', name: 'China' },
-    { code: '+57', name: 'Colombia' },
-    { code: '+506', name: 'Costa Rica' },
-    { code: '+53', name: 'Cuba' },
-    { code: '+45', name: 'Denmark' },
-    { code: '+20', name: 'Egypt' },
-    { code: '+503', name: 'El Salvador' },
-    { code: '+33', name: 'France' },
-    { code: '+49', name: 'Germany' },
-    { code: '+30', name: 'Greece' },
-    { code: '+502', name: 'Guatemala' },
-    { code: '+509', name: 'Haiti' },
-    { code: '+504', name: 'Honduras' },
-    { code: '+852', name: 'Hong Kong' },
-    { code: '+91', name: 'India' },
-    { code: '+62', name: 'Indonesia' },
-    { code: '+353', name: 'Ireland' },
-    { code: '+972', name: 'Israel' },
-    { code: '+39', name: 'Italy' },
-    { code: '+81', name: 'Japan' },
-    { code: '+962', name: 'Jordan' },
-    { code: '+7', name: 'Kazakhstan/Russia' },
-    { code: '+254', name: 'Kenya' },
-    { code: '+965', name: 'Kuwait' },
-    { code: '+996', name: 'Kyrgyzstan' },
-    { code: '+856', name: 'Laos' },
-    { code: '+52', name: 'Mexico' },
-    { code: '+377', name: 'Monaco' },
-    { code: '+212', name: 'Morocco' },
-    { code: '+258', name: 'Mozambique' },
-    { code: '+31', name: 'Netherlands' },
-    { code: '+64', name: 'New Zealand' },
-    { code: '+505', name: 'Nicaragua' },
-    { code: '+234', name: 'Nigeria' },
-    { code: '+47', name: 'Norway' },
-    { code: '+968', name: 'Oman' },
-    { code: '+92', name: 'Pakistan' },
-    { code: '+507', name: 'Panama' },
-    { code: '+595', name: 'Paraguay' },
-    { code: '+51', name: 'Peru' },
-    { code: '+63', name: 'Philippines' },
-    { code: '+48', name: 'Poland' },
-    { code: '+351', name: 'Portugal' },
-    { code: '+974', name: 'Qatar' },
-    { code: '+40', name: 'Romania' },
-    { code: '+966', name: 'Saudi Arabia' },
-    { code: '+221', name: 'Senegal' },
-    { code: '+65', name: 'Singapore' },
-    { code: '+27', name: 'South Africa' },
-    { code: '+82', name: 'South Korea' },
-    { code: '+34', name: 'Spain' },
-    { code: '+94', name: 'Sri Lanka' },
-    { code: '+46', name: 'Sweden' },
-    { code: '+41', name: 'Switzerland' },
-    { code: '+886', name: 'Taiwan' },
-    { code: '+66', name: 'Thailand' },
-    { code: '+90', name: 'Turkey' },
-    { code: '+971', name: 'UAE' },
-    { code: '+44', name: 'UK' },
-    { code: '+598', name: 'Uruguay' },
-    { code: '+998', name: 'Uzbekistan' },
-    { code: '+58', name: 'Venezuela' },
-    { code: '+84', name: 'Vietnam' }
-];
-
-
-
-  // Fetch business settings
   useEffect(() => {
-    const fetchBusinessData = async () => {
-      try {
-        // Get business settings
-        const settingsRef = doc(db, 'users', providerId, 'settings', 'business');
-        const settingsDoc = await getDoc(settingsRef);
-        const businessSettings = settingsDoc.data();
-        
-        // Get user data which contains the email
-        const userData = await getUserData(providerId);
-        console.log('User data with email:', userData);
-        
-        if (settingsDoc.exists()) {
-          // Combine user data with business settings
-          const combinedData = {
-            ...businessSettings,
-            email: userData?.email, // Email from user document
-            userId: providerId
-          };
-          console.log('Combined business data:', combinedData);
-          setBusinessData(combinedData);
-        } else {
-          toast.error('Business not found');
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        toast.error('Error loading business');
-      } finally {
-        setLoading(false);
-      }
-    };
+    let cancelled = false;
+    getPublicBusiness(slug)
+      .then((data) => {
+        if (cancelled) return;
+        setBusiness(data);
+        setForm((prev) => ({ ...prev, date: todayIn(data.timezone) }));
+      })
+      .catch((error) => {
+        if (!cancelled && error.status !== 404) toast.error(errorMessage(error));
+      })
+      .finally(() => !cancelled && setLoading(false));
+    return () => { cancelled = true; };
+  }, [slug]);
 
-    fetchBusinessData();
-  }, [providerId]);
+  const availableStaff = useMemo(
+    () => business?.staff.filter((s) => s.serviceIds.includes(form.serviceId)) ?? [],
+    [business, form.serviceId]
+  );
 
-  // Fetch existing appointments for the selected date
   useEffect(() => {
-    const fetchExistingAppointments = async () => {
-      if (!formData.date || !providerId) return;
-      
-      const selectedDate = dayjs(formData.date).format('YYYY-MM-DD');
-      const appointmentsRef = collection(db, 'appointments');
-      const q = query(
-        appointmentsRef,
-        where('userId', '==', providerId),
-        where('date', '==', selectedDate)
-      );
-
-      try {
-        const querySnapshot = await getDocs(q);
-        const appointments = querySnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .filter(apt => apt.status !== 'Cancelled');
-        console.log('Existing appointments for date:', appointments);
-        setExistingAppointments(appointments);
-      } catch (error) {
-        console.error('Error fetching existing appointments:', error);
-        toast.error('Error checking appointment availability');
-      }
-    };
-
-    fetchExistingAppointments();
-  }, [formData.date, providerId]);
-
-  // Filter staff members based on selected service
-  const availableStaff = useMemo(() => {
-    if (!businessData?.business?.staff || !formData.service) return [];
-    
-    const selectedService = businessData.business.services.find(s => s.name === formData.service);
-    if (!selectedService) return [];
-
-    return businessData.business.staff.filter(staff => 
-      staff.active !== false && staff.availableServices?.includes(selectedService.id)
-    );
-  }, [businessData?.business?.staff, businessData?.business?.services, formData.service]);
-
-  // Generate time slots based on business hours
-  const timeSlots = useMemo(() => {
-    if (!businessData?.businessHours) return [];
-
-    const slots = [];
-    const selectedDay = dayjs(formData.date).format('dddd').toLowerCase();
-    const dayHours = businessData.businessHours[selectedDay];
-
-    console.log('Selected day:', selectedDay);
-    console.log('Day hours:', dayHours);
-
-    if (dayHours?.enabled) {
-      const interval = parseInt(businessData.business?.timeInterval) || 30;
-      
-      // Convert 12-hour format to 24-hour
-      const convertTo24Hour = (timeStr) => {
-        const [time, period] = timeStr.split(' ');
-        let [hours, minutes] = time.split(':');
-        hours = parseInt(hours);
-        
-        if (period === 'PM' && hours !== 12) {
-          hours += 12;
-        } else if (period === 'AM' && hours === 12) {
-          hours = 0;
-        }
-        
-        return { hours, minutes: parseInt(minutes) };
-      };
-
-      // Check if a time slot is available
-      const isTimeSlotAvailable = (timeStr) => {
-        // If no staff is selected, consider the slot available
-        if (!formData.staffMember) return true;
-
-        return !existingAppointments.some(apt => 
-          apt.time === timeStr && 
-          apt.staffMember === formData.staffMember
-        );
-      };
-
-      const start = convertTo24Hour(dayHours.start);
-      const end = convertTo24Hour(dayHours.end);
-
-      let current = new Date(formData.date);
-      current.setHours(start.hours, start.minutes, 0);
-
-      const endTime = new Date(formData.date);
-      endTime.setHours(end.hours, end.minutes, 0);
-
-      // Don't show past times for today
-      const now = new Date();
-      if (dayjs(formData.date).isSame(dayjs(now), 'day')) {
-        // For current day, start time should be the later of business start time or current time
-        const currentMinute = now.getMinutes();
-        
-        // Round up current time to next interval
-        const roundedMinutes = Math.ceil(currentMinute / interval) * interval;
-        const adjustedTime = new Date(now);
-        adjustedTime.setMinutes(roundedMinutes);
-        adjustedTime.setSeconds(0);
-        adjustedTime.setMilliseconds(0);
-        
-        // Use the later time between business start and current time
-        current = new Date(Math.max(current.getTime(), adjustedTime.getTime()));
-      }
-
-      while (current < endTime) {
-        const timeStr = dayjs(current).format('h:mm A');
-        if (isTimeSlotAvailable(timeStr)) {
-          // For today, only add future times
-          if (!dayjs(formData.date).isSame(dayjs(now), 'day') || 
-              dayjs(current).isAfter(dayjs(now))) {
-            slots.push(timeStr);
-          }
-        }
-        current.setMinutes(current.getMinutes() + interval);
-      }
-
-      console.log('Generated available slots:', slots);
+    if (!form.serviceId || !form.staffId || !form.date) {
+      setAvailability({ loading: false, status: null, slots: [] });
+      return undefined;
     }
+    let cancelled = false;
+    setAvailability((prev) => ({ ...prev, loading: true }));
+    getPublicAvailability(slug, { serviceId: form.serviceId, staffId: form.staffId, date: form.date })
+      .then((data) => !cancelled && setAvailability({ loading: false, status: data.status, slots: data.slots }))
+      .catch((error) => {
+        if (cancelled) return;
+        setAvailability({ loading: false, status: null, slots: [] });
+        toast.error(errorMessage(error));
+      });
+    return () => { cancelled = true; };
+  }, [slug, form.serviceId, form.staffId, form.date, refreshSlots]);
 
-    return slots;
-  }, [businessData?.businessHours, businessData?.business?.timeInterval, formData.date, formData.staffMember, existingAppointments]);
+  const update = (changes) => {
+    setForm((prev) => ({ ...prev, ...changes }));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // For phone field, remove all non-numeric characters
-    if (name === 'phone') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value.replace(/[^0-9]/g, '')
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    if (name === 'serviceId') update({ serviceId: value, staffId: '', startsAt: '' });
+    else if (name === 'staffId') update({ staffId: value, startsAt: '' });
+    else if (name === 'phone') update({ phone: value.replace(/[^0-9]/g, '') });
+    else update({ [name]: value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (submitting) return; // Prevent multiple submissions
+    if (submitting || !form.startsAt) return;
     setSubmitting(true);
-
-    // Format the phone number with country code
-    const fullPhoneNumber = formData.phone ? `${countryCode}${formData.phone.replace(/[^0-9]/g, '')}` : '';
-    console.log('Full phone number:', fullPhoneNumber);
     try {
-      const appointment = {
-        ...formData,
-        userId: providerId,
-        date: dayjs(formData.date).format('YYYY-MM-DD'),
-        phone: fullPhoneNumber,
-        createdAt: dayjs().toISOString()
-      };
-
-      await addDoc(collection(db, 'appointments'), appointment);
-
-      // Send confirmation email
-      await sendAppointmentConfirmation({
-        to_name: formData.clientName,
-        email: formData.email,
-        business_name: businessData?.business?.name || '',
-        appointment_date: dayjs(formData.date).format('YYYY-MM-DD'),
-        appointment_time: formData.time
+      const booking = await createPublicBooking(slug, {
+        serviceId: form.serviceId,
+        staffId: form.staffId,
+        startsAt: form.startsAt,
+        client: { name: form.clientName.trim(), email: form.email.trim(), phoneE164: toE164(countryCode, form.phone) },
+        notes: form.notes,
+        privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
+        smsConsent: false,
+      }, idempotencyKey);
+      const service = business.services.find((s) => s.id === form.serviceId);
+      const staff = business.staff.find((s) => s.id === form.staffId);
+      navigate(`/booking/success/${slug}`, {
+        state: { booking, businessName: business.name, serviceName: service?.name, staffName: staff?.displayName },
       });
-
-      // Send notification to business owner
-      console.log('Business Data for Email:', businessData); // Debug line
-      const businessEmail = businessData?.email || businessData?.business?.email || '';
-      console.log('Using business email:', businessEmail);
-      
-      if (!businessEmail) {
-        console.error('No business email found for notification');
-        toast.error('Could not send business notification - no email found');
-      }
-
-      await sendBusinessNotification({
-        business_name: businessData?.business?.name || '',
-        client_name: formData.clientName,
-        appointment_date: dayjs(formData.date).format('YYYY-MM-DD'),
-        appointment_time: formData.time,
-        business_email: businessEmail,
-        client_email: formData.email,
-        service_name: formData.service,
-        staff_member: formData.staffMember
-      });
-
-      // Send SMS reminder if phone is provided
-      if (formData.phone) {
-        await sendAppointmentReminder({
-          phone: fullPhoneNumber,
-          clientName: formData.clientName,
-          businessName: businessData.business.name,
-          date: dayjs(formData.date).format('YYYY-MM-DD'),  // Changed to ISO format
-          time: formData.time
-        });
-      }
-
-      toast.success('Appointment requested successfully');
-      navigate(`/booking/success/${providerId}`);
     } catch (error) {
-      console.error('Error:', error);
-      toast.error('Failed to book appointment');
+      // The server answered: this attempt is settled, the next one is new.
+      if (error.status) setIdempotencyKey(crypto.randomUUID());
+      if (['SLOT_UNAVAILABLE', 'SLOT_NOT_OFFERED'].includes(error.code)) {
+        update({ startsAt: '' });
+        setRefreshSlots((n) => n + 1);
+      }
+      toast.error(errorMessage(error));
     } finally {
       setSubmitting(false);
     }
@@ -370,170 +116,145 @@ export default function PublicBookingForm() {
     );
   }
 
-  if (!businessData) {
+  if (!business) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
-        <div className="text-gray-400 text-6xl mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </div>
-        <h2 className="text-3xl font-bold text-white mb-2">Oops! Business Not Found</h2>
+        <h2 className="text-3xl font-bold text-white mb-2">Booking page not found</h2>
         <p className="text-gray-400 text-center max-w-md">
-          Looks like this business has taken an unexpected vacation! 
-          Try checking the URL or contact support if you think this is a mistake.
+          This link is not active. Check the address or ask the business for its booking link.
         </p>
       </div>
     );
   }
 
+  const noSlotsMessage = {
+    closed: 'Closed on this day. Choose another date.',
+    outside_window: 'Bookings are not open for this date yet.',
+    open: 'No free times on this day. Choose another date or staff member.',
+  }[availability.status];
+
   return (
     <div className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
         <h2 className="text-2xl font-bold text-white mb-2 text-center">Book an Appointment</h2>
-        {businessData.business?.name && (
-          <p className="text-gray-400 text-center mb-6 text-lg">
-            with <span className="font-semibold text-blue-400 inline">{businessData.business.name}</span>
-          </p>
-        )}
+        <p className="text-gray-400 text-center mb-6 text-lg">
+          with <span className="font-semibold text-blue-400 inline">{business.name}</span>
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Service Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-300">Service *</label>
-            <select
-              name="service"
-              value={formData.service}
-              onChange={handleChange}
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2"
-              required
-            >
+            <label htmlFor="serviceId" className="block text-sm font-medium text-gray-300">Service *</label>
+            <select id="serviceId" name="serviceId" value={form.serviceId} onChange={handleChange} className={inputClass} required>
               <option value="">Select a service</option>
-              {businessData.business?.services?.map(service => (
-                <option key={service.id} value={service.name}>
-                  {service.name} - ${service.price}
+              {business.services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.name} · {service.durationMinutes} min · {formatMoney(service.priceMinor, service.currency)}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Staff Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-300">Staff Member *</label>
-            <select
-              name="staffMember"
-              value={formData.staffMember}
-              onChange={handleChange}
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2"
-              required
-            >
-              <option value="">Select staff member</option>
-              {availableStaff.map(staff => (
-                <option key={staff.id} value={staff.name}>
-                  {staff.name}
-                </option>
+            <label htmlFor="staffId" className="block text-sm font-medium text-gray-300">Staff Member *</label>
+            <select id="staffId" name="staffId" value={form.staffId} onChange={handleChange} className={inputClass} required disabled={!form.serviceId}>
+              <option value="">{form.serviceId ? 'Select staff member' : 'Select a service first'}</option>
+              {availableStaff.map((staff) => (
+                <option key={staff.id} value={staff.id}>{staff.displayName}</option>
               ))}
             </select>
           </div>
 
-          {/* Date & Time Selection */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300">Date *</label>
-              <DatePicker
-                selected={formData.date}
-                onChange={date => setFormData(prev => ({ ...prev, date }))}
-                minDate={new Date()}
-                className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2"
-                dateFormat="MMM d, yyyy"
-                wrapperClassName="w-full"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300">Time *</label>
-              <select
-                name="time"
-                value={formData.time}
-                onChange={handleChange}
-                className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2"
-                required
-              >
-                <option value="">Select time</option>
-                {timeSlots.map(time => (
-                  <option key={time} value={time}>{time}</option>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">Date *</label>
+            <DatePicker
+              selected={form.date ? fromLocalDateString(form.date) : null}
+              onChange={(date) => date && update({ date: toLocalDateString(date), startsAt: '' })}
+              minDate={fromLocalDateString(todayIn(business.timezone))}
+              className={inputClass}
+              dateFormat="MMM d, yyyy"
+              wrapperClassName="w-full"
+              required
+            />
+          </div>
+
+          <fieldset>
+            <legend className="block text-sm font-medium text-gray-300">
+              Time * <span className="text-gray-500 font-normal">({business.timezone.replace('_', ' ')})</span>
+            </legend>
+            {!form.staffId ? (
+              <p className="mt-2 text-sm text-gray-400">Choose a service and staff member to see free times.</p>
+            ) : availability.loading ? (
+              <p className="mt-2 text-sm text-gray-400">Looking for free times...</p>
+            ) : availability.slots.length === 0 ? (
+              <p className="mt-2 text-sm text-gray-400">{noSlotsMessage}</p>
+            ) : (
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {availability.slots.map((slot) => (
+                  <button
+                    type="button"
+                    key={slot.startsAt}
+                    onClick={() => update({ startsAt: slot.startsAt })}
+                    aria-pressed={form.startsAt === slot.startsAt}
+                    className={`px-2 py-2 rounded-md text-sm border ${form.startsAt === slot.startsAt
+                      ? 'bg-blue-600 border-blue-500 text-white'
+                      : 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600'}`}
+                  >
+                    {formatTime(slot.startsAt, business.timezone)}
+                  </button>
                 ))}
-              </select>
-            </div>
-          </div>
+              </div>
+            )}
+          </fieldset>
 
-          {/* Client Information */}
           <div>
-            <label className="block text-sm font-medium text-gray-300">Full Name *</label>
-            <input
-              type="text"
-              name="clientName"
-              value={formData.clientName}
-              onChange={handleChange}
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2"
-              required
-            />
+            <label htmlFor="clientName" className="block text-sm font-medium text-gray-300">Full Name *</label>
+            <input id="clientName" type="text" name="clientName" value={form.clientName} onChange={handleChange} className={inputClass} maxLength={100} required />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300">Email *</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2"
-              required
-            />
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email *</label>
+            <input id="email" type="email" name="email" value={form.email} onChange={handleChange} className={inputClass} maxLength={200} required />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300">Phone</label>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-300">Phone</label>
             <div className="mt-1 grid grid-cols-3 gap-2">
               <select
+                aria-label="Country code"
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
                 className="block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2"
               >
-                {countryCodes.map(country => (
-                  <option key={country.code} value={country.code}>
-                    {country.name} ({country.code})
-                  </option>
+                {COUNTRY_CODES.map((country) => (
+                  <option key={country.code} value={country.code}>{country.name} ({country.code})</option>
                 ))}
               </select>
               <input
+                id="phone"
                 type="tel"
                 name="phone"
-                value={formData.phone}
+                value={form.phone}
                 onChange={handleChange}
                 className="col-span-2 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2"
-                placeholder="123-456-7890"
+                placeholder="88887777"
+                maxLength={14}
               />
             </div>
-            <p className="mt-1 text-sm text-gray-400">Example: {countryCode} 123-456-7890</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300">Notes</label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows="3"
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2"
-            />
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-300">Notes</label>
+            <textarea id="notes" name="notes" value={form.notes} onChange={handleChange} rows="3" maxLength={500} className={inputClass} />
           </div>
+
+          <p className="text-xs text-gray-400">
+            {business.name} uses your name, email and phone only to manage this appointment and contact you about it.
+          </p>
 
           <button
             type="submit"
-            disabled={submitting}
-            className={`w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${submitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={submitting || !form.startsAt}
+            className={`w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${submitting || !form.startsAt ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {submitting ? 'Booking...' : 'Book Appointment'}
           </button>

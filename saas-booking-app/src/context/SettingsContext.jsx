@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { db, auth } from '../firebase/config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { syncMyBusiness } from '../services/api';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { toast } from 'react-hot-toast';
 
@@ -25,7 +26,9 @@ const defaultSettings = {
     services: [],
     staff: [],
     allowStaffPreference: true,
-    timeInterval: 30  // Time interval in minutes for appointment slots
+    timeInterval: 30,  // Time interval in minutes for appointment slots
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    currency: 'USD'
   },
   businessHours: DAYS_OF_WEEK.reduce((acc, day) => ({
     ...acc,
@@ -40,13 +43,31 @@ const defaultSettings = {
 export const SettingsProvider = ({ children }) => {
   const [user] = useAuthState(auth);
   const [settings, setSettings] = useState(defaultSettings);
+  // The business as the booking API sees it (id, public slug, publish status),
+  // rebuilt by the server from these settings after each load and save.
+  const [business, setBusiness] = useState({ loading: true, data: null, error: null });
+
+  const refreshBusiness = useCallback(async () => {
+    if (!auth.currentUser) return null;
+    try {
+      const data = await syncMyBusiness();
+      setBusiness({ loading: false, data, error: null });
+      return data;
+    } catch (error) {
+      console.error('Error syncing business:', error);
+      setBusiness((prev) => ({ loading: false, data: prev.data, error }));
+      return null;
+    }
+  }, []);
 
   useEffect(() => {
     const loadSettings = async () => {
       if (!user) {
         setSettings(defaultSettings);
+        setBusiness({ loading: false, data: null, error: null });
         return;
       }
+      setBusiness((prev) => ({ ...prev, loading: true }));
 
       try {
         const userSettingsRef = doc(db, 'users', user.uid, 'settings', 'business');
@@ -54,6 +75,15 @@ export const SettingsProvider = ({ children }) => {
 
         if (settingsDoc.exists()) {
           const data = settingsDoc.data();
+          // Accounts created before time zone and currency existed get the defaults once.
+          if (!data.business?.timezone || !data.business?.currency) {
+            data.business = {
+              ...data.business,
+              timezone: data.business?.timezone || defaultSettings.business.timezone,
+              currency: data.business?.currency || defaultSettings.business.currency,
+            };
+            await setDoc(userSettingsRef, { business: data.business }, { merge: true });
+          }
           // Ensure all required fields exist with defaults
           setSettings({
             ...defaultSettings,
@@ -75,14 +105,16 @@ export const SettingsProvider = ({ children }) => {
           await setDoc(userSettingsRef, defaultSettings);
           setSettings(defaultSettings);
         }
+        await refreshBusiness();
       } catch (error) {
         console.error('Error loading settings:', error);
         toast.error('Failed to load settings');
+        setBusiness((prev) => ({ ...prev, loading: false, error }));
       }
     };
 
     loadSettings();
-  }, [user]);
+  }, [user, refreshBusiness]);
 
   const updateSettings = async (newSettings) => {
     if (!user) return;
@@ -114,6 +146,7 @@ export const SettingsProvider = ({ children }) => {
       
       // Update local state
       setSettings(mergedSettings);
+      await refreshBusiness();
     } catch (error) {
       console.error('Error updating settings:', error);
       throw error; // Re-throw to handle in the component
@@ -121,7 +154,7 @@ export const SettingsProvider = ({ children }) => {
   };
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, business, refreshBusiness }}>
       {children}
     </SettingsContext.Provider>
   );

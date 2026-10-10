@@ -6,6 +6,7 @@ import { createBooking } from '../domain/booking.js';
 import {
   cancelAppointment, listAppointments, rescheduleAppointment, toApi, transitionAppointment, updateAppointmentDetails,
 } from '../domain/appointments.js';
+import { syncLegacyBusiness } from '../domain/legacySync.js';
 import { requireAuth, requireMember } from './auth.js';
 import { createRateLimiter } from '../../middleware/rateLimit.js';
 import {
@@ -54,6 +55,22 @@ const availabilityQuery = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').refine((d) => shiftLocalDate(d, 0) === d, 'Invalid date'),
 });
 
+// Slots of one service and staff member on a local date, for a business id.
+const availabilityFor = async (businessId, { serviceId, staffId, date }, excludeAppointmentId) => {
+  const { business, service, staff } = await getBookingContext(db, businessId, serviceId, staffId);
+  if (!business) throw new ApiError(404, 'BUSINESS_NOT_FOUND', 'Business not found');
+  if (!service) throw new ApiError(404, 'SERVICE_NOT_FOUND', 'Service not found');
+  if (!staff) throw new ApiError(404, 'STAFF_NOT_FOUND', 'Staff member not found');
+
+  const busy = await getBusyIntervals(db, business.id, staff.id, [
+    shiftLocalDate(date, -1), date, shiftLocalDate(date, 1),
+  ], excludeAppointmentId);
+  const { status, slots } = computeAvailability({
+    business, service, staff, localDate: date, busy, now: Date.now(),
+  });
+  return { timezone: business.timezone, date, serviceId, staffId, status, slots };
+};
+
 // Start times a staff member can take a service on a local date (section 13.2).
 // Returns only slots: never other clients' names, contacts or appointments.
 router.get(
@@ -64,24 +81,8 @@ router.get(
     try {
       const published = await getPublishedBusinessBySlug(db, req.validated.params.slug);
       if (!published) throw new ApiError(404, 'BUSINESS_NOT_FOUND', 'Business not found');
-
-      const { serviceId, staffId, date } = req.validated.query;
-      const { business, service, staff } = await getBookingContext(db, published.businessId, serviceId, staffId);
-      if (!business) throw new ApiError(404, 'BUSINESS_NOT_FOUND', 'Business not found');
-      if (!service) throw new ApiError(404, 'SERVICE_NOT_FOUND', 'Service not found');
-      if (!staff) throw new ApiError(404, 'STAFF_NOT_FOUND', 'Staff member not found');
-
-      const busy = await getBusyIntervals(db, business.id, staff.id, [
-        shiftLocalDate(date, -1), date, shiftLocalDate(date, 1),
-      ]);
-      const { status, slots } = computeAvailability({
-        business, service, staff, localDate: date, busy, now: Date.now(),
-      });
-
-      res.json({
-        data: { timezone: business.timezone, date, serviceId, staffId, status, slots },
-        requestId: req.requestId,
-      });
+      const data = await availabilityFor(published.businessId, req.validated.query);
+      res.json({ data, requestId: req.requestId });
     } catch (error) {
       return next(toApiError(error));
     }
@@ -152,6 +153,15 @@ priv.get('/appointments', validate(listQuery, 'query'), handle(async (req, res) 
   const { from, to } = req.validated.query;
   const appointments = await listAppointments(db, { businessId: req.member.businessId, fromDate: from, toDate: to });
   res.json({ data: appointments.map(toApi), requestId: req.requestId });
+}));
+
+// Same slots for the dashboard; when rescheduling, the appointment being
+// moved does not block its own time.
+const privateAvailabilityQuery = availabilityQuery.extend({ excludeAppointmentId: idSchema.optional() });
+priv.get('/availability', validate(privateAvailabilityQuery, 'query'), handle(async (req, res) => {
+  const { excludeAppointmentId, ...query } = req.validated.query;
+  const data = await availabilityFor(req.member.businessId, query, excludeAppointmentId);
+  res.json({ data, requestId: req.requestId });
 }));
 
 // Administrative booking: same rules, locks and idempotency as a public one.
@@ -229,5 +239,12 @@ priv.post('/appointments/:appointmentId/transition', validate(appointmentParams,
     });
     res.json({ data: toApi(apt), requestId: req.requestId });
   }));
+
+// The signed-in owner's business, rebuilt from the settings screen (see
+// domain/legacySync.js). Called by the app after loading or saving settings.
+router.post('/me/business/sync', requireAuth, handle(async (req, res) => {
+  const business = await syncLegacyBusiness(db, req.user.uid);
+  res.json({ data: business, requestId: req.requestId });
+}));
 
 export default router;

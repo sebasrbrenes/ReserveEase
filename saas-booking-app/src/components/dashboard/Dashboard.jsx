@@ -1,17 +1,16 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { auth } from '../../firebase/config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog } from '@headlessui/react';
 import dayjs from 'dayjs';
-import { 
-  FiCalendar, 
-  FiLogOut, 
-  FiUsers, 
+import {
+  FiCalendar,
+  FiLogOut,
+  FiUsers,
   FiDollarSign,
   FiSettings,
   FiEdit2,
-  FiTrash2,
+  FiXCircle,
   FiPlus,
   FiMessageSquare
 } from 'react-icons/fi';
@@ -25,249 +24,156 @@ import WeeklyCalendar from '../calendar/WeeklyCalendar';
 import Feedback from '../feedback/Feedback';
 import HelpButton from '../common/HelpButton';
 import './select.css';
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy,
-  onSnapshot,
-  doc,
-  deleteDoc,
-  updateDoc
-} from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import {
+  cancelAppointment, errorMessage, listAppointments, transitionAppointment,
+} from '../../services/api';
+import { STATUS_ACTIONS, statusClass, statusLabel } from '../appointments/status';
+import { formatLocalDate, formatMoney, formatTime, shiftDate, todayIn } from '../../utils/datetime';
+
+// Appointments loaded around today; the API is the only source.
+const PAST_DAYS = 60;
+const FUTURE_DAYS = 120;
+const REFRESH_MS = 60 * 1000;
 
 const Dashboard = () => {
-  const [user] = useAuthState(auth);
-  const { settings } = useSettings();
+  const { business } = useSettings();
+  const businessId = business.data?.businessId;
+  const timezone = business.data?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const currency = business.data?.currency || 'USD';
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [showNewAppointment, setShowNewAppointment] = useState(false);
   const [showAllAppointments, setShowAllAppointments] = useState(false);
   const [appointmentToEdit, setAppointmentToEdit] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [appointmentToDelete, setAppointmentToDelete] = useState(null);
+  const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingStatus, setEditingStatus] = useState(null);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
-  // Load appointments
-  useEffect(() => {
-    if (!user) {
-      console.log('No user logged in');
-      return;
-    }
-
-    console.log('Current user ID:', user.uid);
-    setIsLoading(true);
-
+  const loadAppointments = useCallback(async () => {
+    if (!businessId) return;
     try {
-      // Create query for real-time updates
-      const appointmentsQuery = query(
-        collection(db, 'appointments'),
-        where('userId', '==', user.uid),
-        orderBy('date', 'asc')  // Only order by date, we'll sort by time in memory
-      );
-
-      // Set up real-time listener
-      const unsubscribe = onSnapshot(appointmentsQuery, (snapshot) => {
-        console.log('Appointments updated in real-time');
-        const fetchedAppointments = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-
-        // Sort appointments by date and time in memory
-        const sortedAppointments = fetchedAppointments.sort((a, b) => {
-          const dateA = dayjs(`${a.date} ${a.time}`, 'YYYY-MM-DD HH:mm A');
-          const dateB = dayjs(`${b.date} ${b.time}`, 'YYYY-MM-DD HH:mm A');
-          return dateA.diff(dateB);
-        });
-
-        // Store all appointments for the view all modal
-        setAppointments(sortedAppointments);
-        setIsLoading(false);
-      }, (error) => {
-        console.error('Error loading appointments:', error);
-        toast.error('Failed to load appointments');
-        setIsLoading(false);
-      });
-
-      return () => unsubscribe();
+      const today = todayIn(timezone);
+      setAppointments(await listAppointments(businessId, shiftDate(today, -PAST_DAYS), shiftDate(today, FUTURE_DAYS)));
     } catch (error) {
-      console.error('Error setting up appointments listener:', error);
-      toast.error('Failed to set up appointments listener');
+      console.error('Error loading appointments:', error);
+      toast.error(errorMessage(error));
+    } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [businessId, timezone]);
 
+  // Load now, then refresh periodically and when the tab regains focus, so
+  // bookings made on the public page show up without reloading.
   useEffect(() => {
-    // Debug auth state
-    console.log('Auth state:', {
-      user: user ? {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        uidChars: user.uid.split('').map((char, i) => `${i}:${char}`).join(', ')
-      } : null,
-      isLoading: !user,
-      isAuthenticated: !!user
-    });
-  }, [user]);
+    if (!businessId) {
+      if (!business.loading) setIsLoading(false);
+      return undefined;
+    }
+    loadAppointments();
+    const timer = setInterval(loadAppointments, REFRESH_MS);
+    window.addEventListener('focus', loadAppointments);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', loadAppointments);
+    };
+  }, [businessId, business.loading, loadAppointments]);
 
   const handleEditAppointment = (appointment) => {
     setAppointmentToEdit(appointment);
     setShowNewAppointment(true);
   };
 
-  const handleDeleteClick = (appointment) => {
-    setAppointmentToDelete(appointment);
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!appointmentToDelete) return;
-
+  // Runs one change; a stale version means someone else changed it: reload.
+  const runChange = async (change, successMessage) => {
     try {
-      const appointmentRef = doc(db, 'appointments', appointmentToDelete.id);
-      await deleteDoc(appointmentRef);
-      toast.success('Appointment deleted successfully');
-      setShowDeleteConfirm(false);
-      setAppointmentToDelete(null);
+      await change();
+      toast.success(successMessage);
     } catch (error) {
-      console.error('Error deleting appointment:', error);
-      toast.error('Failed to delete appointment');
-    }
-  };
-
-
-  const handleStatusChange = async (appointmentId, newStatus) => {
-    setEditingStatus(appointmentId);
-    
-    try {
-      const appointmentRef = doc(db, 'appointments', appointmentId);
-      await updateDoc(appointmentRef, { status: newStatus });
-      toast.success('Status updated successfully');
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Failed to update status');
+      toast.error(errorMessage(error));
     } finally {
-      setEditingStatus(null);
+      await loadAppointments();
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Attended':
-        return 'bg-green-500/20 text-green-500';
-      case 'Canceled':
-        return 'bg-red-500/20 text-red-500';
-      default:
-        return 'bg-yellow-500/20 text-yellow-500';
-    }
+  const handleConfirmCancel = async () => {
+    const apt = appointmentToCancel;
+    if (!apt) return;
+    setAppointmentToCancel(null);
+    await runChange(
+      () => cancelAppointment(businessId, apt.id, { expectedVersion: apt.version }),
+      'Appointment cancelled. The time is free again.'
+    );
   };
 
-  const calendarAppointments = useMemo(() => {
-    if (!appointments?.length) return [];
+  const handleStatusChange = async (appointment, action) => {
+    setEditingStatus(null);
+    if (!action) return;
+    if (action === 'cancelled') {
+      setAppointmentToCancel(appointment);
+      return;
+    }
+    await runChange(
+      () => transitionAppointment(businessId, appointment.id, { expectedVersion: appointment.version, to: action }),
+      'Status updated'
+    );
+  };
 
-    const selectedDateTime = selectedDate ? dayjs(selectedDate).startOf('day') : dayjs().startOf('day');
-    return appointments.filter(apt => {
-      const aptDate = dayjs(apt.date);
-      return aptDate.isSame(selectedDateTime, 'day') || aptDate.isAfter(selectedDateTime, 'day');
-    });
-  }, [appointments, selectedDate]);
+  const selectedLocalDate = selectedDate.format('YYYY-MM-DD');
 
-  // Filter appointments for the current view
-  const currentViewAppointments = useMemo(() => {
-    if (!appointments?.length) return [];
+  const calendarAppointments = useMemo(
+    () => appointments.filter((apt) => apt.status !== 'cancelled'),
+    [appointments]
+  );
 
-    const selectedDateTime = selectedDate ? dayjs(selectedDate).startOf('day') : dayjs().startOf('day');
-    return appointments.filter(apt => {
-      const aptDate = dayjs(apt.date);
-      return aptDate.isSame(selectedDateTime, 'day');
-    });
-  }, [appointments, selectedDate]);
+  const currentViewAppointments = useMemo(
+    () => appointments.filter((apt) => apt.localDate === selectedLocalDate),
+    [appointments, selectedLocalDate]
+  );
 
-  const activeStaff = useMemo(() => {
-    return settings?.business?.staff?.filter(staff => staff.active !== false) || [];
-  }, [settings?.business?.staff]);
+  const staffList = business.data?.staff || [];
+  const activeStaff = staffList.filter((staff) => staff.active);
 
+  // Counts only appointments that are still happening or happened.
   const metrics = useMemo(() => {
-    const todayAppointments = appointments.filter(apt => 
-      dayjs(apt.date).format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
-    );
-
-    const yesterdayAppointments = appointments.filter(apt => 
-      dayjs(apt.date).format('YYYY-MM-DD') === dayjs().subtract(1, 'day').format('YYYY-MM-DD')
-    );
+    const today = todayIn(timezone);
+    const live = (apt) => apt.status === 'confirmed' || apt.status === 'completed';
+    const todayAppointments = appointments.filter((apt) => apt.localDate === today && live(apt));
+    const yesterdayAppointments = appointments.filter((apt) => apt.localDate === shiftDate(today, -1) && live(apt));
+    const completedToday = todayAppointments.filter((apt) => apt.status === 'completed');
+    const diff = todayAppointments.length - yesterdayAppointments.length;
 
     return [
       {
         id: 'todayAppointments',
-        title: 'Today\'s Appointments',
         value: todayAppointments.length,
-        subtext: todayAppointments.length === yesterdayAppointments.length
-          ? 'Same as yesterday'
-          : todayAppointments.length > yesterdayAppointments.length
-          ? `${todayAppointments.length - yesterdayAppointments.length} more than yesterday`
-          : `${Math.abs(todayAppointments.length - yesterdayAppointments.length)} less than yesterday`,
-        type: todayAppointments.length === yesterdayAppointments.length
-          ? 'neutral'
-          : todayAppointments.length > yesterdayAppointments.length
-          ? 'positive'
-          : 'negative',
+        title: "Today's appointments",
+        subtext: diff === 0 ? 'Same as yesterday' : diff > 0 ? `${diff} more than yesterday` : `${-diff} fewer than yesterday`,
+        type: diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative',
         icon: FiCalendar
       },
       {
         id: 'activeStaff',
-        title: 'Active Staff',
         value: activeStaff.length,
-        subtext: !settings?.business?.staff?.length 
+        title: 'Active staff',
+        subtext: !staffList.length
           ? 'No staff members'
-          : activeStaff.length === settings?.business?.staff?.length 
+          : activeStaff.length === staffList.length
           ? 'All staff active'
-          : `${settings?.business?.staff?.length - activeStaff.length} staff inactive`,
+          : `${staffList.length - activeStaff.length} staff inactive`,
         type: 'neutral',
         icon: FiUsers
       },
       {
-        id: 'todayRevenue',
-        title: 'Today\'s Revenue',
-        value: `$${todayAppointments.reduce((total, apt) => {
-          const service = settings?.business?.services?.find(s => s.name === apt.service);
-          return total + (service?.price || 0);
-        }, 0)}`,
-        subtext: todayAppointments.filter(apt => apt.status === 'Confirmed').length === 0 
-          ? 'No confirmed appointments'
-          : `${todayAppointments.filter(apt => apt.status === 'Confirmed').length} confirmed appointments`,
+        id: 'todayValue',
+        value: formatMoney(todayAppointments.reduce((total, apt) => total + (apt.serviceSnapshot?.priceMinor || 0), 0), currency),
+        title: "Today's booked value",
+        subtext: `${completedToday.length} of ${todayAppointments.length} completed`,
         type: 'neutral',
         icon: FiDollarSign
       }
     ];
-  }, [appointments, activeStaff.length, settings?.business?.staff, settings?.business?.services]);
-
-  const formatTime = (time) => {
-    return dayjs(`2000-01-01 ${time}`, 'YYYY-MM-DD HH:mm A').format('h:mm A');
-  };
-
-  const statusOptions = [
-    { value: 'Pending', label: 'Pending' },
-    { value: 'Attended', label: 'Attended' },
-    { value: 'Canceled', label: 'Canceled' }
-  ];
-
-  const getStatusLabel = (status) => {
-    return statusOptions.find(option => option.value === status)?.label || status;
-  };
-
-
-  const getStaffMemberName = (staffId) => {
-    if (!staffId || staffId === 'No preference') return 'No preference';
-    const staff = settings?.business?.staff?.find(s => s.name === staffId);
-    return staff?.name || staffId;
-  };
-
-
+  }, [appointments, timezone, currency, activeStaff.length, staffList.length]);
 
   return (
     <div className="min-h-screen bg-[#1a1f2b]">
@@ -308,6 +214,15 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {!business.loading && business.data?.status !== 'published' && (
+          <div className="mb-6 rounded-lg border border-yellow-600/50 bg-yellow-500/10 p-4 text-sm text-yellow-200">
+            {business.error
+              ? errorMessage(business.error)
+              : 'Your booking page is not live yet. Finish your services, staff and hours in '}
+            {!business.error && <Link to="/settings" className="underline">Settings</Link>}
+          </div>
+        )}
+
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
           {metrics.map(metric => (
@@ -320,6 +235,7 @@ const Dashboard = () => {
                   <metric.icon className="w-6 h-6 text-blue-500" />
                 </div>
                 <div>
+                  <p className="text-sm text-gray-400">{metric.title}</p>
                   <span className="text-2xl font-bold text-white">{metric.value}</span>
                   <p className={`text-sm ${
                     metric.type === 'neutral' 
@@ -355,7 +271,9 @@ const Dashboard = () => {
                       setShowNewAppointment(true);
                       setAppointmentToEdit(null);
                     }}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 w-full sm:w-auto"
+                    disabled={business.data?.status !== 'published'}
+                    title={business.data?.status !== 'published' ? 'Finish your settings to take bookings' : undefined}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FiPlus className="w-4 h-4" />
                     New Appointment
@@ -382,59 +300,55 @@ const Dashboard = () => {
                     >
                       <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-3">
                         <div>
-                          <h3 className="text-lg font-semibold text-white">{appointment.clientName}</h3>
+                          <h3 className="text-lg font-semibold text-white">{appointment.client?.name}</h3>
                           <p className="text-gray-400 text-sm">
-                            {dayjs(appointment.date).format('MMMM D, YYYY')} at {formatTime(appointment.time)}
+                            {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} at {formatTime(appointment.startsAt, timezone)}
                           </p>
-                          <p className="text-gray-400 text-sm">{appointment.service}</p>
+                          <p className="text-gray-400 text-sm">{appointment.serviceSnapshot?.name}</p>
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
-                          <span className="hidden sm:inline text-gray-400">{getStaffMemberName(appointment.staffMember)}</span>
+                          <span className="hidden sm:inline text-gray-400">{appointment.staffSnapshot?.displayName}</span>
                           <div className="flex items-center gap-2">
-                            <AnimatePresence mode="wait">
-                              {editingStatus === appointment.id ? (
-                                <motion.select
-                                  key={`status-select-${appointment.id}`}
-                                  initial={{ opacity: 0, scale: 0.95 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.95 }}
-                                  className={`px-3 py-1 rounded-full text-xs bg-[#1a1f2b] border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                  value={appointment.status}
-                                  onChange={(e) => handleStatusChange(appointment.id, e.target.value)}
-                                  onBlur={() => setEditingStatus(null)}
-                                >
-                                  {statusOptions.map(option => (
-                                    <option key={option.value} value={option.value}>
-                                      {option.label}
-                                    </option>
-                                  ))}
-                                </motion.select>
-                              ) : (
-                                <motion.button
-                                  key={`status-${appointment.id}-${appointment.status}`}
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  onClick={() => setEditingStatus(appointment.id)}
-                                  className={`px-3 py-1 rounded-full text-xs ${getStatusColor(appointment.status)}`}
-                                >
-                                  {getStatusLabel(appointment.status)}
-                                </motion.button>
-                              )}
-                            </AnimatePresence>
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {editingStatus === appointment.id ? (
+                              <select
+                                autoFocus
+                                aria-label="Change status"
+                                className="px-3 py-1 rounded-full text-xs bg-[#1a1f2b] text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value=""
+                                onChange={(e) => handleStatusChange(appointment, e.target.value)}
+                                onBlur={() => setEditingStatus(null)}
+                              >
+                                <option value="">{statusLabel(appointment.status)}</option>
+                                {STATUS_ACTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <button
+                                onClick={() => appointment.status === 'confirmed' && setEditingStatus(appointment.id)}
+                                className={`px-3 py-1 rounded-full text-xs ${statusClass(appointment.status)} ${appointment.status === 'confirmed' ? '' : 'cursor-default'}`}
+                                title={appointment.status === 'confirmed' ? 'Change status' : undefined}
+                              >
+                                {statusLabel(appointment.status)}
+                              </button>
+                            )}
+                            <div className="flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                               <button
                                 onClick={() => handleEditAppointment(appointment)}
                                 className="text-blue-500 hover:text-blue-400 transition-colors"
+                                aria-label="Edit appointment"
                               >
                                 <FiEdit2 className="w-4 h-4" />
                               </button>
-                              <button
-                                onClick={() => handleDeleteClick(appointment)}
-                                className="text-gray-400 hover:text-red-500 transition-colors"
-                              >
-                                <FiTrash2 className="w-4 h-4" />
-                              </button>
+                              {appointment.status === 'confirmed' && (
+                                <button
+                                  onClick={() => setAppointmentToCancel(appointment)}
+                                  className="text-gray-400 hover:text-red-500 transition-colors"
+                                  aria-label="Cancel appointment"
+                                >
+                                  <FiXCircle className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -462,7 +376,9 @@ const Dashboard = () => {
             setAppointmentToEdit(null);
           }}
           appointment={appointmentToEdit}
-          existingAppointments={appointments}
+          businessId={businessId}
+          business={business.data}
+          onSaved={loadAppointments}
         />
 
         {/* Appointments View Modal */}
@@ -470,20 +386,18 @@ const Dashboard = () => {
           isOpen={showAllAppointments}
           onClose={() => setShowAllAppointments(false)}
           appointments={appointments}
+          timezone={timezone}
           onEdit={handleEditAppointment}
-          onDelete={handleDeleteClick}
+          onCancel={setAppointmentToCancel}
           onStatusChange={handleStatusChange}
-          getStatusColor={getStatusColor}
-          getStatusLabel={getStatusLabel}
-          getStaffMemberName={getStaffMemberName}
         />
 
         {/* Delete Confirmation Dialog */}
         <AnimatePresence>
-          {showDeleteConfirm && (
+          {appointmentToCancel && (
             <Dialog
-              open={showDeleteConfirm}
-              onClose={() => setShowDeleteConfirm(false)}
+              open={Boolean(appointmentToCancel)}
+              onClose={() => setAppointmentToCancel(null)}
               className="relative z-50"
             >
               <motion.div
@@ -508,10 +422,10 @@ const Dashboard = () => {
                   className="mx-auto max-w-sm rounded-lg bg-gray-800 p-6"
                 >
                   <Dialog.Title className="text-xl font-medium text-white mb-4">
-                    Delete Appointment
+                    Cancel appointment
                   </Dialog.Title>
                   <Dialog.Description className="text-gray-300 mb-6">
-                    Are you sure you want to delete this appointment?
+                    Cancel {appointmentToCancel.client?.name}&apos;s appointment? The time becomes available to other clients.
                   </Dialog.Description>
 
                   <div className="flex justify-end gap-3">
@@ -519,17 +433,17 @@ const Dashboard = () => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       className="px-4 py-2 rounded-md bg-gray-600 text-white hover:bg-gray-500 transition-colors"
-                      onClick={() => setShowDeleteConfirm(false)}
+                      onClick={() => setAppointmentToCancel(null)}
                     >
-                      Cancel
+                      Keep it
                     </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-500 transition-colors"
-                      onClick={handleConfirmDelete}
+                      onClick={handleConfirmCancel}
                     >
-                      Delete
+                      Cancel appointment
                     </motion.button>
                   </div>
                 </Dialog.Panel>

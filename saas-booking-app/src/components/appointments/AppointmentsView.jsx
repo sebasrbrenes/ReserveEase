@@ -1,18 +1,18 @@
 import { useState, useMemo } from "react";
-import { FiSearch, FiX, FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiSearch, FiX, FiEdit2, FiXCircle } from "react-icons/fi";
 import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
+import { STATUS, STATUS_ACTIONS, statusClass, statusLabel } from "./status";
+import { formatLocalDate, formatTime } from "../../utils/datetime";
 
 const AppointmentsView = ({
   isOpen,
   onClose,
   appointments,
+  timezone,
   onEdit,
-  onDelete,
+  onCancel,
   onStatusChange,
-  getStatusColor,
-  getStatusLabel,
-  getStaffMemberName
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingStatus, setEditingStatus] = useState(null);
@@ -22,23 +22,15 @@ const AppointmentsView = ({
     staff: "all",
     service: "all",
   });
-  const [sortConfig] = useState({
-    key: "date",
-    direction: "asc",
-  });
 
   // Extract unique values for filters
   const staffMembers = useMemo(() => {
-    return [...new Set(appointments.map((apt) => apt.staffMember))];
+    return [...new Set(appointments.map((apt) => apt.staffSnapshot?.displayName).filter(Boolean))];
   }, [appointments]);
 
   const services = useMemo(() => {
-    return [...new Set(appointments.map((apt) => apt.service))];
+    return [...new Set(appointments.map((apt) => apt.serviceSnapshot?.name).filter(Boolean))];
   }, [appointments]);
-
-  const handleSearch = (value) => {
-    setSearchTerm(value);
-  };
 
   const handleFilterChange = (filterType, value) => {
     setFilters((prev) => ({
@@ -48,67 +40,21 @@ const AppointmentsView = ({
   };
 
   const filteredAppointments = useMemo(() => {
-    return appointments
-      .filter((appointment) => {
-        const searchString = `${appointment.clientName} ${appointment.email} ${
-          appointment.phone
-        } ${appointment.service} ${appointment.staffMember || ""} ${
-          appointment.notes || ""
-        }`.toLowerCase();
+    return appointments.filter((appointment) => {
+      const searchString = `${appointment.client?.name} ${appointment.client?.email} ${
+        appointment.client?.phoneE164 || ""
+      } ${appointment.serviceSnapshot?.name} ${appointment.staffSnapshot?.displayName || ""} ${
+        appointment.notes || ""
+      }`.toLowerCase();
 
-        if (searchTerm && !searchString.includes(searchTerm.toLowerCase())) {
-          return false;
-        }
-
-        if (
-          filters.dateRange !== "all" &&
-          !dayjs(appointment.date).isSame(dayjs(), filters.dateRange)
-        ) {
-          return false;
-        }
-
-        if (
-          filters.status !== "all" &&
-          appointment.status !== filters.status
-        ) {
-          return false;
-        }
-
-        if (
-          filters.staff !== "all" &&
-          appointment.staffMember !== filters.staff
-        ) {
-          return false;
-        }
-
-        if (
-          filters.service !== "all" &&
-          appointment.service !== filters.service
-        ) {
-          return false;
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        if (sortConfig.key === "date") {
-          const dateA = dayjs(`${a.date}T${a.time}`);
-          const dateB = dayjs(`${b.date}T${b.time}`);
-          return sortConfig.direction === "asc"
-            ? dateA.diff(dateB)
-            : dateB.diff(dateA);
-        }
-
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-
-        if (sortConfig.direction === "asc") {
-          return aValue > bValue ? 1 : -1;
-        } else {
-          return aValue < bValue ? 1 : -1;
-        }
-      });
-  }, [appointments, searchTerm, filters, sortConfig]);
+      if (searchTerm && !searchString.includes(searchTerm.toLowerCase())) return false;
+      if (filters.dateRange !== "all" && !dayjs(appointment.localDate).isSame(dayjs(), filters.dateRange)) return false;
+      if (filters.status !== "all" && appointment.status !== filters.status) return false;
+      if (filters.staff !== "all" && appointment.staffSnapshot?.displayName !== filters.staff) return false;
+      if (filters.service !== "all" && appointment.serviceSnapshot?.name !== filters.service) return false;
+      return true;
+    });
+  }, [appointments, searchTerm, filters]);
 
   return (
     <AnimatePresence>
@@ -146,7 +92,7 @@ const AppointmentsView = ({
                     placeholder="Search by client name, email, or phone..."
                     className="w-full bg-dark-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-700"
                     value={searchTerm}
-                    onChange={(e) => handleSearch(e.target.value)}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
               </div>
@@ -168,9 +114,9 @@ const AppointmentsView = ({
                 onChange={(e) => handleFilterChange("status", e.target.value)}
               >
                 <option key="all" value="all">All Statuses</option>
-                <option key="pending" value="Pending">Pending</option>
-                <option key="attended" value="Attended">Attended</option>
-                <option key="canceled" value="Canceled">Canceled</option>
+                {Object.entries(STATUS).map(([value, { label }]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
 
               <select
@@ -201,6 +147,9 @@ const AppointmentsView = ({
             </div>
 
             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              {filteredAppointments.length === 0 && (
+                <p className="text-gray-400">No appointments match these filters.</p>
+              )}
               {filteredAppointments.map((appointment) => (
                 <div
                   key={appointment.id}
@@ -209,69 +158,69 @@ const AppointmentsView = ({
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="text-lg font-semibold text-white">
-                        {appointment.clientName}
+                        {appointment.client?.name}
                       </h3>
                       <p className="text-gray-400">
-                        {dayjs(appointment.date).format('MMMM D, YYYY')} at {appointment.time}
+                        {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} at {formatTime(appointment.startsAt, timezone)}
                       </p>
-                      <p className="text-gray-400">{appointment.service}</p>
+                      <p className="text-gray-400">{appointment.serviceSnapshot?.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {[appointment.client?.email, appointment.client?.phoneE164].filter(Boolean).join(' · ')}
+                      </p>
                       {appointment.notes && (
                         <p className="text-sm text-gray-500 mt-1">{appointment.notes}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-gray-400">
-                        {getStaffMemberName(appointment.staffMember)}
+                        {appointment.staffSnapshot?.displayName}
                       </span>
                       <div className="flex items-center gap-2">
                         {editingStatus === appointment.id ? (
-                          <div className="relative">
-                            <select
-                              value={appointment.status}
-                              onChange={(e) => {
-                                onStatusChange(appointment.id, e.target.value);
-                                setEditingStatus(null);
-                              }}
-                              className={`px-3 py-1 rounded text-sm cursor-pointer appearance-none ${getStatusColor(appointment.status)} border border-gray-700`}
-                              style={{
-                                WebkitAppearance: 'none',
-                                MozAppearance: 'none'
-                              }}
-                            >
-                              <option value="Pending" className="bg-dark-700 text-yellow-500">Pending</option>
-                              <option value="Attended" className="bg-dark-700 text-green-500">Attended</option>
-                              <option value="Canceled" className="bg-dark-700 text-red-500">Canceled</option>
-                            </select>
-                            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                              <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </div>
-                          </div>
+                          <select
+                            autoFocus
+                            aria-label="Change status"
+                            value=""
+                            onChange={(e) => {
+                              onStatusChange(appointment, e.target.value);
+                              setEditingStatus(null);
+                            }}
+                            onBlur={() => setEditingStatus(null)}
+                            className="px-3 py-1 rounded text-sm cursor-pointer bg-dark-700 text-white border border-gray-700"
+                          >
+                            <option value="">{statusLabel(appointment.status)}</option>
+                            {STATUS_ACTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
                         ) : (
                           <button
-                            onClick={() => setEditingStatus(appointment.id)}
-                            className={`px-2 py-1 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(appointment.status)}`}
+                            onClick={() => appointment.status === 'confirmed' && setEditingStatus(appointment.id)}
+                            className={`px-2 py-1 rounded text-xs ${appointment.status === 'confirmed' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} transition-opacity ${statusClass(appointment.status)}`}
                           >
-                            {getStatusLabel(appointment.status)}
+                            {statusLabel(appointment.status)}
                           </button>
                         )}
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => {
                               onEdit(appointment);
                               onClose();
                             }}
                             className="text-blue-500 hover:text-blue-400 transition-colors"
+                            aria-label="Edit appointment"
                           >
                             <FiEdit2 className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => onDelete(appointment)}
-                            className="text-gray-400 hover:text-red-500 transition-colors"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
+                          {appointment.status === 'confirmed' && (
+                            <button
+                              onClick={() => onCancel(appointment)}
+                              className="text-gray-400 hover:text-red-500 transition-colors"
+                              aria-label="Cancel appointment"
+                            >
+                              <FiXCircle className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

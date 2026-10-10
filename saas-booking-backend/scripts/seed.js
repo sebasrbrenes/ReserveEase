@@ -1,10 +1,10 @@
-// Loads two fictitious businesses into the Firebase emulators, in both data
-// shapes: the current one (users/{uid}/settings/business + appointments) used
-// by the existing app, and model v2 (businesses/{id} + publicBusinesses/{slug})
-// used by /api/v1. Safe to run repeatedly.
+// Loads two fictitious businesses into the Firebase emulators: the settings the
+// app edits (users/{uid}/settings/business) and the model v2 documents the API
+// uses, built from those settings by the same bridge as the app
+// (src/domain/legacySync.js), plus a few confirmed appointments.
+// Safe to run repeatedly.
 
 import 'dotenv/config';
-import dayjs from 'dayjs';
 
 if (!process.env.FIRESTORE_EMULATOR_HOST || !process.env.FIREBASE_AUTH_EMULATOR_HOST) {
   console.error(
@@ -16,7 +16,9 @@ if (!process.env.FIRESTORE_EMULATOR_HOST || !process.env.FIREBASE_AUTH_EMULATOR_
 
 const { getAuth } = await import('firebase-admin/auth');
 const { db, default: app } = await import('../config/firebase.js');
-const schemas = await import('../src/domain/schemas.js');
+const { legacyToV2 } = await import('../src/domain/legacySync.js');
+const { createBooking } = await import('../src/domain/booking.js');
+const { localDateOf, shiftLocalDate, zonedToUtc } = await import('../src/domain/time.js');
 const auth = getAuth(app);
 
 const PASSWORD = 'demo1234';
@@ -29,7 +31,6 @@ const hours = (start, end, closed = []) => Object.fromEntries(
 const BUSINESSES = [
   {
     uid: 'demo-owner-barberia',
-    businessId: 'biz-barberia-demo',
     slug: 'barberia-demo',
     email: 'barberia@demo.test',
     displayName: 'Dueño Barbería Demo',
@@ -40,6 +41,8 @@ const BUSINESSES = [
       address: 'San José, Costa Rica',
       allowStaffPreference: true,
       timeInterval: 30,
+      timezone: 'America/Costa_Rica',
+      currency: 'CRC',
       services: [
         { id: 'svc-corte', name: 'Corte', duration: 30, price: 6000 },
         { id: 'svc-barba', name: 'Barba', duration: 20, price: 4000 },
@@ -52,14 +55,13 @@ const BUSINESSES = [
     },
     businessHours: hours('9:00 AM', '6:00 PM', ['sunday']),
     appointments: [
-      { dayOffset: 0, time: '10:00 AM', service: 'Corte', staffMember: 'Ana', clientName: 'Cliente Uno' },
-      { dayOffset: 0, time: '11:00 AM', service: 'Corte y barba', staffMember: 'Luis', clientName: 'Cliente Dos' },
-      { dayOffset: 1, time: '9:30 AM', service: 'Barba', staffMember: 'Luis', clientName: 'Cliente Tres' },
+      { day: 0, time: '10:00', serviceId: 'svc-corte', staffId: 'staff-ana', clientName: 'Cliente Uno' },
+      { day: 0, time: '11:00', serviceId: 'svc-combo', staffId: 'staff-luis', clientName: 'Cliente Dos' },
+      { day: 1, time: '09:30', serviceId: 'svc-barba', staffId: 'staff-luis', clientName: 'Cliente Tres' },
     ],
   },
   {
     uid: 'demo-owner-salon',
-    businessId: 'biz-salon-demo',
     slug: 'salon-demo',
     email: 'salon@demo.test',
     displayName: 'Dueña Salón Demo',
@@ -70,6 +72,8 @@ const BUSINESSES = [
       address: 'Heredia, Costa Rica',
       allowStaffPreference: true,
       timeInterval: 30,
+      timezone: 'America/Costa_Rica',
+      currency: 'CRC',
       services: [
         { id: 'svc-tinte', name: 'Tinte', duration: 90, price: 25000 },
         { id: 'svc-peinado', name: 'Peinado', duration: 45, price: 12000 },
@@ -81,7 +85,7 @@ const BUSINESSES = [
     },
     businessHours: hours('10:00 AM', '7:00 PM', ['sunday', 'monday']),
     appointments: [
-      { dayOffset: 1, time: '10:00 AM', service: 'Tinte', staffMember: 'Ana', clientName: 'Clienta Cuatro' },
+      { day: 1, time: '10:00', serviceId: 'svc-tinte', staffId: 'staff-ana-salon', clientName: 'Clienta Cuatro' },
     ],
   },
 ];
@@ -96,108 +100,64 @@ const upsertUser = async ({ uid, email, displayName }) => {
   }
 };
 
-const now = dayjs().toISOString();
+const TZ = 'America/Costa_Rica';
 
-// "9:00 AM" -> "09:00"
-const to24h = (t) => {
-  const [, h, m, period] = t.match(/^(\d{1,2}):(\d{2}) (AM|PM)$/);
-  const hour = (Number(h) % 12) + (period === 'PM' ? 12 : 0);
-  return `${String(hour).padStart(2, '0')}:${m}`;
+// Next local dates (from tomorrow) on which the business is open.
+const openDates = (business, count) => {
+  const dates = [];
+  for (let i = 1; dates.length < count && i < 14; i += 1) {
+    const date = shiftLocalDate(localDateOf(Date.now(), TZ), i);
+    const weekday = new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }).toLowerCase();
+    if (business.weeklySchedule[weekday].length) dates.push(date);
+  }
+  return dates;
 };
 
-// Builds and validates the v2 documents for one business.
-const buildV2 = (b) => {
-  const business = schemas.businessSchema.parse({
-    id: b.businessId,
-    ownerUid: b.uid,
-    name: b.business.name,
-    slug: b.slug,
-    timezone: 'America/Costa_Rica',
-    currency: 'CRC',
-    status: 'published',
-    bookingPolicy: {
-      confirmationMode: 'automatic',
-      slotStepMinutes: 15,
-      minNoticeMinutes: 60,
-      maxAdvanceDays: 60,
-      cancellationNoticeMinutes: 120,
-    },
-    weeklySchedule: Object.fromEntries(Object.entries(b.businessHours).map(([day, h]) => [
-      day, h.enabled ? [{ start: to24h(h.start), end: to24h(h.end) }] : [],
-    ])),
-    schemaVersion: schemas.SCHEMA_VERSION,
-  });
-  const services = b.business.services.map((svc) => schemas.serviceSchema.parse({
-    id: svc.id,
-    name: svc.name,
-    durationMinutes: svc.duration,
-    bufferAfterMinutes: 5,
-    priceMinor: svc.price * 100,
-    currency: 'CRC',
-    active: true,
-  }));
-  const staff = b.business.staff.map((m) => schemas.staffSchema.parse({
-    id: m.id,
-    displayName: m.name,
-    active: m.active,
-    serviceIds: m.availableServices,
-  }));
-  const publicBusiness = schemas.publicBusinessSchema.parse({
-    businessId: business.id,
-    slug: business.slug,
-    name: business.name,
-    timezone: business.timezone,
-    currency: business.currency,
-    status: business.status,
-    services: services.filter((svc) => svc.active),
-    staff: staff.filter((m) => m.active),
-  });
-  return { business, services, staff, publicBusiness };
+const removeBusiness = async (businessId) => {
+  await db.recursiveDelete(db.doc(`businesses/${businessId}`));
+  const jobs = await db.collection('notificationJobs').where('businessId', '==', businessId).get();
+  await Promise.all(jobs.docs.map((d) => d.ref.delete()));
 };
 
 for (const b of BUSINESSES) {
   await upsertUser(b);
+  const settings = { business: b.business, businessHours: b.businessHours, ui: { language: 'es', notifications: false } };
+  const stamp = new Date().toISOString();
+  await db.doc(`users/${b.uid}`).set({ email: b.email, createdAt: stamp, updatedAt: stamp });
+  await db.doc(`users/${b.uid}/settings/business`).set(settings);
 
-  await db.doc(`users/${b.uid}`).set({ email: b.email, createdAt: now, updatedAt: now });
-  await db.doc(`users/${b.uid}/settings/business`).set({
-    business: b.business,
-    businessHours: b.businessHours,
-    ui: { language: 'es', notifications: false },
-  });
-
-  // Replace this business's demo appointments so reruns stay idempotent.
-  const existing = await db.collection('appointments').where('userId', '==', b.uid).get();
+  const v2 = legacyToV2({ uid: b.uid, settings, existingSlug: b.slug });
+  await removeBusiness(v2.business.id);
   const batch = db.batch();
-  existing.forEach((doc) => batch.delete(doc.ref));
-  b.appointments.forEach((apt, i) => {
-    batch.set(db.collection('appointments').doc(`${b.uid}-apt-${i + 1}`), {
-      userId: b.uid,
-      clientName: apt.clientName,
-      email: `cliente${i + 1}@example.com`,
-      phone: '',
-      date: dayjs().add(apt.dayOffset, 'day').format('YYYY-MM-DD'),
-      time: apt.time,
-      service: apt.service,
-      staffMember: apt.staffMember,
-      notes: '',
-      status: 'Pending',
-      createdAt: now,
-    });
-  });
+  batch.set(db.doc(`businesses/${v2.business.id}`), v2.business);
+  batch.set(db.doc(`businesses/${v2.business.id}/members/${b.uid}`), { role: 'owner' });
+  v2.services.forEach((svc) => batch.set(db.doc(`businesses/${v2.business.id}/services/${svc.id}`), svc));
+  v2.staff.forEach((m) => batch.set(db.doc(`businesses/${v2.business.id}/staff/${m.id}`), m));
+  batch.set(db.doc(`publicBusinesses/${v2.business.slug}`), v2.publicBusiness);
   await batch.commit();
 
-  const v2 = buildV2(b);
-  const v2Batch = db.batch();
-  v2Batch.set(db.doc(`businesses/${v2.business.id}`), v2.business);
-  v2Batch.set(db.doc(`businesses/${v2.business.id}/members/${b.uid}`), { role: 'owner' });
-  v2.services.forEach((svc) => v2Batch.set(db.doc(`businesses/${v2.business.id}/services/${svc.id}`), svc));
-  v2.staff.forEach((m) => v2Batch.set(db.doc(`businesses/${v2.business.id}/staff/${m.id}`), m));
-  v2Batch.set(db.doc(`publicBusinesses/${v2.business.slug}`), v2.publicBusiness);
-  await v2Batch.commit();
+  // Appointments go through the same booking path as real ones.
+  const dates = openDates(v2.business, 2);
+  for (const [i, apt] of b.appointments.entries()) {
+    const [h, m] = apt.time.split(':').map(Number);
+    await createBooking(db, {
+      businessId: v2.business.id,
+      idempotencyKey: `seed-${b.uid}-${i}`,
+      source: 'admin',
+      command: {
+        serviceId: apt.serviceId,
+        staffId: apt.staffId,
+        startsAt: new Date(zonedToUtc(dates[apt.day], h * 60 + m, TZ)).toISOString(),
+        client: { name: apt.clientName, email: `cliente${i + 1}@example.com`, phoneE164: null },
+        notes: '',
+        privacyNoticeVersion: 'seed',
+        smsConsent: false,
+      },
+    });
+  }
 
   console.log(`Seeded ${b.business.name}: ${b.email} / ${PASSWORD} (${b.appointments.length} appointments)`);
 }
 
-console.log('Public booking links: /book/demo-owner-barberia and /book/demo-owner-salon');
-console.log('API v1: GET /api/v1/public/businesses/barberia-demo and /salon-demo');
+console.log('Public booking links: /book/barberia-demo and /book/salon-demo');
 process.exit(0);

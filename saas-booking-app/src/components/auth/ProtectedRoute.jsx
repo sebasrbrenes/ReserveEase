@@ -17,6 +17,11 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" />;
   }
 
+  // The dashboard needs a verified email (the booking API rejects others).
+  if (!user.emailVerified) {
+    return <Navigate to="/verify-email" replace />;
+  }
+
   return children;
 };
 

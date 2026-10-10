@@ -3,7 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
 import { FiArrowLeft, FiEdit2, FiTrash2, FiLink, FiCopy } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import { auth } from '../../firebase/config';
+
+// Why the booking page is not published yet (codes from the API).
+const PUBLISH_PROBLEMS = {
+  NAME_MISSING: 'Add your business name.',
+  NO_SERVICES: 'Add at least one service.',
+  NO_STAFF_WITH_SERVICES: 'Add an active staff member and assign them a service.',
+  NO_OPENING_HOURS: 'Open at least one day in Business Hours.',
+};
+const TIME_ZONES = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [];
+const CURRENCIES = ['USD', 'CRC', 'MXN', 'COP', 'EUR', 'GBP', 'CAD', 'ARS', 'CLP', 'PEN', 'GTQ', 'HNL', 'NIO', 'PAB', 'DOP', 'BRL'];
 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
@@ -16,12 +25,11 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { settings, updateSettings } = useSettings();
-  
-  const getBookingLink = () => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/book/${auth.currentUser?.uid}`;
-  };
+  const { settings, updateSettings, business } = useSettings();
+  const slug = business.data?.slug;
+  const isPublished = business.data?.status === 'published';
+
+  const getBookingLink = () => (slug ? `${window.location.origin}/book/${slug}` : '');
 
   const copyBookingLink = async () => {
     try {
@@ -46,6 +54,8 @@ const Settings = () => {
     phone: settings?.business?.phone || '',
     address: settings?.business?.address || '',
     timeInterval: settings?.business?.timeInterval || 30,
+    timezone: settings?.business?.timezone || '',
+    currency: settings?.business?.currency || 'USD',
   });
 
   useEffect(() => {
@@ -56,6 +66,8 @@ const Settings = () => {
         phone: settings.business.phone || '',
         address: settings.business.address || '',
         timeInterval: settings.business.timeInterval || 30,
+        timezone: settings.business.timezone || '',
+        currency: settings.business.currency || 'USD',
       });
     }
   }, [settings?.business]);
@@ -111,6 +123,8 @@ const Settings = () => {
           phone: businessForm.phone || '',
           address: businessForm.address || '',
           timeInterval: businessForm.timeInterval || 30,
+          timezone: businessForm.timezone,
+          currency: businessForm.currency,
           services: services,
           staff: staff,
           allowStaffPreference: true
@@ -398,6 +412,17 @@ const Settings = () => {
           <p className="text-sm text-gray-400 mb-4">
             Share this link with your clients to let them book appointments directly.
           </p>
+          {business.loading ? (
+            <p className="text-sm text-gray-400 mb-4">Checking your booking page...</p>
+          ) : !isPublished && (
+            <div className="mb-4 rounded-lg border border-yellow-600/50 bg-yellow-500/10 p-4 text-sm text-yellow-200">
+              <p className="font-medium mb-1">Your booking page is not live yet.</p>
+              <ul className="list-disc pl-5 space-y-1">
+                {(business.data?.problems || []).map((code) => <li key={code}>{PUBLISH_PROBLEMS[code] || code}</li>)}
+                {business.error && <li>Could not reach the booking server. Try again in a moment.</li>}
+              </ul>
+            </div>
+          )}
           <div className="space-y-4">
             <div className="flex flex-col space-y-2">
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
@@ -409,7 +434,8 @@ const Settings = () => {
                 />
                 <button
                   onClick={copyBookingLink}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 flex items-center gap-2 w-full sm:w-auto"
+                  disabled={!isPublished}
+                  className="disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 flex items-center gap-2 w-full sm:w-auto"
                 >
                   <FiCopy className="w-4 h-4" />
                   Copy
@@ -456,6 +482,38 @@ const Settings = () => {
                   <option value="30">30 minutes</option>
                   <option value="45">45 minutes</option>
                   <option value="60">60 minutes</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col space-y-2">
+                <label htmlFor="timezone" className="text-sm font-medium">Time Zone</label>
+                <select
+                  name="timezone"
+                  id="timezone"
+                  value={businessForm.timezone}
+                  onChange={handleBusinessSettingsChange}
+                  className="bg-dark border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {!TIME_ZONES.includes(businessForm.timezone) && (
+                    <option value={businessForm.timezone}>{businessForm.timezone || 'Select a time zone'}</option>
+                  )}
+                  {TIME_ZONES.map((tz) => <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>)}
+                </select>
+                <p className="text-xs text-gray-400">Clients always see times in this zone.</p>
+              </div>
+              <div className="flex flex-col space-y-2">
+                <label htmlFor="currency" className="text-sm font-medium">Currency</label>
+                <select
+                  name="currency"
+                  id="currency"
+                  value={businessForm.currency}
+                  onChange={handleBusinessSettingsChange}
+                  className="bg-dark border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {!CURRENCIES.includes(businessForm.currency) && <option value={businessForm.currency}>{businessForm.currency}</option>}
+                  {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
             </div>
@@ -609,7 +667,7 @@ const Settings = () => {
                 <div>
                   <h3 className="font-medium">{service.name}</h3>
                   <p className="text-sm text-gray-400">
-                    {service.duration} min · ${service.price}
+                    {service.duration} min · {service.price} {businessForm.currency}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
