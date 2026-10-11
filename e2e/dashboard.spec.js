@@ -61,15 +61,50 @@ test('the settings page shows the public booking link', async ({ page }) => {
   await expect(page.locator('input[readonly]').first()).toHaveValue(/\/book\/salon-demo$/);
 });
 
-test('T22: each date in the weekly calendar sits under its own weekday', async ({ page }) => {
+test('T22: each date in the month calendar sits under its own weekday', async ({ page }) => {
   await login(page, 'salon@demo.test');
   const headers = await page.locator('.grid-cols-7 > div').allTextContents();
   expect(headers).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
   const days = page.locator('.grid-cols-7 > button');
-  await expect(days).toHaveCount(7);
+  const count = await days.count();
+  expect(count % 7).toBe(0);
+  expect(count).toBeGreaterThanOrEqual(28);
   const today = new Date();
-  const column = (today.getDay() + 6) % 7; // Monday = 0
-  await expect(days.nth(column)).toHaveText(String(today.getDate()));
+  const label = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const labels = await days.evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')));
+  const index = labels.findIndex((l) => l.startsWith(label));
+  expect(index).toBeGreaterThanOrEqual(0);
+  expect(index % 7).toBe((today.getDay() + 6) % 7); // Monday = 0
+});
+
+test('the list shows the next appointments across days, and a picked day on demand', async ({ page }) => {
+  await login(page, 'salon@demo.test');
+  const list = page.getByTestId('day-list');
+  await expect(page.getByRole('heading', { name: 'Upcoming Appointments' })).toBeVisible();
+  const items = list.locator(':scope > div');
+  await expect(items.first()).toBeVisible();
+  const count = await items.count();
+  expect(count).toBeLessThanOrEqual(7);
+  // Soonest first, and more than one day when the seed has them.
+  const dates = await items.locator('p.text-ink.text-sm').allTextContents();
+  const times = dates.map((d) => Date.parse(d.replace(' at ', ' ')));
+  expect([...times].sort((a, b) => a - b)).toEqual(times);
+
+  // The arrows change the month, not the selection.
+  const title = page.locator('h2.hd-title.text-3xl');
+  const month = await title.textContent();
+  await page.getByRole('button', { name: 'Next month' }).click();
+  await expect(title).not.toHaveText(month);
+  await page.getByRole('button', { name: 'Today' }).click();
+  await expect(title).toHaveText(month);
+
+  // Picking a day filters the list; "Show upcoming" brings the list back.
+  const busy = page.locator('.grid-cols-7 > button[aria-label*="appointment"]').first();
+  await busy.click();
+  await expect(busy).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('heading', { name: 'Upcoming Appointments' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Show upcoming' }).click();
+  await expect(page.getByRole('heading', { name: 'Upcoming Appointments' })).toBeVisible();
 });
 
 test('T29: the client email preference is saved and survives a reload', async ({ page }) => {
