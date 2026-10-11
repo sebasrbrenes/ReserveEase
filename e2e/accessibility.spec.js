@@ -29,6 +29,9 @@ test('public booking pages have no serious accessibility problems', async ({ pag
 test('dashboard and settings have no serious accessibility problems', async ({ page }) => {
   await login(page, 'barberia@demo.test');
   await expect(page.getByRole('button', { name: 'View All' })).toBeVisible();
+  // Let the appointment cards finish fading in before measuring contrast.
+  const card = page.getByTestId('day-list').locator(':scope > div').first();
+  await expect(card).toHaveCSS('opacity', '1');
   await check(page, 'dashboard');
   await page.goto('/settings');
   await expect(page.locator('#businessName')).toHaveValue(/./);

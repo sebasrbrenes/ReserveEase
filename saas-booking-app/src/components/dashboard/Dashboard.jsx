@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { auth } from '../../firebase/config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog } from '@headlessui/react';
-import dayjs from 'dayjs';
 import {
   FiCalendar,
   FiLogOut,
@@ -20,7 +19,7 @@ import { toast } from 'react-hot-toast';
 import AppointmentModal from '../appointments/AppointmentModal';
 import AppointmentsView from '../appointments/AppointmentsView';
 import { useSettings } from '../../context/SettingsContext';
-import WeeklyCalendar from '../calendar/WeeklyCalendar';
+import MonthCalendar from '../calendar/MonthCalendar';
 import Feedback from '../feedback/Feedback';
 import HelpButton from '../common/HelpButton';
 import { Logo, Sparkle, Star, Underline } from '../ui/Doodles';
@@ -35,6 +34,8 @@ import { formatLocalDate, formatMoney, formatTime, shiftDate, todayIn } from '..
 const PAST_DAYS = 60;
 const FUTURE_DAYS = 120;
 const REFRESH_MS = 60 * 1000;
+// How many upcoming appointments the list shows when no day is picked.
+const UPCOMING_COUNT = 7;
 // The cancel dialog renders in a portal, outside .hd-page and its focus ring.
 const dialogFocus = 'focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker focus-visible:outline-offset-2';
 
@@ -43,7 +44,8 @@ const Dashboard = () => {
   const businessId = business.data?.businessId;
   const timezone = business.data?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const currency = business.data?.currency || 'USD';
-  const [selectedDate, setSelectedDate] = useState(dayjs());
+  // null = the list shows the next appointments; a day = that day's appointments.
+  const [selectedDate, setSelectedDate] = useState(null);
   const [showNewAppointment, setShowNewAppointment] = useState(false);
   const [showAllAppointments, setShowAllAppointments] = useState(false);
   const [appointmentToEdit, setAppointmentToEdit] = useState(null);
@@ -127,17 +129,22 @@ const Dashboard = () => {
     'Email queued again'
   );
 
-  const selectedLocalDate = selectedDate.format('YYYY-MM-DD');
+  const selectedLocalDate = selectedDate?.format('YYYY-MM-DD');
 
   const calendarAppointments = useMemo(
     () => appointments.filter((apt) => apt.status !== 'cancelled'),
     [appointments]
   );
 
-  const currentViewAppointments = useMemo(
-    () => appointments.filter((apt) => apt.localDate === selectedLocalDate),
-    [appointments, selectedLocalDate]
-  );
+  // Appointments still to come, soonest first, whatever their day.
+  const currentViewAppointments = useMemo(() => {
+    if (selectedLocalDate) return appointments.filter((apt) => apt.localDate === selectedLocalDate);
+    const now = Date.now();
+    return appointments
+      .filter((apt) => apt.status === 'confirmed' && Date.parse(apt.endsAt || apt.startsAt) > now)
+      .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
+      .slice(0, UPCOMING_COUNT);
+  }, [appointments, selectedLocalDate]);
 
   const staffList = business.data?.staff || [];
   const activeStaff = staffList.filter((staff) => staff.active);
@@ -263,10 +270,20 @@ const Dashboard = () => {
             <div className="hd-card p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
                 <h2 className="relative inline-block self-start">
-                  <span className="hd-title text-4xl">{showAllAppointments ? 'All Appointments' : 'Upcoming Appointments'}</span>
+                  <span className="hd-title text-4xl">
+                    {selectedDate ? formatLocalDate(selectedLocalDate, { weekday: 'long', month: 'long', day: 'numeric' }) : 'Upcoming Appointments'}
+                  </span>
                   <Underline className="absolute -bottom-2 left-0 w-full h-3 text-sun" />
                 </h2>
                 <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
+                  {selectedDate && (
+                    <button
+                      onClick={() => setSelectedDate(null)}
+                      className="hd-btn hd-btn-secondary !px-4 !py-2 text-sm flex-1 sm:flex-none"
+                    >
+                      Show upcoming
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowAllAppointments(true)}
                     className="hd-btn hd-btn-secondary !px-4 !py-2 text-sm flex-1 sm:flex-none"
@@ -296,10 +313,10 @@ const Dashboard = () => {
               ) : currentViewAppointments.length === 0 ? (
                 <div className="text-center py-8">
                   <Star className="mx-auto w-8 h-8 text-sun mb-2" />
-                  <p className="hd-title text-3xl text-ink">No appointments scheduled for this date</p>
+                  <p className="hd-title text-3xl text-ink">{selectedDate ? 'No appointments scheduled for this date' : 'No upcoming appointments'}</p>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
+                <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar" data-testid="day-list">
                   {currentViewAppointments.map((appointment) => (
                     <motion.div
                       key={`appointment-${appointment.id}`}
@@ -372,7 +389,7 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="min-w-0">
-            <WeeklyCalendar
+            <MonthCalendar
               appointments={calendarAppointments}
               selectedDate={selectedDate}
               onDateSelect={(date) => setSelectedDate(date)}
