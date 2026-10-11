@@ -2,7 +2,8 @@
 // the browser never writes appointments to Firestore directly.
 import { auth } from '../firebase/config';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+// A trailing slash in the Vercel variable would turn paths into //api/v1.
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').trim().replace(/\/+$/, '');
 
 export class ApiError extends Error {
   constructor(status, code, message, fields) {
