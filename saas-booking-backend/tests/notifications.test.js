@@ -81,9 +81,17 @@ describe.skipIf(!hasEmulator)('notification worker', () => {
     const dayBefore = () => Date.parse(at('10:00')) - 24 * HOUR + MINUTE;
     await run(adapter, dayBefore);
     expect((await job(`${id}_v1_reminder_email`)).status).toBe('simulated');
-    const soonDate = localDateOf(Date.now() + 3 * HOUR, TZ);
-    const soonTime = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })
-      .format(new Date(Math.ceil((Date.now() + 3 * HOUR) / (15 * MINUTE)) * 15 * MINUTE));
+    // About 3 hours ahead, on the 15-minute grid. Date and time come from the
+    // same instant, and a start too late for a 30-minute service before 23:55
+    // moves to the next local midnight (still well inside 24 hours).
+    const soonMs = Math.ceil((Date.now() + 3 * HOUR) / (15 * MINUTE)) * 15 * MINUTE;
+    let soonDate = localDateOf(soonMs, TZ);
+    let soonTime = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .format(new Date(soonMs));
+    if (soonTime > '23:15') {
+      soonDate = shiftLocalDate(soonDate, 1);
+      soonTime = '00:00';
+    }
     const soon = await book(at(soonTime, soonDate));
     expect(await job(`${soon}_v1_reminder_email`)).toBeUndefined();
   });
