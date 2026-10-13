@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { FiSearch, FiX, FiEdit2, FiXCircle } from "react-icons/fi";
 import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
-import { STATUS, STATUS_ACTIONS, statusClass, statusLabel } from "./status";
+import { STATUS, statusActionsFor, statusClass, statusLabel } from "./status";
 import { formatLocalDate, formatTime } from "../../utils/datetime";
 import NotificationStatus from "./NotificationStatus";
 import { Scribble } from "../ui/Doodles";
@@ -202,7 +202,7 @@ const AppointmentsView = ({
                             className="hd-input !mt-0 !w-auto !py-1 text-sm cursor-pointer"
                           >
                             <option value="">{statusLabel(appointment.status)}</option>
-                            {STATUS_ACTIONS.map((option) => (
+                            {statusActionsFor(appointment).map((option) => (
                               <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                           </select>

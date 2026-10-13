@@ -15,5 +15,12 @@ export const STATUS_ACTIONS = [
   { value: 'cancelled', label: 'Cancel appointment' },
 ];
 
+// The actions that make sense now: before the start only cancelling does.
+export const statusActionsFor = (appointment, now = Date.now()) => (
+  Date.parse(appointment.startsAt) <= now
+    ? STATUS_ACTIONS
+    : STATUS_ACTIONS.filter((action) => action.value === 'cancelled')
+);
+
 export const statusLabel = (status) => STATUS[status]?.label || status;
 export const statusClass = (status) => STATUS[status]?.className || 'text-ink-soft bg-paper-deep';

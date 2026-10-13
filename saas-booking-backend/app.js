@@ -16,6 +16,19 @@ const app = express();
 // Behind Render's proxy: use the client IP for rate limiting
 app.set('trust proxy', 1);
 
+// Security headers: the API only answers JSON, so nothing may run or embed it.
+app.use((req, res, next) => {
+  res.set({
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+  });
+  next();
+});
+app.disable('x-powered-by');
+
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
