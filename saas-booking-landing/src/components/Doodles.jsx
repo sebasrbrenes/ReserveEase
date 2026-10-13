@@ -1,3 +1,5 @@
+import logoMark from '../assets/images/logo-mark.png';
+
 // Hand-drawn strokes for titles, empty states and the landing. They are
 // decoration only: hidden from assistive technology and never clickable.
 
@@ -54,30 +56,17 @@ export function Sparkle({ className = '' }) {
   );
 }
 
-// The ReserveEase calendar mark (same drawing as Logos/reserveease-logo.svg).
+// The ReserveEase mascot (same drawing as Logos/reserveease-logo-*.png).
 export function LogoMark({ className = '' }) {
   return (
-    <svg viewBox="262 266 652 652" fill="none" aria-hidden="true" focusable="false" className={`pointer-events-none select-none ${className}`}>
-      <g strokeLinecap="round" strokeLinejoin="round">
-        <path d="M302 388 L372 424 M410 302 L434 370" stroke="#FFD35C" strokeWidth="34" />
-        <rect x="397" y="468" width="472" height="420" rx="78" fill="#FFFDF8" stroke="#1F2328" strokeWidth="36" />
-        <path d="M400 590 H866" stroke="#1F2328" strokeWidth="32" />
-        <path d="M520 412 V512 M752 412 V512" stroke="#1F2328" strokeWidth="40" />
-      </g>
-      <rect x="468" y="648" width="78" height="76" rx="14" fill="#B9CDF5" />
-      <rect x="590" y="648" width="78" height="76" rx="14" fill="#B9CDF5" />
-      <rect x="715" y="648" width="82" height="76" rx="14" fill="#2450B8" />
-      <rect x="468" y="750" width="78" height="76" rx="14" fill="#B9CDF5" />
-      <rect x="590" y="750" width="78" height="76" rx="14" fill="#B9CDF5" />
-      <rect x="715" y="750" width="82" height="76" rx="14" fill="#B9CDF5" />
-    </svg>
+    <img src={logoMark} alt="" aria-hidden="true" draggable="false" className={`pointer-events-none select-none object-contain ${className}`} />
   );
 }
 
 export function Logo({ className = '' }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <LogoMark className="h-10 w-10" />
+      <LogoMark className="h-14 w-14" />
       <span className="font-hand text-3xl font-bold text-ink leading-none">ReserveEase</span>
     </span>
   );
