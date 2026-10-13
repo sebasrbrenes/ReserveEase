@@ -54,14 +54,22 @@ export function Sparkle({ className = '' }) {
   );
 }
 
-// The ReserveEase calendar mark, redrawn with a marker.
+// The ReserveEase calendar mark (same drawing as Logos/reserveease-logo.svg).
 export function LogoMark({ className = '' }) {
   return (
-    <svg viewBox="0 0 48 48" strokeWidth="3" className={withClass(className)} {...decorative}>
-      <path d="M9 13 C 9 10, 11 9, 14 9 L 35 8.5 C 38 8.5, 39.5 10, 39.5 13 L 40 36 C 40 39, 38 40.5, 35 40.5 L 13 40 C 10 40, 8.5 38.5, 8.5 35.5 Z" className="text-ink" />
-      <path d="M9 19 C 18 18, 30 19.5, 39.5 18.5" className="text-ink" />
-      <path d="M17 5 L 17.5 12 M31 5 L 30.5 12" className="text-ink" />
-      <path d="M15 26 L 15.5 26 M21 26 C 25 25.5, 29 26.5, 33 26 M15 33 C 19 32.5, 23 33.5, 27 33 M32.5 33 L 33 33" className="text-marker" />
+    <svg viewBox="262 266 652 652" fill="none" aria-hidden="true" focusable="false" className={`pointer-events-none select-none ${className}`}>
+      <g strokeLinecap="round" strokeLinejoin="round">
+        <path d="M302 388 L372 424 M410 302 L434 370" stroke="#FFD35C" strokeWidth="34" />
+        <rect x="397" y="468" width="472" height="420" rx="78" fill="#FFFDF8" stroke="#1F2328" strokeWidth="36" />
+        <path d="M400 590 H866" stroke="#1F2328" strokeWidth="32" />
+        <path d="M520 412 V512 M752 412 V512" stroke="#1F2328" strokeWidth="40" />
+      </g>
+      <rect x="468" y="648" width="78" height="76" rx="14" fill="#B9CDF5" />
+      <rect x="590" y="648" width="78" height="76" rx="14" fill="#B9CDF5" />
+      <rect x="715" y="648" width="82" height="76" rx="14" fill="#2450B8" />
+      <rect x="468" y="750" width="78" height="76" rx="14" fill="#B9CDF5" />
+      <rect x="590" y="750" width="78" height="76" rx="14" fill="#B9CDF5" />
+      <rect x="715" y="750" width="82" height="76" rx="14" fill="#B9CDF5" />
     </svg>
   );
 }
@@ -69,7 +77,7 @@ export function LogoMark({ className = '' }) {
 export function Logo({ className = '' }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <LogoMark className="h-9 w-9" />
+      <LogoMark className="h-10 w-10" />
       <span className="font-hand text-3xl font-bold text-ink leading-none">ReserveEase</span>
     </span>
   );
