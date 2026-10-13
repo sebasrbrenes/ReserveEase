@@ -337,10 +337,15 @@ const Settings = () => {
     <div className="hd-page px-4 py-6 sm:p-6 overflow-x-hidden">
       <div className="max-w-5xl mx-auto">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => {
+            // Opened directly (new tab, bookmark): there is no page of the app
+            // to go back to, so Back goes to the dashboard instead of leaving.
+            if (window.history.state?.idx > 0) navigate(-1);
+            else navigate('/dashboard');
+          }}
           className="hd-btn hd-btn-secondary !px-3 !py-1.5 mb-6 text-sm"
         >
-          <FiArrowLeft className="w-4 h-4" />
+          <FiArrowLeft className="w-4 h-4" aria-hidden="true" />
           Back
         </button>
 

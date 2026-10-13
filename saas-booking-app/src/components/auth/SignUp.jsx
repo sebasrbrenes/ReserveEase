@@ -59,8 +59,10 @@ const SignUp = () => {
       let errorMessage = 'Failed to create account';
       
       switch (error.code) {
+        // Same answer whether or not the email has an account, so the form
+        // does not tell strangers who is registered.
         case 'auth/email-already-in-use':
-          errorMessage = 'This email is already registered';
+          errorMessage = 'We could not create an account with this email. If you already have one, log in or reset your password.';
           break;
         case 'auth/invalid-email':
           errorMessage = 'Invalid email address';

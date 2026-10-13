@@ -80,3 +80,38 @@ export const toE164 = (countryCode, localNumber) => {
   const digits = String(localNumber || '').replace(/[^0-9]/g, '');
   return digits ? `${countryCode}${digits}` : null;
 };
+
+// Same rule as the API: "+", a country code and 8 to 15 digits in all.
+export const isE164 = (phone) => /^\+[1-9]\d{7,14}$/.test(phone);
+
+// The business's time zone says where most of its clients call from, so the
+// phone field starts on that country instead of always on +1.
+const CODE_BY_TIME_ZONE = {
+  'America/Costa_Rica': '+506', 'America/Panama': '+507', 'America/Managua': '+505',
+  'America/Tegucigalpa': '+504', 'America/El_Salvador': '+503', 'America/Guatemala': '+502',
+  'America/Mexico_City': '+52', 'America/Cancun': '+52', 'America/Monterrey': '+52',
+  'America/Merida': '+52', 'America/Chihuahua': '+52', 'America/Tijuana': '+52',
+  'America/Hermosillo': '+52', 'America/Mazatlan': '+52',
+  'America/Bogota': '+57', 'America/Lima': '+51', 'America/Caracas': '+58',
+  'America/La_Paz': '+591', 'America/Santiago': '+56', 'America/Asuncion': '+595',
+  'America/Montevideo': '+598', 'America/Argentina/Buenos_Aires': '+54', 'America/Buenos_Aires': '+54',
+  'America/Sao_Paulo': '+55', 'America/Havana': '+53', 'America/Port-au-Prince': '+509',
+  'Europe/Madrid': '+34', 'Europe/London': '+44', 'Europe/Dublin': '+353', 'Europe/Paris': '+33',
+  'Europe/Berlin': '+49', 'Europe/Rome': '+39', 'Europe/Lisbon': '+351', 'Europe/Amsterdam': '+31',
+  'Europe/Brussels': '+32', 'Europe/Vienna': '+43', 'Europe/Zurich': '+41', 'Europe/Stockholm': '+46',
+  'Europe/Oslo': '+47', 'Europe/Copenhagen': '+45', 'Europe/Warsaw': '+48', 'Europe/Athens': '+30',
+  'Europe/Bucharest': '+40', 'Europe/Istanbul': '+90', 'Europe/Moscow': '+7', 'Europe/Monaco': '+377',
+  'Asia/Tokyo': '+81', 'Asia/Seoul': '+82', 'Asia/Shanghai': '+86', 'Asia/Hong_Kong': '+852',
+  'Asia/Taipei': '+886', 'Asia/Singapore': '+65', 'Asia/Bangkok': '+66', 'Asia/Jakarta': '+62',
+  'Asia/Manila': '+63', 'Asia/Kolkata': '+91', 'Asia/Calcutta': '+91', 'Asia/Dubai': '+971',
+  'Asia/Riyadh': '+966', 'Asia/Qatar': '+974', 'Asia/Kuwait': '+965', 'Asia/Bahrain': '+973',
+  'Asia/Muscat': '+968', 'Asia/Amman': '+962', 'Asia/Jerusalem': '+972', 'Asia/Karachi': '+92',
+  'Asia/Dhaka': '+880', 'Asia/Colombo': '+94', 'Asia/Ho_Chi_Minh': '+84', 'Asia/Vientiane': '+856',
+  'Asia/Tashkent': '+998', 'Asia/Bishkek': '+996', 'Asia/Almaty': '+7',
+  'Australia/Sydney': '+61', 'Australia/Melbourne': '+61', 'Australia/Brisbane': '+61',
+  'Australia/Perth': '+61', 'Australia/Adelaide': '+61', 'Pacific/Auckland': '+64',
+  'Africa/Cairo': '+20', 'Africa/Lagos': '+234', 'Africa/Nairobi': '+254', 'Africa/Johannesburg': '+27',
+  'Africa/Casablanca': '+212', 'Africa/Dakar': '+221', 'Africa/Maputo': '+258',
+};
+
+export const defaultCountryCode = (timeZone) => CODE_BY_TIME_ZONE[timeZone] || '+1';

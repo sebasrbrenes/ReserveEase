@@ -128,7 +128,7 @@ body {
   }
 }
 
-.hd-page :focus-visible {
+:is(.hd-page, .hd-scope) :focus-visible {
   outline: 3px solid theme('colors.marker.DEFAULT');
   outline-offset: 2px;
 }
@@ -143,46 +143,47 @@ body {
   }
 }
 
-/* react-datepicker in the Hand-Drawn pages */
-.hd-page .react-datepicker {
+/* react-datepicker in the Hand-Drawn pages, and in their dialogs, which render
+   outside .hd-page: mark those with .hd-scope. */
+:is(.hd-page, .hd-scope) .react-datepicker {
   @apply font-sans border-2 border-ink text-ink;
   border-radius: 14px 6px 12px 6px / 6px 12px 6px 14px;
   box-shadow: 4px 4px 0 theme('colors.ink.DEFAULT');
   overflow: hidden;
 }
-.hd-page .react-datepicker__header {
+:is(.hd-page, .hd-scope) .react-datepicker__header {
   @apply bg-paper border-b-2 border-ink;
 }
-.hd-page .react-datepicker__current-month {
+:is(.hd-page, .hd-scope) .react-datepicker__current-month {
   @apply font-hand text-2xl font-bold text-ink;
 }
-.hd-page .react-datepicker__day-name,
-.hd-page .react-datepicker__day {
+:is(.hd-page, .hd-scope) .react-datepicker__day-name,
+:is(.hd-page, .hd-scope) .react-datepicker__day {
   @apply text-ink;
   width: 2.25rem;
   line-height: 2.25rem;
 }
-.hd-page .react-datepicker__day:hover {
+:is(.hd-page, .hd-scope) .react-datepicker__day:hover {
   @apply bg-sun-light rounded-full;
 }
-.hd-page .react-datepicker__day--selected,
-.hd-page .react-datepicker__day--keyboard-selected {
+:is(.hd-page, .hd-scope) .react-datepicker__day--selected,
+:is(.hd-page, .hd-scope) .react-datepicker__day--keyboard-selected {
   @apply bg-sun text-ink font-bold rounded-full outline outline-2 outline-ink;
 }
-.hd-page .react-datepicker__day--disabled {
+:is(.hd-page, .hd-scope) .react-datepicker__day--disabled {
   @apply text-ink-soft/40;
 }
-.hd-page .react-datepicker__triangle {
+:is(.hd-page, .hd-scope) .react-datepicker__triangle {
   display: none;
 }
 
 /* dashboard/select.css forces dark selects everywhere; Hand-Drawn pages keep them on paper. */
-.hd-page select,
-.hd-page select option {
+:is(.hd-page, .hd-scope) select,
+:is(.hd-page, .hd-scope) select option {
   background-color: #ffffff !important;
   color: theme('colors.ink.DEFAULT') !important;
 }
-.hd-page select:disabled {
+:is(.hd-page, .hd-scope) select:disabled {
   background-color: theme('colors.paper.deep') !important;
   color: theme('colors.ink.soft') !important;
 }

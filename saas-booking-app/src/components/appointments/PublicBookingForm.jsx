@@ -1,15 +1,25 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-import { createPublicBooking, errorMessage, getPublicAvailability, getPublicBusiness } from '../../services/api';
-import { COUNTRY_CODES, toE164 } from '../../utils/countryCodes';
+import { createPublicBooking, errorMessage, fieldErrors, getPublicAvailability, getPublicBusiness } from '../../services/api';
+import { COUNTRY_CODES, defaultCountryCode, isE164, toE164 } from '../../utils/countryCodes';
 import { formatLocalDate, formatMoney, formatTime, fromLocalDateString, toLocalDateString, todayIn } from '../../utils/datetime';
 import { Logo, Star, Underline } from '../ui/Doodles';
 
 // Shown with the form; bump it when the privacy notice text changes.
 const PRIVACY_NOTICE_VERSION = '2026-10';
+
+// Form fields for the paths the API reports in its field errors.
+const FIELD_BY_PATH = { 'client.name': 'clientName', 'client.email': 'email', 'client.phoneE164': 'phone', notes: 'notes' };
+const FIELD_ORDER = ['clientName', 'email', 'phone', 'notes'];
+
+// The error under a field; the field points at it with aria-describedby.
+function FieldError({ id, message }) {
+  if (!message) return null;
+  return <p id={id} className="mt-1 text-sm font-semibold text-coral">{message}</p>;
+}
 
 function Step({ number, title, children }) {
   return (
@@ -41,6 +51,9 @@ export default function PublicBookingForm() {
   const [business, setBusiness] = useState(null);
   const [form, setForm] = useState({ serviceId: '', staffId: '', date: '', startsAt: '', clientName: '', email: '', phone: '', notes: '' });
   const [countryCode, setCountryCode] = useState('+1');
+  // Errors shown next to their field: { clientName, email, phone, notes }.
+  const [errors, setErrors] = useState({});
+  const fieldRefs = { clientName: useRef(null), email: useRef(null), phone: useRef(null), notes: useRef(null) };
   const [availability, setAvailability] = useState({ loading: false, status: null, slots: [] });
   const [refreshSlots, setRefreshSlots] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -55,6 +68,7 @@ export default function PublicBookingForm() {
         if (cancelled) return;
         setBusiness(data);
         setForm((prev) => ({ ...prev, date: todayIn(data.timezone) }));
+        setCountryCode(defaultCountryCode(data.timezone));
       })
       .catch((error) => {
         if (!cancelled && error.status !== 404) toast.error(errorMessage(error));
@@ -91,22 +105,36 @@ export default function PublicBookingForm() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
     if (name === 'serviceId') update({ serviceId: value, staffId: '', startsAt: '' });
     else if (name === 'staffId') update({ staffId: value, startsAt: '' });
     else if (name === 'phone') update({ phone: value.replace(/[^0-9]/g, '') });
     else update({ [name]: value });
   };
 
+  // Shows the errors next to their fields and moves the focus to the first.
+  const showErrors = (found) => {
+    setErrors(found);
+    const first = FIELD_ORDER.find((field) => found[field]);
+    if (first) fieldRefs[first].current?.focus();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting || !form.startsAt) return;
+    const phone = toE164(countryCode, form.phone);
+    if (phone && !isE164(phone)) {
+      showErrors({ phone: `This number looks too short or too long. Write the full number, for example ${countryCode} 8888 7777.` });
+      return;
+    }
+    setErrors({});
     setSubmitting(true);
     try {
       const booking = await createPublicBooking(slug, {
         serviceId: form.serviceId,
         staffId: form.staffId,
         startsAt: form.startsAt,
-        client: { name: form.clientName.trim(), email: form.email.trim(), phoneE164: toE164(countryCode, form.phone) },
+        client: { name: form.clientName.trim(), email: form.email.trim(), phoneE164: phone },
         notes: form.notes,
         privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
         smsConsent: false,
@@ -123,6 +151,10 @@ export default function PublicBookingForm() {
         update({ startsAt: '' });
         setRefreshSlots((n) => n + 1);
       }
+      const byField = Object.fromEntries(
+        Object.entries(fieldErrors(error)).map(([path, message]) => [FIELD_BY_PATH[path], message])
+      );
+      if (Object.keys(byField).length) showErrors(byField);
       toast.error(errorMessage(error));
     } finally {
       setSubmitting(false);
@@ -244,12 +276,22 @@ export default function PublicBookingForm() {
             <Step number={3} title="About you">
               <div>
                 <label htmlFor="clientName" className="hd-label">Full Name *</label>
-                <input id="clientName" type="text" name="clientName" value={form.clientName} onChange={handleChange} className="hd-input" maxLength={100} autoComplete="name" required />
+                <input
+                  id="clientName" ref={fieldRefs.clientName} type="text" name="clientName" value={form.clientName} onChange={handleChange}
+                  className="hd-input" maxLength={100} autoComplete="name" required
+                  aria-invalid={Boolean(errors.clientName)} aria-describedby={errors.clientName ? 'clientName-error' : undefined}
+                />
+                <FieldError id="clientName-error" message={errors.clientName} />
               </div>
 
               <div>
                 <label htmlFor="email" className="hd-label">Email *</label>
-                <input id="email" type="email" name="email" value={form.email} onChange={handleChange} className="hd-input" maxLength={200} autoComplete="email" required />
+                <input
+                  id="email" ref={fieldRefs.email} type="email" name="email" value={form.email} onChange={handleChange}
+                  className="hd-input" maxLength={200} autoComplete="email" required
+                  aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'email-error' : undefined}
+                />
+                <FieldError id="email-error" message={errors.email} />
               </div>
 
               <div>
@@ -258,7 +300,10 @@ export default function PublicBookingForm() {
                   <select
                     aria-label="Country code"
                     value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
+                    onChange={(e) => {
+                      setCountryCode(e.target.value);
+                      setErrors((prev) => ({ ...prev, phone: undefined }));
+                    }}
                     className="hd-input"
                   >
                     {COUNTRY_CODES.map((country) => (
@@ -267,6 +312,7 @@ export default function PublicBookingForm() {
                   </select>
                   <input
                     id="phone"
+                    ref={fieldRefs.phone}
                     type="tel"
                     name="phone"
                     value={form.phone}
@@ -275,13 +321,21 @@ export default function PublicBookingForm() {
                     placeholder="88887777"
                     autoComplete="tel-national"
                     maxLength={14}
+                    aria-invalid={Boolean(errors.phone)}
+                    aria-describedby={errors.phone ? 'phone-error' : 'phone-help'}
                   />
                 </div>
+                <FieldError id="phone-error" message={errors.phone} />
+                {!errors.phone && <p id="phone-help" className="mt-1 hd-help">Optional. Choose the country and write the number without its code.</p>}
               </div>
 
               <div>
                 <label htmlFor="notes" className="hd-label">Notes</label>
-                <textarea id="notes" name="notes" value={form.notes} onChange={handleChange} rows="3" maxLength={500} className="hd-input" />
+                <textarea
+                  id="notes" ref={fieldRefs.notes} name="notes" value={form.notes} onChange={handleChange} rows="3" maxLength={500} className="hd-input"
+                  aria-invalid={Boolean(errors.notes)} aria-describedby={errors.notes ? 'notes-error' : undefined}
+                />
+                <FieldError id="notes-error" message={errors.notes} />
               </div>
             </Step>
           </form>

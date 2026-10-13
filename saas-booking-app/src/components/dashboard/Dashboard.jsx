@@ -27,7 +27,7 @@ import {
   cancelAppointment, errorMessage, listAppointments, retryNotifications, transitionAppointment,
 } from '../../services/api';
 import NotificationStatus from '../appointments/NotificationStatus';
-import { STATUS_ACTIONS, statusClass, statusLabel } from '../appointments/status';
+import { statusActionsFor, statusClass, statusLabel } from '../appointments/status';
 import { formatLocalDate, formatMoney, formatTime, shiftDate, todayIn } from '../../utils/datetime';
 
 // Appointments loaded around today; the API is the only source.
@@ -43,7 +43,7 @@ const Dashboard = () => {
   const { business } = useSettings();
   const businessId = business.data?.businessId;
   const timezone = business.data?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const currency = business.data?.currency || 'USD';
+  const currency = business.data?.currency;
   // null = the list shows the next appointments; a day = that day's appointments.
   const [selectedDate, setSelectedDate] = useState(null);
   const [showNewAppointment, setShowNewAppointment] = useState(false);
@@ -146,6 +146,16 @@ const Dashboard = () => {
       .slice(0, UPCOMING_COUNT);
   }, [appointments, selectedLocalDate]);
 
+  // Until the business and its appointments arrive, the cards show that they
+  // are loading instead of zeros that look like real numbers.
+  // If the business could not load, the cards show a dash and the alert why.
+  const businessReady = !business.loading && Boolean(business.data);
+  const metricsReady = !business.loading && !(businessId && isLoading);
+  const canBook = businessReady && business.data.status === 'published';
+  const newAppointmentHint = business.loading
+    ? 'Loading your business...'
+    : !canBook ? 'Finish your settings to take bookings' : undefined;
+
   const staffList = business.data?.staff || [];
   const activeStaff = staffList.filter((staff) => staff.active);
 
@@ -181,7 +191,9 @@ const Dashboard = () => {
       },
       {
         id: 'todayValue',
-        value: formatMoney(todayAppointments.reduce((total, apt) => total + (apt.serviceSnapshot?.priceMinor || 0), 0), currency),
+        value: currency
+          ? formatMoney(todayAppointments.reduce((total, apt) => total + (apt.serviceSnapshot?.priceMinor || 0), 0), currency)
+          : '—',
         title: "Today's booked value",
         subtext: `${completedToday.length} of ${todayAppointments.length} completed`,
         type: 'neutral',
@@ -236,7 +248,11 @@ const Dashboard = () => {
         )}
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8"
+          aria-busy={!metricsReady}
+          data-testid="metrics"
+        >
           {metrics.map(metric => (
             <div
               key={metric.id}
@@ -248,7 +264,13 @@ const Dashboard = () => {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink-soft">{metric.title}</p>
-                  <span className="text-2xl font-extrabold text-ink">{metric.value}</span>
+                  {metricsReady ? (
+                    <span className="text-2xl font-extrabold text-ink">{business.data ? metric.value : '—'}</span>
+                  ) : (
+                    <span className="block h-8 w-20 my-0.5 rounded-md bg-paper-deep animate-pulse motion-reduce:animate-none">
+                      <span className="sr-only">Loading</span>
+                    </span>
+                  )}
                   <p className={`text-sm ${
                     metric.type === 'neutral'
                       ? 'text-ink-soft'
@@ -256,7 +278,7 @@ const Dashboard = () => {
                       ? 'text-leaf font-semibold'
                       : 'text-coral font-semibold'
                   }`}>
-                    {metric.subtext}
+                    {metricsReady ? metric.subtext : '\u00a0'}
                   </p>
                 </div>
               </div>
@@ -296,8 +318,8 @@ const Dashboard = () => {
                       setShowNewAppointment(true);
                       setAppointmentToEdit(null);
                     }}
-                    disabled={business.data?.status !== 'published'}
-                    title={business.data?.status !== 'published' ? 'Finish your settings to take bookings' : undefined}
+                    disabled={!canBook}
+                    title={newAppointmentHint}
                     className="hd-btn !px-4 !py-2 text-sm flex-1 sm:flex-none"
                   >
                     <FiPlus className="w-4 h-4" aria-hidden="true" />
@@ -348,7 +370,7 @@ const Dashboard = () => {
                                 onBlur={() => setEditingStatus(null)}
                               >
                                 <option value="">{statusLabel(appointment.status)}</option>
-                                {STATUS_ACTIONS.map((option) => (
+                                {statusActionsFor(appointment).map((option) => (
                                   <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
                               </select>

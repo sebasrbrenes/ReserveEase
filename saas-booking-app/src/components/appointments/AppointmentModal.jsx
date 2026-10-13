@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { FiX } from 'react-icons/fi';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
@@ -24,6 +25,7 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
   const [form, setForm] = useState(() => emptyForm(timezone));
   const [availability, setAvailability] = useState({ loading: false, status: null, slots: [] });
   const [submitting, setSubmitting] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const canMove = !appointment || appointment.status === 'confirmed';
 
@@ -168,23 +170,30 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-ink/40 p-4 overflow-y-auto"
-        >
+        // A modal dialog: it takes the focus, keeps Tab inside, closes with
+        // Escape and gives the focus back to the button that opened it.
+        <Dialog static open={isOpen} onClose={onClose} className="relative z-50">
           <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/40"
+            aria-hidden="true"
+          />
+          <div className="fixed inset-0 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+          <DialogPanel
+            as={motion.div}
             initial={{ scale: 0.95 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0.95 }}
-            className="hd-card w-full max-w-lg p-5 sm:p-6 relative my-8 text-ink"
+            className="hd-scope hd-card w-full max-w-lg p-5 sm:p-6 relative my-8 text-ink font-sans"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="hd-title text-4xl">
+              <DialogTitle className="hd-title text-4xl">
                 {appointment ? 'Edit Appointment' : 'New Appointment'}
-              </h2>
+              </DialogTitle>
               <button
+                type="button"
                 onClick={onClose}
                 aria-label="Close"
                 className="p-1 text-ink-soft hover:text-ink hover:bg-paper-deep rounded-full transition duration-200"
@@ -224,9 +233,12 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="w-full">
+                {/* Escape with the calendar open closes the calendar, not the dialog. */}
+                <div className="w-full" onKeyDown={(e) => pickerOpen && e.key === 'Escape' && e.stopPropagation()}>
                   <label htmlFor="apt-date" className="hd-label">Date *</label>
                   <DatePicker
+                    onCalendarOpen={() => setPickerOpen(true)}
+                    onCalendarClose={() => setPickerOpen(false)}
                     id="apt-date"
                     selected={form.date ? fromLocalDateString(form.date) : null}
                     onChange={(date) => date && update({ date: toLocalDateString(date), startsAt: '' })}
@@ -296,8 +308,9 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
                 </button>
               </div>
             </form>
-          </motion.div>
-        </motion.div>
+          </DialogPanel>
+          </div>
+        </Dialog>
       )}
     </AnimatePresence>
   );

@@ -77,9 +77,28 @@ export const cancelAppointment = (businessId, id, body) =>
 export const transitionAppointment = (businessId, id, body) =>
   request('POST', apt(businessId, id, '/transition'), { body, signedIn: true });
 
+// What to tell the person about each field the API can reject.
+const FIELD_MESSAGES = {
+  'client.name': 'Write the client\'s name.',
+  'client.email': 'Write a valid email, for example name@example.com.',
+  'client.phoneE164': 'Check the phone number: write it with its country code, for example +506 8888 7777.',
+  notes: 'Notes can be up to 500 characters.',
+};
+
+// The API's field errors as { path: message } for the person to read.
+export const fieldErrors = (error) => Object.fromEntries(
+  (error?.code === 'INVALID_INPUT' ? error.fields || [] : [])
+    .map(({ path }) => [path, FIELD_MESSAGES[path]])
+    .filter(([, message]) => message)
+);
+
 // Messages for the error codes a person can act on.
 export const errorMessage = (error) => {
   switch (error?.code) {
+    case 'INVALID_INPUT': {
+      const [first] = Object.values(fieldErrors(error));
+      return first || 'Some details are not valid. Check the form and try again.';
+    }
     case 'SLOT_UNAVAILABLE': return 'That time was just taken. Please choose another one.';
     case 'SLOT_NOT_OFFERED': return 'That time is no longer available. Please choose another one.';
     case 'VERSION_CONFLICT': return 'This appointment was changed elsewhere. The list has been refreshed; try again.';
