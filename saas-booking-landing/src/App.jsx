@@ -1,10 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
-import Hero from './components/Hero'
-import Features from './components/Features'
-import HowItWorks from './components/HowItWorks'
-import Pricing from './components/Pricing'
-import FAQ from './components/FAQ'
+import Hero from './components/notebook/Hero'
+import Race from './components/notebook/Race'
+import Closing from './components/notebook/Closing'
 import Footer from './components/Footer'
 
 // Pages
@@ -21,14 +19,12 @@ function App() {
         <Route
           path="/"
           element={
-            <div className="hd-page overflow-x-clip">
+            <div className="min-h-screen overflow-x-clip bg-paper text-ink">
               <Header />
               <main>
                 <Hero />
-                <HowItWorks />
-                <Features />
-                <Pricing />
-                <FAQ />
+                <Race />
+                <Closing />
               </main>
               <Footer />
             </div>

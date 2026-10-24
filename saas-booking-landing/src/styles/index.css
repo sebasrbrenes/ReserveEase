@@ -119,6 +119,49 @@ body {
   .hd-link {
     @apply font-bold text-marker underline decoration-2 underline-offset-4 hover:text-marker-dark;
   }
+
+  /* Notebook: the landing is one paper agenda. Ruled lines every 32px, a red margin. */
+  .nb-ruled {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 31px,
+      rgba(36, 80, 184, 0.09) 31px,
+      rgba(36, 80, 184, 0.09) 32px
+    );
+  }
+
+  .nb-display {
+    @apply font-display text-ink;
+    font-variation-settings: 'opsz' 144;
+    letter-spacing: -0.03em;
+    word-spacing: 0.08em;
+    line-height: 0.92;
+  }
+
+  .nb-sheet {
+    @apply relative bg-white border-2 border-ink;
+    border-radius: 6px 18px 8px 16px / 16px 8px 18px 6px;
+    box-shadow: 6px 6px 0 theme('colors.ink.DEFAULT');
+  }
+
+  .nb-stamp {
+    @apply inline-block font-display italic font-bold uppercase text-coral border-2 border-coral px-2 py-0.5 text-xs;
+    letter-spacing: 0.08em;
+    border-radius: 4px 9px 5px 8px / 8px 5px 9px 4px;
+  }
+}
+
+/* Paper grain over the whole page. Decorative, never intercepts clicks. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.10 0 0 0 0 0.08 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 :focus-visible {

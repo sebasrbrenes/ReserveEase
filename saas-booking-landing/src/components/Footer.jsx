@@ -5,32 +5,18 @@ const linkClass = 'text-ink-soft hover:text-marker';
 
 const Footer = () => (
   <footer className="border-t-2 border-ink bg-paper-deep">
-    <div className="max-w-6xl mx-auto px-4 py-10 grid gap-8 sm:grid-cols-2 md:grid-cols-4">
-      <div className="sm:col-span-2 md:col-span-1">
+    <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:flex-row md:items-center md:justify-between">
+      <div>
         <Logo />
-        <p className="mt-3 text-sm text-ink-soft">Online booking for businesses that work by appointment.</p>
+        <p className="mt-2 text-sm text-ink-soft">Reservas en línea para negocios que trabajan con citas.</p>
       </div>
-      <nav aria-label="Product">
-        <h2 className="font-extrabold mb-3">Product</h2>
-        <ul className="space-y-2">
-          <li><a href="/#how-it-works" className={linkClass}>How it works</a></li>
-          <li><a href="/#features" className={linkClass}>Features</a></li>
-          <li><a href="/#pricing" className={linkClass}>Pricing</a></li>
-        </ul>
-      </nav>
-      <nav aria-label="Company">
-        <h2 className="font-extrabold mb-3">Company</h2>
-        <ul className="space-y-2">
-          <li><Link to="/about" className={linkClass}>About</Link></li>
-          <li><a href="mailto:contact@reservease.com" className={linkClass}>Contact</a></li>
-        </ul>
-      </nav>
-      <nav aria-label="Legal">
-        <h2 className="font-extrabold mb-3">Legal</h2>
-        <ul className="space-y-2">
-          <li><Link to="/privacy-policy" className={linkClass}>Privacy Policy</Link></li>
-          <li><Link to="/terms" className={linkClass}>Terms of Service</Link></li>
-          <li><Link to="/refund-policy" className={linkClass}>Refund Policy</Link></li>
+      <nav aria-label="Legal y contacto">
+        <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <li><Link to="/about" className={linkClass}>Quiénes somos</Link></li>
+          <li><a href="mailto:contact@reservease.com" className={linkClass}>Contacto</a></li>
+          <li><Link to="/privacy-policy" className={linkClass}>Privacidad</Link></li>
+          <li><Link to="/terms" className={linkClass}>Términos</Link></li>
+          <li><Link to="/refund-policy" className={linkClass}>Reembolsos</Link></li>
         </ul>
       </nav>
     </div>
