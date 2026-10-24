@@ -26,6 +26,7 @@ export default {
       fontFamily: {
         sans: ['"Nunito Variable"', 'Nunito', 'system-ui', 'Avenir', 'Helvetica', 'Arial', 'sans-serif'],
         hand: ['Caveat', '"Segoe Print"', '"Bradley Hand"', 'cursive'],
+        display: ['"Fraunces Variable"', 'Fraunces', 'Georgia', 'serif'],
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
