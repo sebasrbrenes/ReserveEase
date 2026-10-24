@@ -3,9 +3,11 @@ import Scene from './Scene';
 import Highlight from './Highlight';
 import HeroAgenda from './HeroAgenda';
 import { APP_URL } from '../../config';
+import { useBusiness } from './BusinessContext';
 
 const Hero = () => {
   const reduce = useReducedMotion();
+  const { business } = useBusiness();
   const rise = (delay) => (reduce ? {} : {
     initial: { opacity: 0, y: 18 },
     animate: { opacity: 1, y: 0 },
@@ -14,7 +16,7 @@ const Hero = () => {
 
   return (
     <Scene id="inicio" time="8:00" labelledBy="hero-title">
-      <div className="grid items-center gap-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
         <div>
           <motion.p {...rise(0)} className="font-hand text-2xl text-marker">
             para barberías, salones y todo el que trabaja con citas
@@ -44,7 +46,7 @@ const Hero = () => {
           animate={{ opacity: 1, y: 0, rotate: 0 }}
           transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
         >
-          <HeroAgenda />
+          <HeroAgenda key={business.id} />
         </motion.div>
       </div>
     </Scene>

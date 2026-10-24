@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useInView, useReducedMotion } from 'framer-motion';
 import Scene from './Scene';
 import Highlight from './Highlight';
-import { BUSINESS } from './demo';
+import { useBusiness } from './BusinessContext';
 
 const SLOTS = ['9:30', '10:30', '11:00', '12:00', '14:00', '15:30'];
 
@@ -39,6 +39,8 @@ const Check = () => (
 
 // A phone drawn in ink, showing the client's side of the booking page.
 const Phone = ({ who, from, target, step, won, lostAt }) => {
+  const { business } = useBusiness();
+  const service = business.services[0].name.toLowerCase();
   const pressed = step >= 2;
   const done = won !== null && step >= won;
   const told = lostAt !== null && step >= lostAt && !done;
@@ -58,13 +60,13 @@ const Phone = ({ who, from, target, step, won, lostAt }) => {
               <Check />
               <p className="mt-3 nb-display text-xl sm:text-3xl font-semibold">¡Listo, {who}!</p>
               <p className="mt-2 text-sm text-ink-soft">Sábado a las <strong className="text-ink">{target}</strong></p>
-              <p className="mt-1 text-xs text-ink-soft">{BUSINESS}</p>
+              <p className="mt-1 text-xs text-ink-soft">{business.name}</p>
             </motion.div>
           ) : (
             <motion.div key="pick" exit={{ opacity: 0, y: -12 }} className="px-2.5 pt-3 sm:px-3">
-              <p className="truncate text-[0.6rem] font-bold uppercase tracking-[0.12em] text-ink-soft sm:text-[0.65rem]">{BUSINESS}</p>
+              <p className="truncate text-[0.6rem] font-bold uppercase tracking-[0.12em] text-ink-soft sm:text-[0.65rem]">{business.name}</p>
               <p className="mt-1 font-display text-base font-semibold leading-tight sm:text-lg">Elige una hora</p>
-              <p className="text-[0.7rem] text-ink-soft sm:text-xs">Sábado · corte</p>
+              <p className="text-[0.7rem] text-ink-soft sm:text-xs">Sábado · {service}</p>
 
               <AnimatePresence>
                 {told && (

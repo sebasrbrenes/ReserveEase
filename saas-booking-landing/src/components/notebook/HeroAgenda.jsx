@@ -1,27 +1,22 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Arrow } from '../Doodles';
-import { BUSINESS, SERVICES, colones, nextSaturday } from './demo';
+import { colones, nextSaturday } from './demo';
+import { useBusiness } from './BusinessContext';
 
 // The day page of the demo business. Taken rows are written in pencil; free rows
 // can be booked by the visitor, exactly as a client would from the link.
-const ROWS = [
-  { time: '9:00', taken: 'Luis · barba' },
-  { time: '9:30' },
-  { time: '10:00', taken: 'Andrés · corte' },
-  { time: '10:30' },
-  { time: '11:00' },
-  { time: '11:30', taken: 'Diego · corte y barba' },
-  { time: '12:00' },
-];
+const TIMES = ['9:00', '9:30', '10:00', '10:30', '11:00', '11:30', '12:00'];
+const TAKEN_AT = { '9:00': 0, '10:00': 1, '11:30': 2 };
 
 const SPIRAL_RINGS = 9;
 
 const HeroAgenda = () => {
   const reduce = useReducedMotion();
-  const [serviceId, setServiceId] = useState(SERVICES[0].id);
+  const { business } = useBusiness();
+  const [serviceId, setServiceId] = useState(business.services[0].id);
   const [booked, setBooked] = useState(null);
-  const service = SERVICES.find((s) => s.id === serviceId);
+  const service = business.services.find((s) => s.id === serviceId) ?? business.services[0];
   const day = nextSaturday();
   const weekday = day.toLocaleDateString('es-CR', { weekday: 'long' });
   const month = day.toLocaleDateString('es-CR', { month: 'long' });
@@ -45,15 +40,15 @@ const HeroAgenda = () => {
             </p>
           </div>
           <p className="text-right text-xs font-bold uppercase tracking-[0.14em] text-ink-soft">
-            {BUSINESS}
-            <span className="block font-semibold normal-case tracking-normal">San José</span>
+            {business.name}
+            <span className="block font-semibold normal-case tracking-normal">{business.place}</span>
           </p>
         </div>
 
         <fieldset className="px-5 sm:px-7 pt-4">
           <legend className="sr-only">Servicio</legend>
           <div className="flex flex-wrap gap-2">
-            {SERVICES.map((s) => (
+            {business.services.map((s) => (
               <button
                 key={s.id}
                 type="button"
@@ -68,7 +63,8 @@ const HeroAgenda = () => {
         </fieldset>
 
         <ol className="mt-3 nb-ruled" style={{ backgroundPosition: '0 12px' }}>
-          {ROWS.map(({ time, taken }) => {
+          {TIMES.map((time) => {
+            const taken = business.taken[TAKEN_AT[time]];
             const mine = booked === time;
             return (
               <li key={time} className="relative flex items-center gap-4 h-12 px-5 sm:px-7 border-b border-ink/10 last:border-b-0">
