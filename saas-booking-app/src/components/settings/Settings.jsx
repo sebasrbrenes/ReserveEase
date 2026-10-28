@@ -6,6 +6,8 @@ import { toast } from 'react-hot-toast';
 import { Star, Underline } from '../ui/Doodles';
 import { CLIENT_LANGUAGES, clientLanguage } from '../../i18n/clientCopy';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
+import SubscriptionSection from '../billing/SubscriptionSection';
 import { formatMoney } from '../../utils/datetime';
 
 // Businesses saved before the language setting existed show their pages in
@@ -44,6 +46,7 @@ const Settings = () => {
   const { hash } = useLocation();
   const { settings, updateSettings, business } = useSettings();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const copy = t.settings;
   const { timeLabel, days: DAY_NAMES } = copy;
 
@@ -834,6 +837,10 @@ const Settings = () => {
             ))}
           </div>
         </section>
+
+        <div className="mt-6">
+          <SubscriptionSection businessId={business.data?.businessId} email={user?.email} />
+        </div>
       </div>
     </div>
   );

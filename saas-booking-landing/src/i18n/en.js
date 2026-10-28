@@ -7,7 +7,7 @@ const en = {
   currency: 'USD',
   meta: {
     title: 'ReserveEase · Your day books itself',
-    description: 'Share one link and your clients book themselves, only in the times you actually have free. Free during early access.',
+    description: 'Share one link and your clients book themselves, only in the times you actually have free. $15 USD a month.',
   },
   switcher: { label: 'Language', en: 'English', es: 'Español' },
   header: {
@@ -35,13 +35,13 @@ const en = {
     hero: '8:00', race: '9:15', chat: '11:40', business: '2:00',
     price: '6:30', notes: '6:45', night: '7:00', closing: '8:00',
   },
-  signupFree: 'Create my free calendar',
+  signupFree: 'Create my calendar',
   hero: {
     kicker: 'for barbershops, salons and anyone who works by appointment',
     title: ['Your day', 'books ', 'itself.'],
     lead: 'You share a link and your clients book at any hour, only in the slots you actually have free. You see it all on your dashboard, without answering texts or crossing out your appointment book.',
     raceLink: 'Watch the race for 10:30',
-    note: 'Free during early access. No card needed.',
+    note: '$15 USD a month. Cancel anytime.',
   },
   agenda: {
     service: 'Service',
@@ -110,9 +110,10 @@ const en = {
   },
   ticket: {
     kicker: 'closing out the register',
-    title: ['What does it cost? ', 'Nothing', ', for now.'],
-    lead: 'ReserveEase is in early access. Until then it’s free and we don’t ask for a card. Before any paid plan starts, we’ll tell you the price and you decide whether to stay.',
-    edition: 'Early access',
+    title: ['What does it cost? ', '$15', ' a month.'],
+    lead: 'One plan, with everything on the receipt. It’s billed monthly in dollars through Paddle, our payment provider, and you can cancel anytime from your account settings.',
+    cta: 'Subscribe for $15 a month',
+    edition: 'Monthly plan',
     lines: [
       ['Your booking page', 'included'],
       ['Unlimited appointments', 'included'],
@@ -121,10 +122,10 @@ const en = {
       ['Phone and computer', 'included'],
       ['Email reminders', 'soon', true],
     ],
-    total: '$0',
-    noCard: 'No card',
-    thanks: 'Thanks for coming early!',
-    stamp: 'Free',
+    total: '$15',
+    noCard: 'USD per month',
+    thanks: 'Thanks for stopping by!',
+    stamp: 'Monthly',
   },
   notes: {
     kicker: 'stuck on the fridge',
@@ -151,8 +152,8 @@ const en = {
         a: 'Only you, after signing in with a verified email. Each business sees only its own appointments, and your clients only see open times, never anyone else’s bookings.',
       },
       {
-        q: 'What if you start charging?',
-        a: 'We’ll tell you the price before it applies and you decide whether to stay. For as long as early access lasts, it’s free.',
+        q: 'How do I pay?',
+        a: 'It’s $15 USD a month by card, through Paddle, our payment provider. From your account settings you can see your next charge, change your card or cancel; if you cancel, you keep access until the end of the month you already paid for.',
       },
     ],
   },

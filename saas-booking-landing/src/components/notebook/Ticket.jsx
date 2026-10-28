@@ -21,7 +21,7 @@ const Ticket = () => {
           <p className="mt-6 max-w-xl text-lg text-ink-soft">
             {copy.lead}
           </p>
-          <a href={appLink('/signup')} className="hd-btn mt-8 px-7 py-3 text-lg">{t.signupFree}</a>
+          <a href={appLink('/signup')} className="hd-btn mt-8 px-7 py-3 text-lg">{copy.cta}</a>
         </div>
 
         <div className="relative mx-auto w-full max-w-sm">

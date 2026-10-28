@@ -18,14 +18,16 @@ const TermsEn = () => (
       </p>
     </Section>
 
-    <Section title="2. Early access and price">
+    <Section title="2. Price and subscription">
       <p>
-        ReserveEase is in early access and is free today. We do not ask for payment details. If there is a paid
-        plan in the future, we will tell businesses at least 30 days in advance and we will never charge without
-        their express agreement.
+        ReserveEase has a single plan at $15 USD per month. You subscribe from your account settings and the
+        payment is handled by Paddle.com, our online reseller and Merchant of Record, which processes the payment
+        and issues the invoice; by paying you also accept its buyer terms. The subscription renews every month
+        until you cancel it. If you cancel, you keep access until the end of the period you already paid for.
+        We never charge you unless you expressly subscribe.
       </p>
       <p>
-        During early access the service may change or have errors or interruptions. We keep improving it, but we
+        The service may change or have errors or interruptions. We keep improving it, but we
         do not guarantee that it is available at all times.
       </p>
     </Section>

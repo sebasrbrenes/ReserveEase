@@ -346,6 +346,33 @@ const es = {
     write: 'Escribir a soporte',
     button: 'Ayuda',
   },
+  billing: {
+    title: 'Suscripción',
+    intro: 'ReserveEase cuesta $15 USD al mes. El cobro lo hace Paddle, nuestro proveedor de pagos.',
+    subscribe: 'Suscribirme · $15 USD al mes',
+    manage: 'Administrar suscripción',
+    checking: 'Revisando tu suscripción...',
+    loadFailed: 'No pudimos revisar tu suscripción. Inténtalo en un momento.',
+    confirming: 'Confirmando tu pago...',
+    activated: '¡Listo! Tu suscripción está activa.',
+    openFailed: 'No pudimos abrir el pago. Inténtalo de nuevo.',
+    notAvailable: 'Los pagos todavía no están disponibles. Te avisaremos cuando puedas suscribirte.',
+    cancelsAt: (date) => `Termina el ${date}. Hasta entonces sigues teniendo acceso.`,
+    nextBilledAt: (date) => `Próximo cobro: ${date}.`,
+    status: {
+      none: 'Todavía no tienes una suscripción.',
+      active: 'Tu suscripción está activa.',
+      trialing: 'Tu suscripción está activa.',
+      past_due: 'No pudimos cobrar tu última renovación. Paddle volverá a intentarlo; revisa tu tarjeta para no perder el acceso.',
+      paused: 'Tu suscripción está en pausa.',
+      canceled: 'Tu suscripción está cancelada.',
+    },
+    errors: {
+      BILLING_NOT_CONFIGURED: 'Los pagos todavía no están disponibles.',
+      ALREADY_SUBSCRIBED: 'Este negocio ya tiene una suscripción.',
+      BILLING_PROVIDER_ERROR: 'El proveedor de pagos no respondió. Inténtalo en un momento.',
+    },
+  },
 };
 
 export default es;

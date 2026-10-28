@@ -7,7 +7,7 @@ const es = {
   currency: 'CRC',
   meta: {
     title: 'ReserveEase · Tu agenda se llena sola',
-    description: 'Comparte un enlace y tus clientes reservan solos, solo en las horas que de verdad tienes libres. Gratis durante el acceso anticipado.',
+    description: 'Comparte un enlace y tus clientes reservan solos, solo en las horas que de verdad tienes libres. $15 USD al mes.',
   },
   switcher: { label: 'Idioma', en: 'English', es: 'Español' },
   header: {
@@ -36,13 +36,13 @@ const es = {
     hero: '8:00', race: '9:15', chat: '11:40', business: '14:00',
     price: '18:30', notes: '18:45', night: '19:00', closing: '8:00',
   },
-  signupFree: 'Crear mi agenda gratis',
+  signupFree: 'Crear mi agenda',
   hero: {
     kicker: 'para barberías, salones y todo el que trabaja con citas',
     title: ['Tu agenda', 'se llena ', 'sola.'],
     lead: 'Compartes un enlace y tus clientes reservan a cualquier hora, solo en los espacios que de verdad tienes libres. Tú lo ves todo en tu panel, sin contestar mensajes ni tachar la libreta.',
     raceLink: 'Mira la carrera por las 10:30',
-    note: 'Gratis durante el acceso anticipado. Sin tarjeta.',
+    note: '$15 USD al mes. Cancelas cuando quieras.',
   },
   agenda: {
     service: 'Servicio',
@@ -112,9 +112,10 @@ const es = {
   },
   ticket: {
     kicker: 'cierre de caja',
-    title: ['¿Cuánto cuesta? ', 'Nada', ', por ahora.'],
-    lead: 'ReserveEase está en acceso anticipado. Mientras tanto es gratis y no te pedimos tarjeta. Antes de que empiece cualquier plan de pago, te avisamos el precio y decides si te quedas.',
-    edition: 'Acceso anticipado',
+    title: ['¿Cuánto cuesta? ', '$15', ' al mes.'],
+    lead: 'Un solo plan, con todo lo que ves en el recibo. Se cobra en dólares cada mes a través de Paddle, nuestro proveedor de pagos, y cancelas cuando quieras desde la configuración de tu cuenta.',
+    cta: 'Suscribirme por $15 al mes',
+    edition: 'Plan mensual',
     lines: [
       ['Tu página de reservas', 'incluido'],
       ['Citas ilimitadas', 'incluido'],
@@ -123,10 +124,10 @@ const es = {
       ['Teléfono y compu', 'incluido'],
       ['Recordatorios por correo', 'pronto', true],
     ],
-    total: '₡0',
-    noCard: 'Sin tarjeta',
-    thanks: '¡Gracias por llegar temprano!',
-    stamp: 'Gratis',
+    total: '$15',
+    noCard: 'USD al mes',
+    thanks: '¡Gracias por tu visita!',
+    stamp: 'Mensual',
   },
   notes: {
     kicker: 'pegadas en la nevera',
@@ -153,8 +154,8 @@ const es = {
         a: 'Solo tú, después de entrar con un correo verificado. Cada negocio ve solo sus citas, y tus clientes solo ven horas libres, nunca las reservas de otras personas.',
       },
       {
-        q: '¿Y si después cobran?',
-        a: 'Te avisamos el precio antes de que se aplique y decides si te quedas. Mientras dure el acceso anticipado, es gratis.',
+        q: '¿Cómo se paga?',
+        a: 'Son $15 USD al mes con tarjeta, a través de Paddle, nuestro proveedor de pagos. Desde la configuración de tu cuenta ves tu próximo cobro, cambias la tarjeta o cancelas; si cancelas, sigues teniendo acceso hasta el final del mes ya pagado.',
       },
     ],
   },

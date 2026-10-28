@@ -10,6 +10,10 @@ import { syncLegacyBusiness } from '../domain/legacySync.js';
 import { isManageKeyValid } from '../domain/manageLink.js';
 import { MINUTE } from '../domain/time.js';
 import { retryFailedJobs } from '../notifications/worker.js';
+import {
+  createCheckoutTransaction, createPortalSession, isBillingConfigured, paddleConfig, PaddleError,
+} from '../billing/paddle.js';
+import { LIVE_STATUSES, subscriptionRef, toBillingView } from '../billing/subscription.js';
 import { requireAuth, requireMember } from './auth.js';
 import { createRateLimiter } from '../../middleware/rateLimit.js';
 import {
@@ -363,6 +367,60 @@ priv.post('/appointments/:appointmentId/notifications/retry', validate(appointme
     });
     res.json({ data: { requeued }, requestId: req.requestId });
   }));
+
+// ---------------------------------------------------------------------------
+// Subscription ($15 USD/month through Paddle). The browser only asks for a
+// checkout or a portal link; the subscription itself changes only through the
+// signed webhook (http/paddleWebhook.js).
+
+const requireOwner = (req, res, next) => (req.member.role === 'owner'
+  ? next()
+  : next(new ApiError(403, 'FORBIDDEN', 'Only the owner can manage the subscription')));
+
+const billingUnavailable = () => new ApiError(503, 'BILLING_NOT_CONFIGURED', 'Payments are not available yet');
+const fromPaddle = (error) => {
+  if (!(error instanceof PaddleError)) return error;
+  console.error('Paddle error', error.status, error.code, error.message);
+  return new ApiError(502, 'BILLING_PROVIDER_ERROR', 'The payment provider did not answer. Try again in a moment.');
+};
+
+priv.get('/billing', handle(async (req, res) => {
+  const snap = await subscriptionRef(db, req.member.businessId).get();
+  res.json({ data: toBillingView(snap.data(), { available: isBillingConfigured() }), requestId: req.requestId });
+}));
+
+priv.post('/billing/checkout', requireOwner, handle(async (req, res) => {
+  const config = paddleConfig();
+  if (!isBillingConfigured(config)) throw billingUnavailable();
+  const current = (await subscriptionRef(db, req.member.businessId).get()).data();
+  if (LIVE_STATUSES.includes(current?.status)) {
+    throw new ApiError(409, 'ALREADY_SUBSCRIBED', 'This business already has a subscription');
+  }
+  try {
+    const transaction = await createCheckoutTransaction(config, {
+      businessId: req.member.businessId, customerId: current?.customerId,
+    });
+    res.status(201).json({ data: { transactionId: transaction.id, environment: config.environment }, requestId: req.requestId });
+  } catch (error) {
+    throw fromPaddle(error);
+  }
+}));
+
+priv.post('/billing/portal', requireOwner, handle(async (req, res) => {
+  const config = paddleConfig();
+  if (!isBillingConfigured(config)) throw billingUnavailable();
+  const current = (await subscriptionRef(db, req.member.businessId).get()).data();
+  if (!current?.customerId) throw new ApiError(404, 'NO_SUBSCRIPTION', 'This business has no subscription yet');
+  try {
+    const session = await createPortalSession(config, {
+      customerId: current.customerId,
+      subscriptionId: LIVE_STATUSES.includes(current.status) ? current.subscriptionId : undefined,
+    });
+    res.json({ data: { url: session.urls.general.overview }, requestId: req.requestId });
+  } catch (error) {
+    throw fromPaddle(error);
+  }
+}));
 
 // The signed-in owner's business, rebuilt from the settings screen (see
 // domain/legacySync.js). Called by the app after loading or saving settings.
