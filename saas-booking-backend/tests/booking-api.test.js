@@ -117,6 +117,7 @@ describe.skipIf(!hasEmulator)('POST /api/v1/public/businesses/:slug/bookings', (
         endsAt: new Date(Date.parse(local('09:00')) + 30 * 60000).toISOString(),
         timezone: TZ,
         notificationStatus: 'queued',
+        managePath: expect.stringMatching(/^\/manage\/biz-tmisc\/[A-Za-z0-9]+\?k=[A-Za-z0-9_-]{32}$/),
       });
       const apt = (await db.doc(`businesses/biz-tmisc/appointments/${res.body.data.bookingReference}`).get()).data();
       expect(apt).toMatchObject({ status: 'confirmed', localDate: date, version: 1, serviceSnapshot: { priceMinor: 600000, currency: 'CRC' } });

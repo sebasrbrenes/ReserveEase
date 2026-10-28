@@ -36,10 +36,10 @@ export const isKnownTemplate = (template) => Object.hasOwn(COPY, template);
 
 /**
  * @param {string} template
- * @param {{ appointment: object, businessName: string }} data
+ * @param {{ appointment: object, businessName: string, manageUrl?: string|null }} data
  * @returns {{ to: string, subject: string, text: string, html: string }}
  */
-export const renderEmail = (template, { appointment, businessName }) => {
+export const renderEmail = (template, { appointment, businessName, manageUrl = null }) => {
   const copy = COPY[template];
   if (!copy) throw new Error(`Unknown template ${template}`);
   const startsAt = appointment.startsAt.toDate();
@@ -50,9 +50,13 @@ export const renderEmail = (template, { appointment, businessName }) => {
     ['Reference', appointment.id],
   ];
   const greeting = `Hello ${appointment.client.name},`;
+  // A cancelled appointment has nothing left to change.
+  const link = template !== 'cancellation_email' && manageUrl;
+  const linkLead = 'Need to change or cancel it? Use this link:';
   const text = [
     greeting, '', copy.lead, '',
     ...details.map(([k, v]) => `${k}: ${v}`),
+    ...(link ? ['', linkLead, manageUrl] : []),
     '', businessName,
   ].join('\n');
   const html = [
@@ -61,6 +65,7 @@ export const renderEmail = (template, { appointment, businessName }) => {
     '<table>',
     ...details.map(([k, v]) => `<tr><td><strong>${escapeHtml(k)}</strong></td><td>${escapeHtml(v)}</td></tr>`),
     '</table>',
+    ...(link ? [`<p>${escapeHtml(linkLead)} <a href="${escapeHtml(manageUrl)}">${escapeHtml(manageUrl)}</a></p>`] : []),
     `<p>${escapeHtml(businessName)}</p>`,
   ].join('\n');
   return { to: appointment.client.email, subject: copy.subject(businessName), text, html };

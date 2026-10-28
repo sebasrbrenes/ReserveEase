@@ -54,6 +54,17 @@ export const createPublicBooking = (slug, booking, idempotencyKey) =>
     headers: { 'Idempotency-Key': idempotencyKey },
   });
 
+// The client's own appointment, from the link in their emails (?k= key)
+const managed = (businessId, id, key, action = '', extra = {}) =>
+  `/public/appointments/${encodeURIComponent(businessId)}/${encodeURIComponent(id)}${action}?${qs({ k: key, ...extra })}`;
+export const getManagedAppointment = (businessId, id, key) => request('GET', managed(businessId, id, key));
+export const getManagedAvailability = (businessId, id, key, date) =>
+  request('GET', managed(businessId, id, key, '/availability', { date }));
+export const cancelManagedAppointment = (businessId, id, key, body) =>
+  request('POST', managed(businessId, id, key, '/cancel'), { body });
+export const rescheduleManagedAppointment = (businessId, id, key, body) =>
+  request('POST', managed(businessId, id, key, '/reschedule'), { body });
+
 // Owner dashboard
 export const syncMyBusiness = () => request('POST', '/me/business/sync', { signedIn: true });
 
@@ -104,6 +115,7 @@ export const errorMessage = (error) => {
     case 'VERSION_CONFLICT': return 'This appointment was changed elsewhere. The list has been refreshed; try again.';
     case 'TOO_EARLY': return 'This can only be done once the appointment has started.';
     case 'INVALID_TRANSITION': return 'This appointment can no longer be changed that way.';
+    case 'TOO_LATE_TO_CHANGE': return 'It is too late to change this appointment online. Please contact the business.';
     case 'BUSINESS_NOT_FOUND': return 'This booking page is not available.';
     case 'EMAIL_NOT_VERIFIED': return 'Verify your email to continue.';
     case 'RATE_LIMITED': return 'Too many attempts. Please wait a moment and try again.';

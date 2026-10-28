@@ -9,6 +9,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { MINUTE } from '../domain/time.js';
 import { isKnownTemplate, renderEmail } from './templates.js';
 import { SendError } from './adapters.js';
+import { manageUrlFor } from '../domain/manageLink.js';
 
 export const LEASE_MS = 2 * MINUTE;
 export const MAX_ATTEMPTS = 5;
@@ -102,7 +103,9 @@ const processJob = async (db, ref, { adapter, nowMs, workerId }) => {
 
   let outcome;
   try {
-    const message = renderEmail(job.template, { appointment: apt, businessName: bizSnap.data()?.name ?? '' });
+    const message = renderEmail(job.template, {
+      appointment: apt, businessName: bizSnap.data()?.name ?? '', manageUrl: manageUrlFor(apt),
+    });
     const result = await adapter.send(message, { idempotencyKey: job.id });
     outcome = { status: result.status, providerMessageId: result.providerMessageId ?? null, lastErrorCode: null, sentAt: FieldValue.serverTimestamp() };
   } catch (error) {

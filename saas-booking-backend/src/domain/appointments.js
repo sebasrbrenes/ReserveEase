@@ -23,13 +23,25 @@ const readAppointment = async (tx, ref, expectedVersion) => {
   return apt;
 };
 
+// A client changing their own appointment must do it at least
+// cancellationNoticeMinutes before it starts; the business can change it anytime.
+const checkClientNotice = (apt, clientNoticeMinutes, nowMs) => {
+  if (clientNoticeMinutes === undefined) return;
+  if (nowMs > apt.startsAt.toMillis() - clientNoticeMinutes * MINUTE) {
+    throw new DomainError('TOO_LATE_TO_CHANGE', 'It is too late to change this appointment online. Contact the business.');
+  }
+};
+
 const audit = (tx, base, type, appointmentId, actorUid, extra = {}) => {
   tx.create(base.collection('auditEvents').doc(), {
     type, appointmentId, actorUid, at: FieldValue.serverTimestamp(), ...extra,
   });
 };
 
-export const cancelAppointment = (db, { businessId, appointmentId, expectedVersion, reason = '', actorUid }) => {
+// clientNoticeMinutes: set when the client cancels from their link.
+export const cancelAppointment = (db, {
+  businessId, appointmentId, expectedVersion, reason = '', actorUid, clientNoticeMinutes, clock = Date.now,
+}) => {
   const base = db.doc(`businesses/${businessId}`);
   const ref = base.collection('appointments').doc(appointmentId);
   return db.runTransaction(async (tx) => {
@@ -42,6 +54,7 @@ export const cancelAppointment = (db, { businessId, appointmentId, expectedVersi
     if (current.status !== 'confirmed') {
       throw new DomainError('INVALID_TRANSITION', `A ${current.status} appointment cannot be cancelled`);
     }
+    checkClientNotice(current, clientNoticeMinutes, clock());
     const jobs = await readPendingJobs(tx, db, appointmentId, current.notificationVersion ?? current.version);
 
     const occupied = { from: current.occupiedFrom.toMillis(), until: current.occupiedUntil.toMillis() };
@@ -66,7 +79,7 @@ export const cancelAppointment = (db, { businessId, appointmentId, expectedVersi
 };
 
 export const rescheduleAppointment = (db, {
-  businessId, appointmentId, expectedVersion, startsAt, staffId, actorUid, clock = Date.now,
+  businessId, appointmentId, expectedVersion, startsAt, staffId, actorUid, clientNoticeMinutes, clock = Date.now,
 }) => {
   const base = db.doc(`businesses/${businessId}`);
   const ref = base.collection('appointments').doc(appointmentId);
@@ -75,6 +88,7 @@ export const rescheduleAppointment = (db, {
     if (current.status !== 'confirmed') {
       throw new DomainError('INVALID_TRANSITION', `A ${current.status} appointment cannot be rescheduled`);
     }
+    checkClientNotice(current, clientNoticeMinutes, clock());
     const targetStaffId = staffId || current.staffId;
     const [businessSnap, staffSnap] = await tx.getAll(base, base.collection('staff').doc(targetStaffId));
     if (!staffSnap.exists) throw new DomainError('STAFF_NOT_FOUND', 'Staff member not found');

@@ -37,6 +37,11 @@ export default function BookingSuccess() {
             <p className="hd-help pt-2">
               Your booking is saved. Keep this reference in case you need to contact the business.
             </p>
+            {booking.managePath && (
+              <p className="pt-2">
+                <Link to={booking.managePath} className="hd-link">Change or cancel this appointment</Link>
+              </p>
+            )}
           </div>
         ) : (
           <p className="text-ink-soft mb-8">Thank you for your booking.</p>
