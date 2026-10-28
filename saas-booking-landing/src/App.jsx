@@ -15,7 +15,6 @@ import Footer from './components/Footer'
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import Terms from './pages/legal/Terms';
 import About from './pages/company/About';
-import RefundPolicy from './pages/legal/RefundPolicy';
 
 function App() {
   return (
@@ -47,7 +46,6 @@ function App() {
         {/* Legal Pages */}
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<Terms />} />
-        <Route path="/refund-policy" element={<RefundPolicy />} />
 
         {/* Company Pages */}
         <Route path="/about" element={<About />} />
