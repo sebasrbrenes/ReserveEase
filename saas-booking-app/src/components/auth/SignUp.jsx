@@ -5,8 +5,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
-import { PRIVACY_URL, TERMS_URL } from '../../utils/links';
+import { PRIVACY_URL, PRIVACY_URL_EN, TERMS_URL, TERMS_URL_EN } from '../../utils/links';
 import { Logo, Sparkle, Underline } from '../ui/Doodles';
+import LanguageSwitch from '../common/LanguageSwitch';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -18,6 +20,8 @@ const SignUp = () => {
   const [loading, setLoading] = useState(false);
   const { signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const { language, t: { auth: copy, common } } = useLanguage();
+  const s = copy.signup;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +30,7 @@ const SignUp = () => {
     try {
       // Validate passwords match
       if (formData.password !== formData.confirmPassword) {
-        toast.error('Las contraseñas no coinciden');
+        toast.error(s.mismatch);
         return;
       }
 
@@ -45,7 +49,7 @@ const SignUp = () => {
       });
 
       // Show success message
-      toast.success('¡Cuenta creada! Revisa tu correo para verificarla.');
+      toast.success(s.created);
       
       // Navigate to a verification pending page
       navigate('/verify-email', { 
@@ -57,22 +61,22 @@ const SignUp = () => {
 
     } catch (error) {
       console.error('Signup error:', error);
-      let errorMessage = 'No pudimos crear la cuenta';
+      let errorMessage = s.failed;
       
       switch (error.code) {
         // Same answer whether or not the email has an account, so the form
         // does not tell strangers who is registered.
         case 'auth/email-already-in-use':
-          errorMessage = 'No pudimos crear una cuenta con este correo. Si ya tienes una, inicia sesión o recupera tu contraseña.';
+          errorMessage = s.emailInUse;
           break;
         case 'auth/invalid-email':
-          errorMessage = 'El correo no es válido';
+          errorMessage = copy.errors.invalidEmail;
           break;
         case 'auth/weak-password':
-          errorMessage = 'La contraseña debe tener al menos 6 caracteres';
+          errorMessage = s.weakPassword;
           break;
         default:
-          errorMessage = 'No pudimos crear la cuenta. Inténtalo de nuevo.';
+          errorMessage = s.tryAgain;
       }
       
       toast.error(errorMessage);
@@ -88,7 +92,7 @@ const SignUp = () => {
       navigate('/dashboard');
     } catch (error) {
       console.error('Google sign in error:', error);
-      toast.error('No pudimos entrar con Google');
+      toast.error(copy.errors.googleFailed);
     } finally {
       setLoading(false);
     }
@@ -105,20 +109,23 @@ const SignUp = () => {
   return (
     <div className="hd-page flex flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
+        <div className="mb-2 flex justify-end">
+          <LanguageSwitch />
+        </div>
         <div className="mb-6 flex justify-center">
           <Logo />
         </div>
         <div className="hd-card p-6 sm:p-8">
           <div className="text-center">
             <h2 className="relative inline-block">
-              <span className="hd-title text-4xl sm:text-5xl">Crea tu cuenta</span>
+              <span className="hd-title text-4xl sm:text-5xl">{s.title}</span>
               <Underline className="absolute -bottom-3 left-0 w-full h-4 text-sun" />
               <Sparkle className="hidden sm:block absolute -right-9 -top-3 w-6 h-6 text-marker" />
             </h2>
             <p className="mt-5 hd-help">
-              ¿Ya tienes cuenta?{' '}
+              {s.haveAccount}{' '}
               <Link to="/login" className="hd-link">
-                Inicia sesión
+                {s.signIn}
               </Link>
             </p>
           </div>
@@ -127,7 +134,7 @@ const SignUp = () => {
             <div className="space-y-4">
               <div>
                 <label htmlFor="name" className="hd-label">
-                  Nombre completo
+                  {s.name}
                 </label>
                 <input
                   id="name"
@@ -137,12 +144,12 @@ const SignUp = () => {
                   value={formData.name}
                   onChange={handleChange}
                   className="hd-input"
-                  placeholder="María Rodríguez"
+                  placeholder={s.namePlaceholder}
                 />
               </div>
               <div>
                 <label htmlFor="email" className="hd-label">
-                  Correo electrónico
+                  {common.email}
                 </label>
                 <input
                   id="email"
@@ -153,12 +160,12 @@ const SignUp = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="hd-input"
-                  placeholder="tu@correo.com"
+                  placeholder={common.emailPlaceholder}
                 />
               </div>
               <div>
                 <label htmlFor="password" className="hd-label">
-                  Contraseña
+                  {s.password}
                 </label>
                 <input
                   id="password"
@@ -174,7 +181,7 @@ const SignUp = () => {
               </div>
               <div>
                 <label htmlFor="confirmPassword" className="hd-label">
-                  Confirma la contraseña
+                  {s.confirmPassword}
                 </label>
                 <input
                   id="confirmPassword"
@@ -191,13 +198,13 @@ const SignUp = () => {
             </div>
 
             <p className="hd-help">
-              Al crear la cuenta aceptas los{' '}
-              <a href={TERMS_URL} target="_blank" rel="noreferrer" className="hd-link">términos de uso</a> y el{' '}
-              <a href={PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">aviso de privacidad</a>.
+              {s.accept[0]}
+              <a href={language === 'en' ? TERMS_URL_EN : TERMS_URL} target="_blank" rel="noreferrer" className="hd-link">{s.accept[1]}</a>{s.accept[2]}
+              <a href={language === 'en' ? PRIVACY_URL_EN : PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">{s.accept[3]}</a>{s.accept[4]}
             </p>
 
             <button type="submit" disabled={loading} className="hd-btn w-full">
-              {loading ? 'Creando la cuenta...' : 'Crear cuenta'}
+              {loading ? s.submitting : s.submit}
             </button>
 
             <div className="relative">
@@ -205,7 +212,7 @@ const SignUp = () => {
                 <div className="w-full border-t-2 border-dashed border-ink-soft/50"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-ink-soft">O continúa con</span>
+                <span className="px-2 bg-white text-ink-soft">{s.or}</span>
               </div>
             </div>
 
@@ -216,13 +223,13 @@ const SignUp = () => {
               className="hd-btn hd-btn-secondary w-full"
             >
               <FcGoogle className="h-5 w-5" aria-hidden="true" />
-              Registrarme con Google
+              {s.google}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <button onClick={() => navigate('/')} className="hd-link">
-              Volver
+              {s.back}
             </button>
           </div>
         </div>

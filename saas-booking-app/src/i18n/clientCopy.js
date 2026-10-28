@@ -1,6 +1,7 @@
 // Text of the pages the business's clients see (booking, confirmation and
-// the manage link), in the language the business picks in Settings.
-// Spanish is the default; the dashboard itself is always in Spanish.
+// the manage link), in the language the business picks in Settings. Until the
+// business loads, they use the visitor's interface language.
+import { getUiLanguage } from './language';
 
 export const CLIENT_LANGUAGES = [
   { value: 'es', label: 'Español' },
@@ -163,5 +164,5 @@ const en = {
 
 const COPY = { es, en };
 
-export const clientLanguage = (language) => (COPY[language] ? language : 'es');
+export const clientLanguage = (language) => (COPY[language] ? language : getUiLanguage());
 export const clientCopy = (language) => COPY[clientLanguage(language)];

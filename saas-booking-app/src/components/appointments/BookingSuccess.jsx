@@ -1,6 +1,7 @@
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { formatLocalDate, formatTime, localeFor } from '../../utils/datetime';
 import { clientCopy, clientLanguage } from '../../i18n/clientCopy';
+import { useDocumentLanguage } from '../../i18n/LanguageContext';
 import { Scribble, Sparkle } from '../ui/Doodles';
 
 export default function BookingSuccess() {
@@ -9,6 +10,7 @@ export default function BookingSuccess() {
   const booking = state?.booking;
   const language = clientLanguage(state?.language);
   const t = clientCopy(language);
+  useDocumentLanguage(language);
   const locale = localeFor(language);
   const localDate = booking
     ? new Intl.DateTimeFormat('en-CA', { timeZone: booking.timezone }).format(new Date(booking.startsAt))

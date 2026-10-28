@@ -6,6 +6,8 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
 import { Logo, Star, Underline } from '../ui/Doodles';
+import LanguageSwitch from '../common/LanguageSwitch';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +17,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const { t: { auth: copy, common } } = useLanguage();
+  const l = copy.login;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +28,7 @@ const Login = () => {
       const { user } = await signInWithEmailAndPassword(auth, formData.email, formData.password);
       
       if (!user.emailVerified) {
-        toast.error('Verifica tu correo antes de entrar');
+        toast.error(l.verifyFirst);
         // Stay signed in so the verification screen can resend the email.
         navigate('/verify-email', { 
           state: { 
@@ -35,28 +39,28 @@ const Login = () => {
         return;
       }
 
-      toast.success('¡Bienvenido de nuevo!');
+      toast.success(l.welcomeBack);
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
-      let errorMessage = 'No pudimos iniciar sesión';
+      let errorMessage = l.failed;
       
       switch (error.code) {
         case 'auth/invalid-email':
-          errorMessage = 'El correo no es válido';
+          errorMessage = copy.errors.invalidEmail;
           break;
         case 'auth/user-disabled':
-          errorMessage = 'Esta cuenta está desactivada';
+          errorMessage = l.disabled;
           break;
         case 'auth/user-not-found':
-          errorMessage = 'No hay ninguna cuenta con este correo';
+          errorMessage = l.notFound;
           break;
         case 'auth/invalid-credential':
         case 'auth/wrong-password':
-          errorMessage = 'El correo o la contraseña no son correctos';
+          errorMessage = l.wrongCredentials;
           break;
         default:
-          errorMessage = 'No pudimos iniciar sesión';
+          errorMessage = l.failed;
       }
       
       toast.error(errorMessage);
@@ -69,11 +73,11 @@ const Login = () => {
     try {
       setLoading(true);
       await signInWithGoogle();
-      toast.success('¡Bienvenido!');
+      toast.success(l.welcome);
       navigate('/dashboard');
     } catch (error) {
       console.error('Google sign in error:', error);
-      toast.error('No pudimos entrar con Google');
+      toast.error(copy.errors.googleFailed);
     } finally {
       setLoading(false);
     }
@@ -90,27 +94,30 @@ const Login = () => {
   return (
     <div className="hd-page flex flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
+        <div className="mb-2 flex justify-end">
+          <LanguageSwitch />
+        </div>
         <div className="mb-6 flex justify-center">
           <Logo />
         </div>
         <div className="hd-card p-6 sm:p-8">
           <div className="text-center">
             <h2 className="relative inline-block">
-              <span className="hd-title text-4xl sm:text-5xl">Hola de nuevo</span>
+              <span className="hd-title text-4xl sm:text-5xl">{l.title}</span>
               <Underline className="absolute -bottom-3 left-0 w-full h-4 text-sun" />
               <Star className="hidden sm:block absolute -right-9 -top-2 w-6 h-6 text-marker rotate-12" />
             </h2>
             <p className="mt-5 hd-help">
-              ¿No tienes cuenta?{' '}
+              {l.noAccount}{' '}
               <Link to="/signup" className="hd-link">
-                Crea una
+                {l.createOne}
               </Link>
             </p>
           </div>
           <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email-address" className="hd-label">
-                Correo electrónico
+                {common.email}
               </label>
               <input
                 id="email-address"
@@ -121,12 +128,12 @@ const Login = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="hd-input"
-                placeholder="tu@correo.com"
+                placeholder={common.emailPlaceholder}
               />
             </div>
             <div>
               <label htmlFor="password" className="hd-label">
-                Contraseña
+                {l.password}
               </label>
               <input
                 id="password"
@@ -137,18 +144,18 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className="hd-input"
-                placeholder="Contraseña"
+                placeholder={l.password}
               />
             </div>
 
             <div className="text-sm">
               <Link to="/forgot-password" className="hd-link">
-                ¿Olvidaste tu contraseña?
+                {l.forgot}
               </Link>
             </div>
 
             <button type="submit" disabled={loading} className="hd-btn w-full">
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? l.submitting : l.submit}
             </button>
 
             <button
@@ -158,7 +165,7 @@ const Login = () => {
               className="hd-btn hd-btn-secondary w-full"
             >
               <FcGoogle className="w-5 h-5" aria-hidden="true" />
-              Entrar con Google
+              {l.google}
             </button>
           </form>
         </div>

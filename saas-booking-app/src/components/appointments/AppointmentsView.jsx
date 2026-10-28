@@ -3,6 +3,7 @@ import { FiSearch, FiX, FiEdit2, FiXCircle } from "react-icons/fi";
 import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { STATUS, statusActionsFor, statusClass, statusLabel } from "./status";
+import { useLanguage } from "../../i18n/LanguageContext";
 import { formatLocalDate, formatTime } from "../../utils/datetime";
 import NotificationStatus from "./NotificationStatus";
 import { Scribble } from "../ui/Doodles";
@@ -17,6 +18,8 @@ const AppointmentsView = ({
   onStatusChange,
   onRetryEmail,
 }) => {
+  const { t } = useLanguage();
+  const copy = t.allAppointments;
   const [searchTerm, setSearchTerm] = useState("");
   const [editingStatus, setEditingStatus] = useState(null);
   const [filters, setFilters] = useState({
@@ -76,11 +79,11 @@ const AppointmentsView = ({
           >
             <div className="flex justify-between items-center mb-5">
               <h2 className="hd-title text-4xl">
-                Todas las citas
+                {copy.title}
               </h2>
               <button
                 onClick={onClose}
-                aria-label="Cerrar"
+                aria-label={t.common.close}
                 className="p-1 text-ink-soft hover:text-ink hover:bg-paper-deep rounded-full transition-colors"
               >
                 <FiX className="w-6 h-6" aria-hidden="true" />
@@ -93,8 +96,8 @@ const AppointmentsView = ({
                   <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" aria-hidden="true" />
                   <input
                     type="text"
-                    aria-label="Buscar citas"
-                    placeholder="Buscar por nombre, correo o teléfono..."
+                    aria-label={copy.search}
+                    placeholder={copy.searchPlaceholder}
                     className="hd-input !mt-0 pl-10"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -103,36 +106,36 @@ const AppointmentsView = ({
               </div>
 
               <select
-                aria-label="Filtrar por fecha"
+                aria-label={copy.byDate}
                 className="hd-input !mt-0 flex-1 min-w-[140px] sm:flex-none sm:w-auto"
                 value={filters.dateRange}
                 onChange={(e) => handleFilterChange("dateRange", e.target.value)}
               >
-                <option key="all" value="all">Todas las fechas</option>
-                <option key="today" value="day">Hoy</option>
-                <option key="week" value="week">Esta semana</option>
-                <option key="month" value="month">Este mes</option>
+                <option key="all" value="all">{copy.allDates}</option>
+                <option key="today" value="day">{copy.today}</option>
+                <option key="week" value="week">{copy.thisWeek}</option>
+                <option key="month" value="month">{copy.thisMonth}</option>
               </select>
 
               <select
-                aria-label="Filtrar por estado"
+                aria-label={copy.byStatus}
                 className="hd-input !mt-0 flex-1 min-w-[140px] sm:flex-none sm:w-auto"
                 value={filters.status}
                 onChange={(e) => handleFilterChange("status", e.target.value)}
               >
-                <option key="all" value="all">Todos los estados</option>
-                {Object.entries(STATUS).map(([value, { label }]) => (
-                  <option key={value} value={value}>{label}</option>
+                <option key="all" value="all">{copy.allStatuses}</option>
+                {Object.keys(STATUS).map((value) => (
+                  <option key={value} value={value}>{statusLabel(value, t)}</option>
                 ))}
               </select>
 
               <select
-                aria-label="Filtrar por persona"
+                aria-label={copy.byStaff}
                 className="hd-input !mt-0 flex-1 min-w-[140px] sm:flex-none sm:w-auto"
                 value={filters.staff}
                 onChange={(e) => handleFilterChange("staff", e.target.value)}
               >
-                <option key="all" value="all">Todo el personal</option>
+                <option key="all" value="all">{copy.allStaff}</option>
                 {staffMembers.map((staff) => (
                   <option key={staff} value={staff}>
                     {staff}
@@ -141,12 +144,12 @@ const AppointmentsView = ({
               </select>
 
               <select
-                aria-label="Filtrar por servicio"
+                aria-label={copy.byService}
                 className="hd-input !mt-0 flex-1 min-w-[140px] sm:flex-none sm:w-auto"
                 value={filters.service}
                 onChange={(e) => handleFilterChange("service", e.target.value)}
               >
-                <option key="all" value="all">Todos los servicios</option>
+                <option key="all" value="all">{copy.allServices}</option>
                 {services.map((service) => (
                   <option key={service} value={service}>
                     {service}
@@ -159,7 +162,7 @@ const AppointmentsView = ({
               {filteredAppointments.length === 0 && (
                 <div className="text-center py-8">
                   <Scribble className="mx-auto w-24 h-10 text-sun mb-2" />
-                  <p className="text-ink-soft">Ninguna cita coincide con estos filtros.</p>
+                  <p className="text-ink-soft">{copy.noMatches}</p>
                 </div>
               )}
               {filteredAppointments.map((appointment) => (
@@ -173,7 +176,7 @@ const AppointmentsView = ({
                         {appointment.client?.name}
                       </h3>
                       <p className="text-ink">
-                        {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} a las {formatTime(appointment.startsAt, timezone)}
+                        {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} {t.dashboard.at} {formatTime(appointment.startsAt, timezone)}
                       </p>
                       <p className="text-ink-soft">{appointment.serviceSnapshot?.name}</p>
                       <p className="text-sm text-ink-soft">
@@ -192,7 +195,7 @@ const AppointmentsView = ({
                         {editingStatus === appointment.id ? (
                           <select
                             autoFocus
-                            aria-label="Cambiar estado"
+                            aria-label={t.dashboard.changeStatus}
                             value=""
                             onChange={(e) => {
                               onStatusChange(appointment, e.target.value);
@@ -201,8 +204,8 @@ const AppointmentsView = ({
                             onBlur={() => setEditingStatus(null)}
                             className="hd-input !mt-0 !w-auto !py-1 text-sm cursor-pointer"
                           >
-                            <option value="">{statusLabel(appointment.status)}</option>
-                            {statusActionsFor(appointment).map((option) => (
+                            <option value="">{statusLabel(appointment.status, t)}</option>
+                            {statusActionsFor(appointment, t).map((option) => (
                               <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                           </select>
@@ -211,7 +214,7 @@ const AppointmentsView = ({
                             onClick={() => appointment.status === 'confirmed' && setEditingStatus(appointment.id)}
                             className={`hd-badge ${appointment.status === 'confirmed' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} transition-opacity ${statusClass(appointment.status)}`}
                           >
-                            {statusLabel(appointment.status)}
+                            {statusLabel(appointment.status, t)}
                           </button>
                         )}
                         <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
@@ -221,7 +224,7 @@ const AppointmentsView = ({
                               onClose();
                             }}
                             className="p-1.5 rounded-lg text-marker hover:bg-marker-light transition-colors"
-                            aria-label="Editar cita"
+                            aria-label={t.dashboard.edit}
                           >
                             <FiEdit2 className="w-4 h-4" aria-hidden="true" />
                           </button>
@@ -229,7 +232,7 @@ const AppointmentsView = ({
                             <button
                               onClick={() => onCancel(appointment)}
                               className="p-1.5 rounded-lg text-ink-soft hover:text-coral hover:bg-coral-light transition-colors"
-                              aria-label="Cancelar cita"
+                              aria-label={t.dashboard.cancel}
                             >
                               <FiXCircle className="w-4 h-4" aria-hidden="true" />
                             </button>
