@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
 import { FiArrowLeft, FiEdit2, FiTrash2, FiLink, FiCopy } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
@@ -50,7 +50,14 @@ const DAY_NAMES = {
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { hash } = useLocation();
   const { settings, updateSettings, business } = useSettings();
+
+  // Links from the dashboard's first steps open the section they name.
+  useEffect(() => {
+    if (!hash) return;
+    document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({ block: 'start' });
+  }, [hash]);
   const slug = business.data?.slug;
   const isPublished = business.data?.status === 'published';
 
@@ -408,7 +415,7 @@ const Settings = () => {
         </section>
 
         {/* Business Information */}
-        <section className="hd-card p-4 sm:p-5 mb-6">
+        <section id="datos-del-negocio" className="hd-card p-4 sm:p-5 mb-6 scroll-mt-4">
           <h2 className="hd-title text-3xl mb-4">Datos del negocio</h2>
           <div className="space-y-4">
             <div>
@@ -536,7 +543,7 @@ const Settings = () => {
         </section>
 
         {/* Business Hours */}
-        <section className="hd-card p-4 sm:p-5 mb-6">
+        <section id="horario" className="hd-card p-4 sm:p-5 mb-6 scroll-mt-4">
           <h2 className="hd-title text-3xl mb-1">Horario</h2>
           <p className="hd-help mb-4">Los cambios de esta sección se guardan en cuanto los haces.</p>
           <div className="space-y-4">
@@ -587,7 +594,7 @@ const Settings = () => {
         </section>
 
         {/* Services */}
-        <section className="hd-card p-4 sm:p-5 mb-6">
+        <section id="servicios" className="hd-card p-4 sm:p-5 mb-6 scroll-mt-4">
           <h2 className="hd-title text-3xl mb-4">Servicios</h2>
           <h3 className="hd-label mb-2">{editingService ? `Editando ${editingService.name}` : 'Agregar un servicio'}</h3>
 
@@ -674,7 +681,7 @@ const Settings = () => {
         </section>
 
         {/* Staff */}
-        <section className="hd-card p-4 sm:p-5">
+        <section id="personal" className="hd-card p-4 sm:p-5 scroll-mt-4">
           <h2 className="hd-title text-3xl mb-4">Personal</h2>
 
           {/* Add/Edit Staff Form */}

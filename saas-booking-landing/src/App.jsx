@@ -13,6 +13,7 @@ import Footer from './components/Footer'
 
 // Pages
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
+import PrivacyPolicyEn from './pages/legal/PrivacyPolicyEn';
 import Terms from './pages/legal/Terms';
 import About from './pages/company/About';
 
@@ -45,6 +46,7 @@ function App() {
 
         {/* Legal Pages */}
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/privacy-policy/en" element={<PrivacyPolicyEn />} />
         <Route path="/terms" element={<Terms />} />
 
         {/* Company Pages */}

@@ -142,10 +142,24 @@ export const legacyToV2 = ({ uid, settings = {}, existingSlug }) => {
   return { business, services, staff, publicBusiness, problems };
 };
 
+// Syncs of the same account run one after another: concurrent transactions
+// over the same documents wait on each other's locks and retry, which made a
+// page load during a save take seconds.
+const inFlight = new Map();
+
+export const syncLegacyBusiness = (db, uid) => {
+  const previous = inFlight.get(uid) ?? Promise.resolve();
+  const next = previous.catch(() => {}).then(() => syncOnce(db, uid));
+  inFlight.set(uid, next);
+  const cleanup = () => { if (inFlight.get(uid) === next) inFlight.delete(uid); };
+  next.then(cleanup, cleanup);
+  return next;
+};
+
 // Reads the legacy settings and writes the v2 documents in one transaction.
 // Services or staff removed from settings stay stored (past appointments
 // refer to them) but are marked inactive.
-export const syncLegacyBusiness = (db, uid) => {
+const syncOnce = (db, uid) => {
   const businessId = businessIdFor(uid);
   const base = db.doc(`businesses/${businessId}`);
   return db.runTransaction(async (tx) => {

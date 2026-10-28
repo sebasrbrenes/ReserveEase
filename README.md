@@ -2,14 +2,14 @@
 
 Agenda de reservas para negocios de servicios (barberías, salones y profesionales que atienden con cita). El negocio configura sus servicios, personal y horarios, comparte un enlace público de reservas y administra las citas desde un panel.
 
-> **Estado:** prototipo funcional en proceso de recuperación. La reserva pública todavía no evita reservas simultáneas del mismo horario ni aísla por completo los datos entre negocios. No usar con clientes reales hasta completar esa etapa. El plan de trabajo está en el documento maestro del proyecto.
+> **Estado:** listo para pruebas con negocios reales. Las reservas pasan por la API en transacciones (dos personas no pueden tomar la misma hora) y cada negocio solo ve sus datos. Falta cerrar el despliegue de producción: SendGrid con remitente verificado, dominios autorizados en Firebase Auth y reglas publicadas. El plan de trabajo está en el documento maestro del proyecto.
 
 ## Estructura
 
 | Carpeta | Qué es | Stack |
 | --- | --- | --- |
 | `saas-booking-app/` | Panel del negocio y página pública de reservas (`/book/:slug`), ambos sobre la API v1 | React 18, Vite, Tailwind, Firebase Auth y Firestore |
-| `saas-booking-backend/` | API v1 de reservas, además de las rutas antiguas de correo, SMS y webhook de suscripciones | Node, Express, firebase-admin, SendGrid, Twilio |
+| `saas-booking-backend/` | API v1 de reservas y proceso que envía los correos a los clientes | Node, Express, firebase-admin, SendGrid |
 | `saas-booking-landing/` | Web promocional | React 18, Vite, Tailwind |
 | `Logos/` | Identidad visual | PNG y SVG |
 
@@ -65,7 +65,7 @@ npm run dev                  # http://localhost:3000
 
 Sin `VITE_USE_EMULATORS=true`, la app usa la configuración web de Firebase de las variables `VITE_FIREBASE_*` (ver `.env.example`). Esos valores son públicos por diseño; la protección real depende de las reglas de Firestore (`firestore.rules`): el navegador solo lee y escribe el perfil y la configuración de su propia cuenta, y todo lo relacionado con reservas pasa por la API.
 
-Por defecto `NOTIFICATIONS_MODE=mock`: las rutas de correo y SMS responden sin contactar a SendGrid ni a Twilio. Para enviar mensajes reales hay que poner `NOTIFICATIONS_MODE=live` y las credenciales correspondientes. Esas rutas tienen además un límite de peticiones por IP.
+Por defecto `NOTIFICATIONS_MODE=mock`: los correos solo se marcan como simulados y nada sale hacia SendGrid. Para enviarlos de verdad hay que poner `NOTIFICATIONS_MODE=live`, `SENDGRID_API_KEY` y `FROM_EMAIL`.
 
 Los correos de las reservas no salen del navegador. Cada reserva, cambio de hora o cancelación deja una tarea en `notificationJobs` dentro de la misma transacción, y el proceso del backend (`server.js`) las envía:
 
@@ -145,11 +145,11 @@ La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobacione
 | App | Vercel | `vercel.json` reescribe todas las rutas a la SPA; definir `VITE_BACKEND_URL` y las `VITE_FIREBASE_*` de `.env.example` en las variables del proyecto |
 | Backend | Render | Variables de `saas-booking-backend/.env.example` |
 | Reglas de Firestore | Firebase | `npx firebase deploy --only firestore:rules,firestore:indexes --project <id-del-proyecto>` desde la raíz |
-| Landing | Firebase Hosting | `npx firebase deploy --only hosting` desde `saas-booking-landing/` tras `npm run build` (proyecto `reserveease-prod`) |
+| Landing | Vercel | Proyecto con raíz `saas-booking-landing/`; definir `VITE_APP_URL` y `VITE_CONTACT_EMAIL` |
 
 ## Limitaciones conocidas
 
-- Sin SendGrid configurado (`NOTIFICATIONS_MODE=live`) los correos solo se simulan. No hay SMS en el flujo nuevo.
+- Sin SendGrid configurado (`NOTIFICATIONS_MODE=live`) los correos solo se simulan. No hay SMS.
 - Si el proceso se detiene justo después de que el proveedor acepta un correo y antes de guardarlo, ese correo puede enviarse dos veces: SendGrid no deduplica por clave. El id de la tarea viaja en `custom_args` para poder conciliarlo.
 - Las citas guardadas con el modelo anterior (colección raíz `appointments`) no aparecen en el panel; no hay migración.
 - La landing dice que el servicio es gratis durante el acceso anticipado; no hay cobro conectado al núcleo nuevo.

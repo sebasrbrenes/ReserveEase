@@ -22,6 +22,7 @@ import { useSettings } from '../../context/SettingsContext';
 import MonthCalendar from '../calendar/MonthCalendar';
 import Feedback from '../feedback/Feedback';
 import HelpButton from '../common/HelpButton';
+import GettingStarted from './GettingStarted';
 import { Logo, Sparkle, Star, Underline } from '../ui/Doodles';
 import {
   cancelAppointment, errorMessage, listAppointments, retryNotifications, transitionAppointment,
@@ -238,13 +239,12 @@ const Dashboard = () => {
           </nav>
         </header>
 
-        {!business.loading && business.data?.status !== 'published' && (
-          <div className="hd-alert mb-6 border-ink bg-sun-light text-ink">
-            {business.error
-              ? errorMessage(business.error)
-              : 'Tu página de reservas todavía no está publicada. Completa tus servicios, personal y horario en '}
-            {!business.error && <Link to="/settings" className="hd-link">Configuración</Link>}
-          </div>
+        {!business.loading && business.error && !business.data && (
+          <div className="hd-alert mb-6 border-ink bg-sun-light text-ink">{errorMessage(business.error)}</div>
+        )}
+        {/* Until the page is published, and afterwards until the first appointment arrives. */}
+        {!business.loading && business.data && (business.data.status !== 'published' || (!isLoading && appointments.length === 0)) && (
+          <GettingStarted business={business.data} />
         )}
 
         {/* Metrics Grid */}

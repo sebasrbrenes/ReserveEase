@@ -8,7 +8,7 @@ import { countryOptions, defaultCountryCode, isE164, toE164 } from '../../utils/
 import { formatLocalDate, formatMoney, formatTime, fromLocalDateString, localeFor, toLocalDateString, todayIn } from '../../utils/datetime';
 import { clientCopy, clientLanguage } from '../../i18n/clientCopy';
 import { Logo, Star, Underline } from '../ui/Doodles';
-import { PRIVACY_URL } from '../../utils/links';
+import { PRIVACY_URL, PRIVACY_URL_EN } from '../../utils/links';
 
 // Shown with the form; bump it when the privacy notice on the landing changes (PrivacyPolicy.jsx).
 const PRIVACY_NOTICE_VERSION = '2026-10';
@@ -361,7 +361,7 @@ export default function PublicBookingForm() {
 
             <p className="mt-4 text-xs text-ink-soft">
               {t.privacyUse(business.name)}{' '}
-              <a href={PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">{t.privacyNotice}</a>
+              <a href={language === 'en' ? PRIVACY_URL_EN : PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">{t.privacyNotice}</a>
             </p>
           </aside>
         </div>
