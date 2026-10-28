@@ -4,6 +4,7 @@ import Hero from './components/notebook/Hero'
 import Race from './components/notebook/Race'
 import Chat from './components/notebook/Chat'
 import YourBusiness from './components/notebook/YourBusiness'
+import Demo from './components/notebook/Demo'
 import Ticket from './components/notebook/Ticket'
 import Notes from './components/notebook/Notes'
 import Night from './components/notebook/Night'
@@ -33,6 +34,7 @@ function App() {
                   <Race />
                   <Chat />
                   <YourBusiness />
+                  <Demo />
                   <Ticket />
                   <Notes />
                   <Night />
