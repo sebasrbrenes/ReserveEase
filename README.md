@@ -104,6 +104,15 @@ Errores con el formato `{ "error": { "code", "message", "fields" }, "requestId" 
 | `GET /api/v1/public/businesses/:slug/availability?serviceId=&staffId=&date=YYYY-MM-DD` | Disponible: horarios libres según duración, buffers, antelación mínima, bloqueos y zona horaria del negocio. Solo devuelve horarios, nunca datos de otros clientes |
 | `POST /api/v1/public/businesses/:slug/bookings` | Disponible: crea una reserva confirmada de forma atómica. Requiere la cabecera `Idempotency-Key`; un reintento con la misma clave devuelve la misma reserva. Responde `409 SLOT_UNAVAILABLE` si el horario se acaba de ocupar |
 
+Enlace del cliente: cada reserva guarda una clave aleatoria (`manageKey`, solo en el servidor) y los correos de confirmación, cambio y recordatorio llevan el enlace `FRONTEND_URL/manage/:businessId/:appointmentId?k=<clave>`. Una clave equivocada responde `404`, igual que una cita inexistente. El cliente puede mover o cancelar su cita hasta `cancellationNoticeMinutes` antes de que empiece (120 minutos por defecto); después responde `409 TOO_LATE_TO_CHANGE`.
+
+| Método y ruta | Estado |
+| --- | --- |
+| `GET /api/v1/public/appointments/:businessId/:appointmentId?k=` | Disponible: la cita del cliente (servicio, profesional, hora, estado y hasta cuándo puede cambiarla), sin notas ni datos de contacto |
+| `GET /api/v1/public/appointments/:businessId/:appointmentId/availability?k=&date=` | Disponible: horarios libres con el mismo servicio y profesional; su propia hora cuenta como libre |
+| `POST /api/v1/public/appointments/:businessId/:appointmentId/reschedule?k=` | Disponible: `{ expectedVersion, startsAt }`, con las mismas reglas que el panel |
+| `POST /api/v1/public/appointments/:businessId/:appointmentId/cancel?k=` | Disponible: `{ expectedVersion }`; libera el horario y envía el aviso de cancelación |
+
 Rutas privadas del panel: requieren `Authorization: Bearer <ID token de Firebase>` de una cuenta con correo verificado que sea miembro del negocio (`businesses/{id}/members/{uid}`). Sin token: `401 UNAUTHENTICATED`; otro negocio: `403 FORBIDDEN`. Cada cambio envía `expectedVersion`; si la cita cambió entretanto responde `409 VERSION_CONFLICT`.
 
 | Método y ruta | Estado |

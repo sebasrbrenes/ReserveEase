@@ -12,6 +12,7 @@ import Settings from './components/settings/Settings'
 import Feedback from './components/feedback/Feedback'
 import PublicBookingForm from './components/appointments/PublicBookingForm'
 import BookingSuccess from './components/appointments/BookingSuccess'
+import ManageBooking from './components/appointments/ManageBooking'
 import StyleGuide from './components/ui/StyleGuide'
 import './App.css'
 
@@ -57,6 +58,7 @@ function App() {
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/book/:slug" element={<PublicBookingForm />} />
               <Route path="/booking/success/:slug" element={<BookingSuccess />} />
+              <Route path="/manage/:businessId/:appointmentId" element={<ManageBooking />} />
               <Route path="/style-guide" element={<StyleGuide />} />
               
               {/* Protected Routes */}

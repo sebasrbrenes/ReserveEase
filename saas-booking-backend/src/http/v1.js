@@ -7,6 +7,8 @@ import {
   cancelAppointment, listAppointments, rescheduleAppointment, toApi, transitionAppointment, updateAppointmentDetails,
 } from '../domain/appointments.js';
 import { syncLegacyBusiness } from '../domain/legacySync.js';
+import { isManageKeyValid } from '../domain/manageLink.js';
+import { MINUTE } from '../domain/time.js';
 import { retryFailedJobs } from '../notifications/worker.js';
 import { requireAuth, requireMember } from './auth.js';
 import { createRateLimiter } from '../../middleware/rateLimit.js';
@@ -30,6 +32,7 @@ const DOMAIN_STATUS = {
   SLOT_UNAVAILABLE: 409,
   IDEMPOTENCY_KEY_REUSED: 409,
   VERSION_CONFLICT: 409,
+  TOO_LATE_TO_CHANGE: 409,
 };
 const toApiError = (error) => (error instanceof DomainError
   ? new ApiError(DOMAIN_STATUS[error.code] || 422, error.code, error.message)
@@ -125,6 +128,116 @@ router.post(
     }
   }
 );
+
+// ---------------------------------------------------------------------------
+// The client's own appointment, opened from the link in their emails
+// (domain/manageLink.js). The key comes as ?k= on every request.
+
+const manageParams = z.object({ businessId: idSchema, appointmentId: idSchema });
+const manageQuery = z.object({ k: z.string().min(16).max(100) }).passthrough();
+
+const manageRateLimit = createRateLimiter({
+  windowMs: Number(process.env.MANAGE_RATE_WINDOW_MS) || 15 * 60 * 1000,
+  max: Number(process.env.MANAGE_RATE_MAX) || 60,
+  onLimit: (req, res, next) => next(new ApiError(429, 'RATE_LIMITED', 'Too many requests. Try again later.')),
+});
+
+const DEFAULT_CLIENT_NOTICE_MINUTES = 120;
+
+// Loads the appointment the link points at; a wrong key is a 404, like a missing one.
+const loadManaged = async (req) => {
+  const { businessId, appointmentId } = req.validated.params;
+  const base = db.doc(`businesses/${businessId}`);
+  const [aptSnap, bizSnap] = await db.getAll(base.collection('appointments').doc(appointmentId), base);
+  const apt = aptSnap.exists ? aptSnap.data() : null;
+  if (!apt || !bizSnap.exists || !isManageKeyValid(apt, req.validated.query.k)) {
+    throw new ApiError(404, 'APPOINTMENT_NOT_FOUND', 'Appointment not found');
+  }
+  const business = bizSnap.data();
+  const noticeMinutes = business.bookingPolicy?.cancellationNoticeMinutes ?? DEFAULT_CLIENT_NOTICE_MINUTES;
+  return { apt, business, noticeMinutes };
+};
+
+// What the client may see: their appointment, never notes or other clients.
+const toClientView = ({ apt, business, noticeMinutes }, nowMs = Date.now()) => {
+  const startsAtMs = apt.startsAt.toMillis();
+  const changeableUntilMs = startsAtMs - noticeMinutes * MINUTE;
+  return {
+    id: apt.id,
+    status: apt.status,
+    startsAt: apt.startsAt.toDate().toISOString(),
+    endsAt: apt.endsAt.toDate().toISOString(),
+    timezone: apt.businessTimezone,
+    serviceName: apt.serviceSnapshot?.name ?? '',
+    durationMinutes: apt.serviceSnapshot?.durationMinutes ?? null,
+    staffName: apt.staffSnapshot?.displayName ?? '',
+    clientName: apt.client?.name ?? '',
+    businessName: business.name ?? '',
+    businessSlug: business.status === 'published' ? business.slug ?? null : null,
+    version: apt.version,
+    changeableUntil: new Date(changeableUntilMs).toISOString(),
+    canChange: apt.status === 'confirmed' && nowMs <= changeableUntilMs,
+  };
+};
+
+const managed = express.Router({ mergeParams: true });
+router.use(
+  '/public/appointments/:businessId/:appointmentId',
+  manageRateLimit,
+  validate(manageParams, 'params'),
+  validate(manageQuery, 'query'),
+  managed,
+);
+
+managed.get('/', async (req, res, next) => {
+  try {
+    res.json({ data: toClientView(await loadManaged(req)), requestId: req.requestId });
+  } catch (error) {
+    next(toApiError(error));
+  }
+});
+
+managed.get('/availability', validate(manageQuery.extend({ date: availabilityQuery.shape.date }), 'query'), async (req, res, next) => {
+  try {
+    const { apt } = await loadManaged(req);
+    const data = await availabilityFor(apt.businessId, {
+      serviceId: apt.serviceId, staffId: apt.staffId, date: req.validated.query.date,
+    }, apt.id);
+    res.json({ data, requestId: req.requestId });
+  } catch (error) {
+    next(toApiError(error));
+  }
+});
+
+managed.post('/cancel', validate(z.object({ expectedVersion: z.number().int().min(1) }).strict(), 'body'),
+  async (req, res, next) => {
+    try {
+      const ctx = await loadManaged(req);
+      const apt = await cancelAppointment(db, {
+        businessId: ctx.apt.businessId, appointmentId: ctx.apt.id, expectedVersion: req.validated.body.expectedVersion,
+        reason: 'Cancelled by the client', actorUid: 'client', clientNoticeMinutes: ctx.noticeMinutes,
+      });
+      res.json({ data: toClientView({ ...ctx, apt }), requestId: req.requestId });
+    } catch (error) {
+      next(toApiError(error));
+    }
+  });
+
+managed.post('/reschedule', validate(z.object({
+  expectedVersion: z.number().int().min(1),
+  startsAt: publicBookingRequestSchema.shape.startsAt,
+}).strict(), 'body'), async (req, res, next) => {
+  try {
+    const ctx = await loadManaged(req);
+    const apt = await rescheduleAppointment(db, {
+      businessId: ctx.apt.businessId, appointmentId: ctx.apt.id, ...req.validated.body,
+      actorUid: 'client', clientNoticeMinutes: ctx.noticeMinutes,
+    });
+    res.json({ data: toClientView({ ...ctx, apt }), requestId: req.requestId });
+  } catch (error) {
+    next(toApiError(error));
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Private routes for business members (section 13.4). Business id comes from

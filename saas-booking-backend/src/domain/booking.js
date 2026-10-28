@@ -18,6 +18,7 @@ import { computeAvailability, DomainError, occupancyOf } from './availability.js
 import { businessSchema, SCHEMA_VERSION, serviceSchema, staffSchema } from './schemas.js';
 import { localDateOf, MINUTE } from './time.js';
 import { queueNotifications } from '../notifications/jobs.js';
+import { managePathFor, newManageKey } from './manageLink.js';
 
 const BLOCK_MS = 5 * MINUTE;
 const IDEMPOTENCY_TTL_MS = 7 * 24 * 60 * MINUTE;
@@ -71,6 +72,7 @@ export const createBooking = async (db, { businessId, command, idempotencyKey, s
   const intentHash = sha256(canonical(command));
   // Generated once, outside the callback, so retries reuse the same id.
   const appointmentRef = base.collection('appointments').doc();
+  const manageKey = newManageKey();
 
   return db.runTransaction(async (tx) => {
     // Reads first: Firestore transactions require all reads before writes.
@@ -140,6 +142,7 @@ export const createBooking = async (db, { businessId, command, idempotencyKey, s
       notes: command.notes,
       privacyNoticeVersion: command.privacyNoticeVersion,
       smsConsent: command.smsConsent,
+      manageKey,
       version: 1,
       // Version whose notifications are current; contact or note edits keep it.
       notificationVersion: 1,
@@ -171,6 +174,7 @@ export const createBooking = async (db, { businessId, command, idempotencyKey, s
       endsAt: new Date(endsAtMs).toISOString(),
       timezone: business.timezone,
       notificationStatus: 'queued',
+      managePath: managePathFor({ businessId, id: appointmentRef.id, manageKey }),
     };
     tx.create(keyRef, {
       intentHash,
