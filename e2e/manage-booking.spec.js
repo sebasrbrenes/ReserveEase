@@ -14,25 +14,25 @@ test('a client moves and then cancels their own booking from its link', async ({
   await page.click('button[type=submit]');
   await expect(page).toHaveURL(/\/booking\/success\/barberia-demo/);
 
-  await page.getByRole('link', { name: 'Change or cancel this appointment' }).click();
+  await page.getByRole('link', { name: 'Cambiar o cancelar esta cita' }).click();
   await expect(page).toHaveURL(/\/manage\/.+\?k=/);
-  await expect(page.getByText('Confirmed', { exact: true })).toBeVisible();
+  await expect(page.getByText('Confirmada', { exact: true })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Change time' }).click();
+  await page.getByRole('button', { name: 'Cambiar la hora' }).click();
   const newSlots = page.locator('fieldset button');
   await expect(newSlots.nth(1)).toBeVisible();
   const chosen = (await newSlots.last().textContent()).trim();
   await newSlots.last().click();
-  await page.getByRole('button', { name: 'Move my appointment' }).click();
-  await expect(page.getByText('Your appointment has a new time.')).toBeVisible();
-  await expect(page.getByText(new RegExp(`at ${chosen}$`))).toBeVisible();
+  await page.getByRole('button', { name: 'Mover mi cita' }).click();
+  await expect(page.getByText('Tu cita tiene una nueva hora.')).toBeVisible();
+  await expect(page.getByText(new RegExp(`a las ${chosen}$`))).toBeVisible();
 
-  await page.getByRole('button', { name: 'Cancel appointment' }).click();
-  await page.getByRole('button', { name: 'Yes, cancel it' }).click();
-  await expect(page.getByText('Cancelled', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Book a new appointment' })).toBeVisible();
+  await page.getByRole('button', { name: 'Cancelar la cita' }).click();
+  await page.getByRole('button', { name: 'Sí, cancelarla' }).click();
+  await expect(page.getByText('Cancelada', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Reservar una cita nueva' })).toBeVisible();
 
   // The same link with another key shows nothing.
   await page.goto(page.url().replace(/k=[^&]+/, 'k=wrongwrongwrongwrongwrong'));
-  await expect(page.getByText('Appointment not found')).toBeVisible();
+  await expect(page.getByText('No encontramos la cita')).toBeVisible();
 });

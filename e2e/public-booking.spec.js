@@ -18,7 +18,7 @@ test('a visitor books a free time and cannot take the same time twice', async ({
   await page.fill('#email', 'visitante@example.com');
   await page.click('button[type=submit]');
   await expect(page).toHaveURL(/\/booking\/success\/barberia-demo/);
-  await expect(page.getByText('Your appointment is confirmed')).toBeVisible();
+  await expect(page.getByText('Tu cita está confirmada')).toBeVisible();
   await expect(page.getByText(chosen.trim())).toBeVisible();
 
   // The same time is no longer offered for that staff member.
@@ -32,5 +32,5 @@ test('a visitor books a free time and cannot take the same time twice', async ({
 
 test('an unknown booking link shows a clear message', async ({ page }) => {
   await page.goto('/book/no-existe-123');
-  await expect(page.getByText('Booking page not found')).toBeVisible();
+  await expect(page.getByText('No encontramos esta página de reservas')).toBeVisible();
 });

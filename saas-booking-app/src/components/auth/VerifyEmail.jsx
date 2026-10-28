@@ -18,11 +18,11 @@ export default function VerifyEmail() {
     setBusy(true);
     try {
       await sendEmailVerification(user, { url: `${window.location.origin}/login` });
-      toast.success('Verification email sent');
+      toast.success('Te enviamos el correo de verificación');
     } catch (error) {
       toast.error(error.code === 'auth/too-many-requests'
-        ? 'Too many emails sent. Please wait a few minutes.'
-        : 'Could not send the email. Try again later.');
+        ? 'Enviamos demasiados correos. Espera unos minutos.'
+        : 'No pudimos enviar el correo. Inténtalo más tarde.');
     } finally {
       setBusy(false);
     }
@@ -38,7 +38,7 @@ export default function VerifyEmail() {
         navigate('/dashboard', { replace: true });
         window.location.reload();
       } else {
-        toast.error('Your email is not verified yet. Open the link in the email we sent you.');
+        toast.error('Tu correo todavía no está verificado. Abre el enlace del correo que te enviamos.');
       }
     } finally {
       setBusy(false);
@@ -53,28 +53,28 @@ export default function VerifyEmail() {
         </div>
         <div className="hd-card p-6 sm:p-8 text-center space-y-5">
           <h1 className="relative inline-block">
-            <span className="hd-title text-4xl sm:text-5xl">Verify your email</span>
+            <span className="hd-title text-4xl sm:text-5xl">Verifica tu correo</span>
             <Underline className="absolute -bottom-3 left-0 w-full h-4 text-sun" />
           </h1>
           <p className="pt-2 text-ink-soft break-words">
-            We sent a verification link{email ? <> to <span className="font-bold text-ink">{email}</span></> : ''}.
-            Open it to activate your account, then come back here.
+            Te enviamos un enlace de verificación{email ? <> a <span className="font-bold text-ink">{email}</span></> : ''}.
+            Ábrelo para activar tu cuenta y luego vuelve aquí.
           </p>
           {user && !user.emailVerified ? (
             <div className="flex flex-col gap-3 pt-2">
               <button onClick={checkVerified} disabled={busy} className="hd-btn w-full">
-                I have verified my email
+                Ya verifiqué mi correo
               </button>
               <button onClick={resend} disabled={busy} className="hd-btn hd-btn-secondary w-full">
-                Send the email again
+                Enviar el correo otra vez
               </button>
               <button onClick={() => auth.signOut()} className="hd-link text-sm self-center">
-                Use another account
+                Usar otra cuenta
               </button>
             </div>
           ) : (
             <Link to="/login" className="hd-btn">
-              Go to login
+              Ir a iniciar sesión
             </Link>
           )}
         </div>

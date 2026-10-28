@@ -125,7 +125,7 @@ export default function PublicBookingForm() {
     if (submitting || !form.startsAt) return;
     const phone = toE164(countryCode, form.phone);
     if (phone && !isE164(phone)) {
-      showErrors({ phone: `This number looks too short or too long. Write the full number, for example ${countryCode} 8888 7777.` });
+      showErrors({ phone: `Este número parece muy corto o muy largo. Escríbelo completo, por ejemplo ${countryCode} 8888 7777.` });
       return;
     }
     setErrors({});
@@ -166,7 +166,7 @@ export default function PublicBookingForm() {
     return (
       <div className="hd-page flex flex-col items-center justify-center gap-4" role="status">
         <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin motion-reduce:animate-none" aria-hidden="true"></div>
-        <p className="font-hand text-3xl">Loading...</p>
+        <p className="font-hand text-3xl">Cargando...</p>
       </div>
     );
   }
@@ -175,9 +175,9 @@ export default function PublicBookingForm() {
     return (
       <div className="hd-page flex flex-col items-center justify-center p-4">
         <div className="hd-card max-w-md p-8 text-center">
-          <h1 className="hd-title text-4xl mb-3">Booking page not found</h1>
+          <h1 className="hd-title text-4xl mb-3">No encontramos esta página de reservas</h1>
           <p className="text-ink-soft">
-            This link is not active. Check the address or ask the business for its booking link.
+            Este enlace no está activo. Revisa la dirección o pídele al negocio su enlace de reservas.
           </p>
         </div>
       </div>
@@ -185,9 +185,9 @@ export default function PublicBookingForm() {
   }
 
   const noSlotsMessage = {
-    closed: 'Closed on this day. Choose another date.',
-    outside_window: 'Bookings are not open for this date yet.',
-    open: 'No free times on this day. Choose another date or staff member.',
+    closed: 'Cerrado este día. Elige otra fecha.',
+    outside_window: 'Todavía no se puede reservar para esta fecha.',
+    open: 'No quedan horas libres este día. Elige otra fecha u otra persona.',
   }[availability.status];
 
   const service = business.services.find((s) => s.id === form.serviceId);
@@ -198,7 +198,7 @@ export default function PublicBookingForm() {
     <div className="hd-page py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <header className="mb-8 text-center sm:text-left">
-          <p className="text-ink-soft mb-1">Book an appointment with</p>
+          <p className="text-ink-soft mb-1">Reserva tu cita con</p>
           <h1 className="relative inline-block">
             <span className="hd-title text-5xl sm:text-6xl">{business.name}</span>
             <Underline className="absolute -bottom-3 left-0 w-full h-4 text-sun" />
@@ -208,11 +208,11 @@ export default function PublicBookingForm() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
           <form id="booking-form" onSubmit={handleSubmit} className="space-y-6">
-            <Step number={1} title="What would you like?">
+            <Step number={1} title="¿Qué necesitas?">
               <div>
-                <label htmlFor="serviceId" className="hd-label">Service *</label>
+                <label htmlFor="serviceId" className="hd-label">Servicio *</label>
                 <select id="serviceId" name="serviceId" value={form.serviceId} onChange={handleChange} className="hd-input" required>
-                  <option value="">Select a service</option>
+                  <option value="">Elige un servicio</option>
                   {business.services.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name} · {s.durationMinutes} min · {formatMoney(s.priceMinor, s.currency)}
@@ -221,9 +221,9 @@ export default function PublicBookingForm() {
                 </select>
               </div>
               <div>
-                <label htmlFor="staffId" className="hd-label">Staff Member *</label>
+                <label htmlFor="staffId" className="hd-label">Te atiende *</label>
                 <select id="staffId" name="staffId" value={form.staffId} onChange={handleChange} className="hd-input" required disabled={!form.serviceId}>
-                  <option value="">{form.serviceId ? 'Select staff member' : 'Select a service first'}</option>
+                  <option value="">{form.serviceId ? 'Elige quién te atiende' : 'Primero elige un servicio'}</option>
                   {availableStaff.map((s) => (
                     <option key={s.id} value={s.id}>{s.displayName}</option>
                   ))}
@@ -231,16 +231,16 @@ export default function PublicBookingForm() {
               </div>
             </Step>
 
-            <Step number={2} title="When?">
+            <Step number={2} title="¿Cuándo?">
               <div>
-                <label htmlFor="date" className="hd-label">Date *</label>
+                <label htmlFor="date" className="hd-label">Fecha *</label>
                 <DatePicker
                   id="date"
                   selected={form.date ? fromLocalDateString(form.date) : null}
                   onChange={(date) => date && update({ date: toLocalDateString(date), startsAt: '' })}
                   minDate={fromLocalDateString(todayIn(business.timezone))}
                   className="hd-input"
-                  dateFormat="MMM d, yyyy"
+                  dateFormat="dd/MM/yyyy"
                   wrapperClassName="w-full"
                   required
                 />
@@ -248,12 +248,12 @@ export default function PublicBookingForm() {
 
               <fieldset>
                 <legend className="hd-label">
-                  Time * <span className="font-normal text-ink-soft">({timezone})</span>
+                  Hora * <span className="font-normal text-ink-soft">({timezone})</span>
                 </legend>
                 {!form.staffId ? (
-                  <p className="mt-2 hd-help">Choose a service and staff member to see free times.</p>
+                  <p className="mt-2 hd-help">Elige el servicio y quién te atiende para ver las horas libres.</p>
                 ) : availability.loading ? (
-                  <p className="mt-2 hd-help" role="status">Looking for free times...</p>
+                  <p className="mt-2 hd-help" role="status">Buscando horas libres...</p>
                 ) : availability.slots.length === 0 ? (
                   <p className="mt-2 hd-help">{noSlotsMessage}</p>
                 ) : (
@@ -274,9 +274,9 @@ export default function PublicBookingForm() {
               </fieldset>
             </Step>
 
-            <Step number={3} title="About you">
+            <Step number={3} title="Tus datos">
               <div>
-                <label htmlFor="clientName" className="hd-label">Full Name *</label>
+                <label htmlFor="clientName" className="hd-label">Nombre completo *</label>
                 <input
                   id="clientName" ref={fieldRefs.clientName} type="text" name="clientName" value={form.clientName} onChange={handleChange}
                   className="hd-input" maxLength={100} autoComplete="name" required
@@ -286,7 +286,7 @@ export default function PublicBookingForm() {
               </div>
 
               <div>
-                <label htmlFor="email" className="hd-label">Email *</label>
+                <label htmlFor="email" className="hd-label">Correo electrónico *</label>
                 <input
                   id="email" ref={fieldRefs.email} type="email" name="email" value={form.email} onChange={handleChange}
                   className="hd-input" maxLength={200} autoComplete="email" required
@@ -296,10 +296,10 @@ export default function PublicBookingForm() {
               </div>
 
               <div>
-                <label htmlFor="phone" className="hd-label">Phone</label>
+                <label htmlFor="phone" className="hd-label">Teléfono</label>
                 <div className="grid grid-cols-3 gap-2">
                   <select
-                    aria-label="Country code"
+                    aria-label="Código de país"
                     value={countryCode}
                     onChange={(e) => {
                       setCountryCode(e.target.value);
@@ -327,11 +327,11 @@ export default function PublicBookingForm() {
                   />
                 </div>
                 <FieldError id="phone-error" message={errors.phone} />
-                {!errors.phone && <p id="phone-help" className="mt-1 hd-help">Optional. Choose the country and write the number without its code.</p>}
+                {!errors.phone && <p id="phone-help" className="mt-1 hd-help">Opcional. Elige el país y escribe el número sin el código.</p>}
               </div>
 
               <div>
-                <label htmlFor="notes" className="hd-label">Notes</label>
+                <label htmlFor="notes" className="hd-label">Notas</label>
                 <textarea
                   id="notes" ref={fieldRefs.notes} name="notes" value={form.notes} onChange={handleChange} rows="3" maxLength={500} className="hd-input"
                   aria-invalid={Boolean(errors.notes)} aria-describedby={errors.notes ? 'notes-error' : undefined}
@@ -342,30 +342,30 @@ export default function PublicBookingForm() {
           </form>
 
           <aside className="hd-card p-5 sm:p-6 lg:sticky lg:top-6" aria-labelledby="summary-title">
-            <h2 id="summary-title" className="hd-title text-3xl mb-3">Your booking</h2>
+            <h2 id="summary-title" className="hd-title text-3xl mb-3">Tu reserva</h2>
             <dl className="text-sm mb-5">
-              <SummaryRow label="Service" value={service?.name} />
-              <SummaryRow label="Duration" value={service && `${service.durationMinutes} min`} />
-              <SummaryRow label="Price" value={service && formatMoney(service.priceMinor, service.currency)} />
-              <SummaryRow label="With" value={staff?.displayName} />
-              <SummaryRow label="Date" value={form.date && formatLocalDate(form.date)} />
-              <SummaryRow label="Time" value={form.startsAt && `${formatTime(form.startsAt, business.timezone)} (${timezone})`} />
+              <SummaryRow label="Servicio" value={service?.name} />
+              <SummaryRow label="Duración" value={service && `${service.durationMinutes} min`} />
+              <SummaryRow label="Precio" value={service && formatMoney(service.priceMinor, service.currency)} />
+              <SummaryRow label="Con" value={staff?.displayName} />
+              <SummaryRow label="Fecha" value={form.date && formatLocalDate(form.date)} />
+              <SummaryRow label="Hora" value={form.startsAt && `${formatTime(form.startsAt, business.timezone)} (${timezone})`} />
             </dl>
 
             <button type="submit" form="booking-form" disabled={submitting || !form.startsAt} className="hd-btn w-full text-lg">
-              {submitting ? 'Booking...' : 'Book Appointment'}
+              {submitting ? 'Reservando...' : 'Reservar cita'}
             </button>
-            {!form.startsAt && <p className="mt-2 hd-help text-center">Pick a time to book.</p>}
+            {!form.startsAt && <p className="mt-2 hd-help text-center">Elige una hora para reservar.</p>}
 
             <p className="mt-4 text-xs text-ink-soft">
-              {business.name} uses your name, email and phone only to manage this appointment and contact you about it.{' '}
-              <a href={PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">Privacy notice</a>
+              {business.name} usa tu nombre, correo y teléfono solo para gestionar esta cita y avisarte sobre ella.{' '}
+              <a href={PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">Aviso de privacidad</a>
             </p>
           </aside>
         </div>
 
         <footer className="mt-10 flex justify-center opacity-70">
-          <span className="text-xs text-ink-soft mr-2 self-center">Bookings by</span>
+          <span className="text-xs text-ink-soft mr-2 self-center">Reservas con</span>
           <Logo className="scale-75 origin-left" />
         </footer>
       </div>

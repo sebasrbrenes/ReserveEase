@@ -36,6 +36,8 @@ if (!useEmulators && !firebaseConfig.projectId) {
 const app = initializeApp(useEmulators ? emulatorConfig : firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+// Verification and password reset emails from Firebase, in Spanish.
+auth.languageCode = "es";
 
 if (useEmulators) {
   connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });

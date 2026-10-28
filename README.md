@@ -73,8 +73,8 @@ Los correos de las reservas no salen del navegador. Cada reserva, cambio de hora
 - Recordatorio 24 horas antes. Si la reserva se hace dentro de esas 24 horas, solo se envía la confirmación.
 - Un recordatorio de una hora anterior o de una cita cancelada nunca se envía.
 - Si el proveedor falla, se reintenta a los 1, 5, 25 y 125 minutos; después queda como fallido y el panel ofrece reintentar.
-- En modo `mock` las tareas quedan como `simulated` y el panel lo dice ("Email simulated"); con `live`, `SENDGRID_API_KEY` y `FROM_EMAIL` se envían por SendGrid y quedan como `accepted` (aceptado por el proveedor, que no es lo mismo que entregado).
-- Si el negocio apaga "Client Emails" en Settings, sus tareas quedan como `disabled` y no se envía nada; el panel muestra "Client emails off".
+- En modo `mock` las tareas quedan como `simulated` y el panel lo dice ("Correo simulado"); con `live`, `SENDGRID_API_KEY` y `FROM_EMAIL` se envían por SendGrid y quedan como `accepted` (aceptado por el proveedor, que no es lo mismo que entregado).
+- Si el negocio apaga "Correos a clientes" en Configuración, sus tareas quedan como `disabled` y no se envía nada; el panel muestra "Correos a clientes apagados".
 - `NOTIFICATIONS_WORKER=off` desactiva el envío en ese proceso.
 
 ### 4. Landing

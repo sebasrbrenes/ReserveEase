@@ -215,7 +215,7 @@ managed.post('/cancel', validate(z.object({ expectedVersion: z.number().int().mi
       const ctx = await loadManaged(req);
       const apt = await cancelAppointment(db, {
         businessId: ctx.apt.businessId, appointmentId: ctx.apt.id, expectedVersion: req.validated.body.expectedVersion,
-        reason: 'Cancelled by the client', actorUid: 'client', clientNoticeMinutes: ctx.noticeMinutes,
+        reason: 'Cancelada por el cliente', actorUid: 'client', clientNoticeMinutes: ctx.noticeMinutes,
       });
       res.json({ data: toClientView({ ...ctx, apt }), requestId: req.requestId });
     } catch (error) {

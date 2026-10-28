@@ -70,7 +70,7 @@ describe.skipIf(!hasEmulator)('notification worker', () => {
     expect(sent[0].to).toBe('cliente@example.com');
     expect(sent[0].html).toContain('Ana &lt;script&gt;');
     expect(sent[0].html).not.toContain('<script>');
-    expect(sent[0].text).toMatch(/at 9:00 AM \(America\/Costa Rica\)/);
+    expect(sent[0].text).toMatch(/a las 9:00\sa\.\sm\. \(America\/Costa Rica\)/);
     // The reminder waits until 24 hours before the start.
     expect((await job(`${id}_v1_reminder_email`)).status).toBe('queued');
   });
@@ -164,7 +164,7 @@ describe.skipIf(!hasEmulator)('notification worker', () => {
     expect((await job(`${cancelled}_v3_cancellation_email`)).status).toBe('simulated');
     const reminders = adapter.sent.filter((m) => m.idempotencyKey.startsWith(moved) && m.idempotencyKey.includes('reminder'));
     expect(reminders.map((m) => m.idempotencyKey)).toEqual([`${moved}_v2_reminder_email`]);
-    expect(reminders[0].text).toMatch(/2:00 PM/);
+    expect(reminders[0].text).toMatch(/2:00\sp\.\sm\./);
   });
 
   it('two workers running at once send each message once', async () => {

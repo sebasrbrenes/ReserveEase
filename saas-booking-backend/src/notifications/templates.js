@@ -6,29 +6,29 @@ const escapeHtml = (value) => String(value ?? '')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 const when = (date, timeZone) => {
-  const day = new Intl.DateTimeFormat('en-US', {
+  const day = new Intl.DateTimeFormat('es-CR', {
     timeZone, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   }).format(date);
-  const time = new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit' }).format(date);
-  return `${day} at ${time} (${timeZone.replace(/_/g, ' ')})`;
+  const time = new Intl.DateTimeFormat('es-CR', { timeZone, hour: 'numeric', minute: '2-digit' }).format(date);
+  return `${day} a las ${time} (${timeZone.replace(/_/g, ' ')})`;
 };
 
 const COPY = {
   confirmation_email: {
-    subject: (b) => `Your appointment with ${b} is confirmed`,
-    lead: 'Your appointment is confirmed.',
+    subject: (b) => `Tu cita con ${b} está confirmada`,
+    lead: 'Tu cita está confirmada.',
   },
   reschedule_email: {
-    subject: (b) => `Your appointment with ${b} has a new time`,
-    lead: 'Your appointment has been moved. These are the new details.',
+    subject: (b) => `Tu cita con ${b} tiene una nueva hora`,
+    lead: 'Tu cita cambió de hora. Estos son los nuevos detalles.',
   },
   reminder_email: {
-    subject: (b) => `Reminder: your appointment with ${b}`,
-    lead: 'This is a reminder of your upcoming appointment.',
+    subject: (b) => `Recordatorio: tu cita con ${b}`,
+    lead: 'Te recordamos tu próxima cita.',
   },
   cancellation_email: {
-    subject: (b) => `Your appointment with ${b} was cancelled`,
-    lead: 'Your appointment has been cancelled. This time is no longer reserved for you.',
+    subject: (b) => `Tu cita con ${b} fue cancelada`,
+    lead: 'Tu cita fue cancelada. Esa hora ya no está reservada para ti.',
   },
 };
 
@@ -44,15 +44,15 @@ export const renderEmail = (template, { appointment, businessName, manageUrl = n
   if (!copy) throw new Error(`Unknown template ${template}`);
   const startsAt = appointment.startsAt.toDate();
   const details = [
-    ['Service', appointment.serviceSnapshot?.name],
-    ['With', appointment.staffSnapshot?.displayName],
-    ['When', when(startsAt, appointment.businessTimezone)],
-    ['Reference', appointment.id],
+    ['Servicio', appointment.serviceSnapshot?.name],
+    ['Con', appointment.staffSnapshot?.displayName],
+    ['Cuándo', when(startsAt, appointment.businessTimezone)],
+    ['Referencia', appointment.id],
   ];
-  const greeting = `Hello ${appointment.client.name},`;
+  const greeting = `Hola, ${appointment.client.name}:`;
   // A cancelled appointment has nothing left to change.
   const link = template !== 'cancellation_email' && manageUrl;
-  const linkLead = 'Need to change or cancel it? Use this link:';
+  const linkLead = '¿Necesitas cambiarla o cancelarla? Usa este enlace:';
   const text = [
     greeting, '', copy.lead, '',
     ...details.map(([k, v]) => `${k}: ${v}`),

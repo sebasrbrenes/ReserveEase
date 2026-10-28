@@ -1,18 +1,18 @@
 // Appointment states of the booking API and what the dashboard can do from each.
 // className holds the Hand-Drawn badge colors; pair it with `hd-badge`.
 export const STATUS = {
-  confirmed: { label: 'Confirmed', className: 'text-marker bg-marker-light' },
-  completed: { label: 'Completed', className: 'text-leaf bg-leaf-light' },
-  no_show: { label: 'No-show', className: 'text-ink bg-sun-light' },
-  cancelled: { label: 'Cancelled', className: 'text-coral bg-coral-light' },
+  confirmed: { label: 'Confirmada', className: 'text-marker bg-marker-light' },
+  completed: { label: 'Completada', className: 'text-leaf bg-leaf-light' },
+  no_show: { label: 'No asistió', className: 'text-ink bg-sun-light' },
+  cancelled: { label: 'Cancelada', className: 'text-coral bg-coral-light' },
 };
 
 // Actions offered on a confirmed appointment. completed and no_show are only
 // accepted by the server once the appointment has started.
 export const STATUS_ACTIONS = [
-  { value: 'completed', label: 'Mark completed' },
-  { value: 'no_show', label: 'Mark no-show' },
-  { value: 'cancelled', label: 'Cancel appointment' },
+  { value: 'completed', label: 'Marcar completada' },
+  { value: 'no_show', label: 'Marcar que no asistió' },
+  { value: 'cancelled', label: 'Cancelar cita' },
 ];
 
 // The actions that make sense now: before the start only cancelling does.

@@ -7,10 +7,10 @@ import { Star, Underline } from '../ui/Doodles';
 
 // Why the booking page is not published yet (codes from the API).
 const PUBLISH_PROBLEMS = {
-  NAME_MISSING: 'Add your business name.',
-  NO_SERVICES: 'Add at least one service.',
-  NO_STAFF_WITH_SERVICES: 'Add an active staff member and assign them a service.',
-  NO_OPENING_HOURS: 'Open at least one day in Business Hours.',
+  NAME_MISSING: 'Escribe el nombre de tu negocio.',
+  NO_SERVICES: 'Agrega al menos un servicio.',
+  NO_STAFF_WITH_SERVICES: 'Agrega a alguien del personal, activo, y asígnale un servicio.',
+  NO_OPENING_HOURS: 'Abre al menos un día en el horario.',
 };
 const TIME_ZONES = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [];
 // "9:30 AM" -> minutes since midnight
@@ -22,11 +22,11 @@ const toMinutes = (time) => {
 
 // The booking engine works in 5-minute blocks, up to 8 hours per service.
 const serviceError = ({ name, duration, price }) => {
-  if (!String(name || '').trim()) return 'Give the service a name.';
+  if (!String(name || '').trim()) return 'Ponle un nombre al servicio.';
   if (!Number.isInteger(duration) || duration < 5 || duration > 480 || duration % 5 !== 0) {
-    return 'Duration must be between 5 and 480 minutes, in steps of 5.';
+    return 'La duración debe estar entre 5 y 480 minutos, en pasos de 5.';
   }
-  if (!Number.isFinite(price) || price < 0) return 'Price must be 0 or more.';
+  if (!Number.isFinite(price) || price < 0) return 'El precio debe ser 0 o más.';
   return null;
 };
 
@@ -40,6 +40,12 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   return `${displayHour}:${minute} ${ampm}`;
 });
+// Stored values stay "9:30 AM"; the list shows "9:30 a. m.".
+const timeLabel = (time) => time.replace(' AM', ' a. m.').replace(' PM', ' p. m.');
+const DAY_NAMES = {
+  monday: 'Lunes', tuesday: 'Martes', wednesday: 'Miércoles', thursday: 'Jueves',
+  friday: 'Viernes', saturday: 'Sábado', sunday: 'Domingo',
+};
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -52,10 +58,10 @@ const Settings = () => {
   const copyBookingLink = async () => {
     try {
       await navigator.clipboard.writeText(getBookingLink());
-      toast.success('Booking link copied to clipboard!');
+      toast.success('¡Enlace de reservas copiado!');
     } catch (error) {
       console.error('Failed to copy link:', error);
-      toast.error('Failed to copy link');
+      toast.error('No pudimos copiar el enlace');
     }
   };
 
@@ -135,7 +141,7 @@ const Settings = () => {
     } catch (error) {
       console.error(failure, error);
       rollback?.();
-      toast.error(`${failure} Your last change was not saved.`);
+      toast.error(`${failure} Tu último cambio no se guardó.`);
       return false;
     }
   };
@@ -179,7 +185,7 @@ const Settings = () => {
     setBusinessHours(updatedHours);
     return saveSection(
       { businessHours: updatedHours },
-      { success: 'Business hours saved', failure: 'Could not save business hours.', rollback: () => setBusinessHours(previous) },
+      { success: 'Horario guardado', failure: 'No pudimos guardar el horario.', rollback: () => setBusinessHours(previous) },
     );
   };
 
@@ -189,32 +195,32 @@ const Settings = () => {
     if (error) return;
     const saved = await saveServices(
       [...services, { ...newService, name: newService.name.trim(), id: Date.now().toString() }],
-      { success: 'Service added', failure: 'Could not add the service.' },
+      { success: 'Servicio agregado', failure: 'No pudimos agregar el servicio.' },
     );
     if (saved) setNewService(emptyService);
   };
 
   const handleDeleteService = async (service) => {
-    if (!window.confirm(`Delete "${service.name}"? Clients will no longer be able to book it.`)) return;
-    await saveServices(services.filter((s) => s.id !== service.id), { success: 'Service deleted', failure: 'Could not delete the service.' });
+    if (!window.confirm(`¿Eliminar "${service.name}"? Los clientes ya no podrán reservarlo.`)) return;
+    await saveServices(services.filter((s) => s.id !== service.id), { success: 'Servicio eliminado', failure: 'No pudimos eliminar el servicio.' });
   };
 
   const handleAddStaff = async () => {
     if (!newStaff.name.trim()) {
-      setStaffFormError('Give the staff member a name.');
+      setStaffFormError('Escribe el nombre de la persona.');
       return;
     }
     setStaffFormError('');
     const saved = await saveStaff(
       [...staff, { ...newStaff, name: newStaff.name.trim(), id: Date.now().toString(), active: true }],
-      { success: 'Staff member added', failure: 'Could not add the staff member.' },
+      { success: 'Persona agregada', failure: 'No pudimos agregar a la persona.' },
     );
     if (saved) setNewStaff(emptyStaff);
   };
 
   const handleDeleteStaff = async (staffMember) => {
-    if (!window.confirm(`Delete ${staffMember.name}? Clients will no longer be able to book with them.`)) return;
-    await saveStaff(staff.filter((s) => s.id !== staffMember.id), { success: 'Staff member deleted', failure: 'Could not delete the staff member.' });
+    if (!window.confirm(`¿Eliminar a ${staffMember.name}? Los clientes ya no podrán reservar con esta persona.`)) return;
+    await saveStaff(staff.filter((s) => s.id !== staffMember.id), { success: 'Persona eliminada', failure: 'No pudimos eliminar a la persona.' });
   };
 
   const handleToggleBusinessHours = (day) => {
@@ -224,7 +230,7 @@ const Settings = () => {
   const handleUpdateBusinessHours = (day, field, value) => {
     const updatedDay = { ...businessHours[day], [field]: value };
     if (toMinutes(updatedDay.end) <= toMinutes(updatedDay.start)) {
-      toast.error('Closing time must be after opening time.');
+      toast.error('La hora de cierre debe ser después de la de apertura.');
       return;
     }
     saveHours({ ...businessHours, [day]: updatedDay });
@@ -234,7 +240,7 @@ const Settings = () => {
   const clientEmails = settings?.business?.clientEmails !== false;
   const handleToggleClientEmails = () => saveSection(
     { business: { ...settings.business, clientEmails: !clientEmails } },
-    { success: clientEmails ? 'Client emails turned off' : 'Client emails turned on', failure: 'Could not save the email preference.' },
+    { success: clientEmails ? 'Correos a clientes apagados' : 'Correos a clientes encendidos', failure: 'No pudimos guardar la preferencia de correos.' },
   );
 
   const handleBusinessSettingsChange = (e) => {
@@ -247,7 +253,7 @@ const Settings = () => {
 
   const handleSaveBusinessSettings = async () => {
     if (!businessForm.name.trim()) {
-      setBusinessNameError('Give your business a name.');
+      setBusinessNameError('Escribe el nombre de tu negocio.');
       return;
     }
     setBusinessNameError('');
@@ -262,7 +268,7 @@ const Settings = () => {
           currency: businessForm.currency,
         },
       },
-      { success: 'Business information saved', failure: 'Could not save the business information.' },
+      { success: 'Datos del negocio guardados', failure: 'No pudimos guardar los datos del negocio.' },
     );
     setSavingBusiness(false);
   };
@@ -274,7 +280,7 @@ const Settings = () => {
     if (error) return;
     const saved = await saveServices(
       services.map((s) => (s.id === editingService.id ? { ...newService, name: newService.name.trim() } : s)),
-      { success: 'Service updated', failure: 'Could not update the service.' },
+      { success: 'Servicio actualizado', failure: 'No pudimos actualizar el servicio.' },
     );
     if (saved) {
       setEditingService(null);
@@ -303,13 +309,13 @@ const Settings = () => {
 
   const handleUpdateStaff = async () => {
     if (!newStaff.name.trim()) {
-      setStaffFormError('Give the staff member a name.');
+      setStaffFormError('Escribe el nombre de la persona.');
       return;
     }
     setStaffFormError('');
     const saved = await saveStaff(
       staff.map((s) => (s.id === editingStaff.id ? { ...newStaff, name: newStaff.name.trim() } : s)),
-      { success: 'Staff member updated', failure: 'Could not update the staff member.' },
+      { success: 'Persona actualizada', failure: 'No pudimos actualizar a la persona.' },
     );
     if (saved) {
       setEditingStaff(null);
@@ -327,7 +333,7 @@ const Settings = () => {
     const active = !staffMember.active;
     saveStaff(
       staff.map((s) => (s.id === staffMember.id ? { ...s, active } : s)),
-      { success: `${staffMember.name} is now ${active ? 'active' : 'inactive'}`, failure: 'Could not change the staff status.' },
+      { success: `${staffMember.name} ahora está ${active ? 'activo' : 'inactivo'}`, failure: 'No pudimos cambiar el estado de la persona.' },
     );
   };
 
@@ -346,12 +352,12 @@ const Settings = () => {
           className="hd-btn hd-btn-secondary !px-3 !py-1.5 mb-6 text-sm"
         >
           <FiArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Back
+          Volver
         </button>
 
         <div className="mb-8">
           <h1 className="relative inline-block">
-            <span className="hd-title text-5xl">Settings</span>
+            <span className="hd-title text-5xl">Configuración</span>
             <Underline className="absolute -bottom-3 left-0 w-full h-4 text-sun" />
             <Star className="hidden sm:block absolute -right-10 -top-2 w-7 h-7 text-marker rotate-12" />
           </h1>
@@ -361,19 +367,19 @@ const Settings = () => {
         <section className="hd-card p-4 sm:p-5 mb-6">
           <h2 className="hd-title text-3xl mb-3 flex items-center gap-2">
             <FiLink className="w-5 h-5 shrink-0" aria-hidden="true" />
-            Booking Link
+            Enlace de reservas
           </h2>
           <p className="hd-help mb-4">
-            Share this link with your clients to let them book appointments directly.
+            Comparte este enlace con tus clientes para que reserven solos.
           </p>
           {business.loading ? (
-            <p className="hd-help mb-4">Checking your booking page...</p>
+            <p className="hd-help mb-4">Revisando tu página de reservas...</p>
           ) : !isPublished && (
             <div className="hd-alert border-ink bg-sun-light text-ink mb-4">
-              <p className="font-bold mb-1">Your booking page is not live yet.</p>
+              <p className="font-bold mb-1">Tu página de reservas todavía no está publicada.</p>
               <ul className="list-disc pl-5 space-y-1">
                 {(business.data?.problems || []).map((code) => <li key={code}>{PUBLISH_PROBLEMS[code] || code}</li>)}
-                {business.error && <li>Could not reach the booking server. Try again in a moment.</li>}
+                {business.error && <li>No pudimos conectar con el servidor de reservas. Inténtalo en un momento.</li>}
               </ul>
             </div>
           )}
@@ -382,7 +388,7 @@ const Settings = () => {
               type="text"
               value={getBookingLink()}
               readOnly
-              aria-label="Booking link"
+              aria-label="Enlace de reservas"
               className="hd-input !mt-0 flex-1 min-w-0 bg-paper"
             />
             <button
@@ -391,18 +397,18 @@ const Settings = () => {
               className="hd-btn w-full sm:w-auto"
             >
               <FiCopy className="w-4 h-4" />
-              Copy
+              Copiar
             </button>
           </div>
         </section>
 
         {/* Business Information */}
         <section className="hd-card p-4 sm:p-5 mb-6">
-          <h2 className="hd-title text-3xl mb-4">Business Information</h2>
+          <h2 className="hd-title text-3xl mb-4">Datos del negocio</h2>
           <div className="space-y-4">
             <div>
               <label htmlFor="businessName" className="hd-label">
-                Business Name
+                Nombre del negocio
               </label>
               <input
                 type="text"
@@ -411,7 +417,7 @@ const Settings = () => {
                 value={businessForm.name}
                 onChange={handleBusinessSettingsChange}
                 className="hd-input"
-                placeholder="Enter your business name"
+                placeholder="Por ejemplo, Barbería Central"
                 aria-invalid={Boolean(businessNameError)}
                 aria-describedby={businessNameError ? 'businessName-error' : undefined}
               />
@@ -420,7 +426,7 @@ const Settings = () => {
 
             <div>
               <label htmlFor="timeInterval" className="hd-label">
-                Appointment Time Interval (minutes)
+                Intervalo entre horas de cita (minutos)
               </label>
               <select
                 name="timeInterval"
@@ -429,16 +435,16 @@ const Settings = () => {
                 onChange={handleBusinessSettingsChange}
                 className="hd-input"
               >
-                <option value="15">15 minutes</option>
-                <option value="30">30 minutes</option>
-                <option value="45">45 minutes</option>
-                <option value="60">60 minutes</option>
+                <option value="15">15 minutos</option>
+                <option value="30">30 minutos</option>
+                <option value="45">45 minutos</option>
+                <option value="60">60 minutos</option>
               </select>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="min-w-0">
-                <label htmlFor="timezone" className="hd-label">Time Zone</label>
+                <label htmlFor="timezone" className="hd-label">Zona horaria</label>
                 <select
                   name="timezone"
                   id="timezone"
@@ -448,14 +454,14 @@ const Settings = () => {
                   aria-describedby="timezone-help"
                 >
                   {!TIME_ZONES.includes(businessForm.timezone) && (
-                    <option value={businessForm.timezone}>{businessForm.timezone || 'Select a time zone'}</option>
+                    <option value={businessForm.timezone}>{businessForm.timezone || 'Elige una zona horaria'}</option>
                   )}
                   {TIME_ZONES.map((tz) => <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>)}
                 </select>
-                <p id="timezone-help" className="hd-help mt-1">Clients always see times in this zone.</p>
+                <p id="timezone-help" className="hd-help mt-1">Tus clientes siempre ven las horas en esta zona.</p>
               </div>
               <div className="min-w-0">
-                <label htmlFor="currency" className="hd-label">Currency</label>
+                <label htmlFor="currency" className="hd-label">Moneda</label>
                 <select
                   name="currency"
                   id="currency"
@@ -471,14 +477,14 @@ const Settings = () => {
 
             <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">
               {businessFormDirty && !savingBusiness && (
-                <p className="hd-help" role="status">You have unsaved changes in this section.</p>
+                <p className="hd-help" role="status">Tienes cambios sin guardar en esta sección.</p>
               )}
               <button
                 onClick={handleSaveBusinessSettings}
                 disabled={!businessFormDirty || savingBusiness}
                 className="hd-btn w-full sm:w-auto"
               >
-                {savingBusiness ? 'Saving...' : 'Save Changes'}
+                {savingBusiness ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </div>
           </div>
@@ -486,15 +492,15 @@ const Settings = () => {
 
         {/* Client emails */}
         <section className="hd-card p-4 sm:p-5 mb-6">
-          <h2 className="hd-title text-3xl mb-2">Client Emails</h2>
+          <h2 className="hd-title text-3xl mb-2">Correos a clientes</h2>
           <label className="flex items-center justify-between gap-4 cursor-pointer">
             <span className="hd-help">
-              Email clients when they book, when you move or cancel their appointment, and a reminder the day before.
+              Enviar un correo al cliente cuando reserva, cuando su cita cambia o se cancela, y un recordatorio el día antes.
             </span>
             <input
               type="checkbox"
               role="switch"
-              aria-label="Email clients about their appointments"
+              aria-label="Enviar correos a los clientes sobre sus citas"
               aria-checked={clientEmails}
               checked={clientEmails}
               onChange={handleToggleClientEmails}
@@ -511,8 +517,8 @@ const Settings = () => {
 
         {/* Business Hours */}
         <section className="hd-card p-4 sm:p-5 mb-6">
-          <h2 className="hd-title text-3xl mb-1">Business Hours</h2>
-          <p className="hd-help mb-4">Changes here are saved as soon as you make them.</p>
+          <h2 className="hd-title text-3xl mb-1">Horario</h2>
+          <p className="hd-help mb-4">Los cambios de esta sección se guardan en cuanto los haces.</p>
           <div className="space-y-4">
             {DAYS_OF_WEEK.map(day => (
               <div key={day} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 pb-4 sm:pb-0 border-b-2 border-dashed border-paper-deep sm:border-0 last:border-0 last:pb-0">
@@ -524,34 +530,34 @@ const Settings = () => {
                       checked={businessHours[day.toLowerCase()]?.enabled ?? true}
                       onChange={() => handleToggleBusinessHours(day.toLowerCase())}
                     />
-                    <span className="capitalize">{day}</span>
+                    <span>{DAY_NAMES[day]}</span>
                   </label>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:flex-1">
                   <select
-                    aria-label={`${day} opening time`}
+                    aria-label={`${DAY_NAMES[day]}: hora de apertura`}
                     className="hd-input !mt-0 text-ink w-full sm:flex-1"
                     value={businessHours[day.toLowerCase()]?.start ?? '9:00 AM'}
                     onChange={(e) => handleUpdateBusinessHours(day.toLowerCase(), 'start', e.target.value)}
                     disabled={!businessHours[day.toLowerCase()]?.enabled}
                   >
                     {TIME_OPTIONS.map(time => (
-                      <option key={time} value={time}>{time}</option>
+                      <option key={time} value={time}>{timeLabel(time)}</option>
                     ))}
                   </select>
 
-                  <span className="hd-help font-semibold">to</span>
+                  <span className="hd-help font-semibold">a</span>
 
                   <select
-                    aria-label={`${day} closing time`}
+                    aria-label={`${DAY_NAMES[day]}: hora de cierre`}
                     className="hd-input !mt-0 text-ink w-full sm:flex-1"
                     value={businessHours[day.toLowerCase()]?.end ?? '5:00 PM'}
                     onChange={(e) => handleUpdateBusinessHours(day.toLowerCase(), 'end', e.target.value)}
                     disabled={!businessHours[day.toLowerCase()]?.enabled}
                   >
                     {TIME_OPTIONS.map(time => (
-                      <option key={time} value={time}>{time}</option>
+                      <option key={time} value={time}>{timeLabel(time)}</option>
                     ))}
                   </select>
                 </div>
@@ -562,16 +568,16 @@ const Settings = () => {
 
         {/* Services */}
         <section className="hd-card p-4 sm:p-5 mb-6">
-          <h2 className="hd-title text-3xl mb-4">Services</h2>
-          <h3 className="hd-label mb-2">{editingService ? `Editing ${editingService.name}` : 'Add a service'}</h3>
+          <h2 className="hd-title text-3xl mb-4">Servicios</h2>
+          <h3 className="hd-label mb-2">{editingService ? `Editando ${editingService.name}` : 'Agregar un servicio'}</h3>
 
           {/* Add/Edit Service Form */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
               <input
                 type="text"
-                aria-label="Service name"
-                placeholder="Service Name"
+                aria-label="Nombre del servicio"
+                placeholder="Nombre del servicio"
                 value={newService.name}
                 onChange={(e) => setNewService(prev => ({ ...prev, name: e.target.value }))}
                 className="hd-input !mt-0"
@@ -582,11 +588,11 @@ const Settings = () => {
             <div>
               <input
                 type="number"
-                aria-label="Duration in minutes"
+                aria-label="Duración en minutos"
                 min={5}
                 max={480}
                 step={5}
-                placeholder="Duration (minutes)"
+                placeholder="Duración (minutos)"
                 value={newService.duration}
                 onChange={(e) => setNewService(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
                 className="hd-input !mt-0"
@@ -595,10 +601,10 @@ const Settings = () => {
             <div className="flex gap-2">
               <input
                 type="number"
-                aria-label="Price"
+                aria-label="Precio"
                 min={0}
                 step="0.01"
-                placeholder="Price"
+                placeholder="Precio"
                 value={newService.price}
                 onChange={(e) => setNewService(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
                 className="hd-input !mt-0 min-w-0"
@@ -607,10 +613,10 @@ const Settings = () => {
                 onClick={editingService ? handleUpdateService : handleAddService}
                 className="hd-btn shrink-0 !px-4"
               >
-                {editingService ? 'Update' : 'Add'}
+                {editingService ? 'Actualizar' : 'Agregar'}
               </button>
               {editingService && (
-                <button onClick={cancelServiceEdit} className="hd-btn hd-btn-secondary shrink-0 !px-4">Cancel</button>
+                <button onClick={cancelServiceEdit} className="hd-btn hd-btn-secondary shrink-0 !px-4">Cancelar</button>
               )}
             </div>
           </div>
@@ -629,14 +635,14 @@ const Settings = () => {
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => handleEditService(service)}
-                    aria-label={`Edit ${service.name}`}
+                    aria-label={`Editar ${service.name}`}
                     className="p-2 rounded-lg text-ink-soft hover:text-marker hover:bg-marker-light transition duration-200"
                   >
                     <FiEdit2 aria-hidden="true" />
                   </button>
                   <button
                     onClick={() => handleDeleteService(service)}
-                    aria-label={`Delete ${service.name}`}
+                    aria-label={`Eliminar ${service.name}`}
                     className="p-2 rounded-lg text-ink-soft hover:text-coral hover:bg-coral-light transition duration-200"
                   >
                     <FiTrash2 aria-hidden="true" />
@@ -649,49 +655,49 @@ const Settings = () => {
 
         {/* Staff */}
         <section className="hd-card p-4 sm:p-5">
-          <h2 className="hd-title text-3xl mb-4">Staff</h2>
+          <h2 className="hd-title text-3xl mb-4">Personal</h2>
 
           {/* Add/Edit Staff Form */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="space-y-4">
               <div>
-                <label htmlFor="staffName" className="hd-label">Name</label>
+                <label htmlFor="staffName" className="hd-label">Nombre</label>
                 <input
                   id="staffName"
                   type="text"
                   value={newStaff.name}
                   onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
                   className="hd-input"
-                  placeholder="Enter staff name"
+                  placeholder="Nombre de la persona"
                   aria-invalid={Boolean(staffFormError)}
                   aria-describedby={staffFormError ? 'staff-error' : undefined}
                 />
                 {staffFormError && <p id="staff-error" className="hd-error mt-1" role="alert">{staffFormError}</p>}
               </div>
               <div>
-                <label htmlFor="staffEmail" className="hd-label">Email (optional)</label>
+                <label htmlFor="staffEmail" className="hd-label">Correo electrónico (opcional)</label>
                 <input
                   id="staffEmail"
                   type="email"
                   value={newStaff.email}
                   onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
                   className="hd-input"
-                  placeholder="Enter staff email"
+                  placeholder="correo@ejemplo.com"
                 />
               </div>
               <div>
-                <label htmlFor="staffPhone" className="hd-label">Phone</label>
+                <label htmlFor="staffPhone" className="hd-label">Teléfono</label>
                 <input
                   id="staffPhone"
                   type="tel"
                   value={newStaff.phone}
                   onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
                   className="hd-input"
-                  placeholder="Enter staff phone"
+                  placeholder="Teléfono"
                 />
               </div>
               <div>
-                <p id="staffServices" className="hd-label">Available Services</p>
+                <p id="staffServices" className="hd-label">Servicios que ofrece</p>
                 <div role="group" aria-labelledby="staffServices" className="hd-input space-y-2 max-h-48 overflow-y-auto">
                   {services.map(service => (
                     <label key={service.id} className="flex items-center gap-2 cursor-pointer">
@@ -718,13 +724,13 @@ const Settings = () => {
                       onClick={cancelStaffEdit}
                       className="hd-btn hd-btn-secondary"
                     >
-                      Cancel
+                      Cancelar
                     </button>
                     <button
                       onClick={handleUpdateStaff}
                       className="hd-btn"
                     >
-                      Update Staff Member
+                      Actualizar persona
                     </button>
                   </>
                 ) : (
@@ -732,7 +738,7 @@ const Settings = () => {
                     onClick={handleAddStaff}
                     className="hd-btn"
                   >
-                    Add Staff Member
+                    Agregar persona
                   </button>
                 )}
               </div>
@@ -757,19 +763,19 @@ const Settings = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleStaffStatusToggle(staffMember)}
-                      aria-label={`${staffMember.name} is ${staffMember.active ? 'active' : 'inactive'}. Change status`}
+                      aria-label={`${staffMember.name} está ${staffMember.active ? 'activo' : 'inactivo'}. Cambiar estado`}
                       className={`hd-badge !text-sm !px-3 !py-1 transition-colors duration-200 ${
                         staffMember.active
                           ? 'text-leaf bg-leaf-light hover:bg-leaf/20'
                           : 'text-ink-soft bg-paper-deep hover:bg-white'
                       }`}
                     >
-                      {staffMember.active ? 'Active' : 'Inactive'}
+                      {staffMember.active ? 'Activo' : 'Inactivo'}
                     </button>
                     <div className="flex gap-1">
                       <button
                         onClick={() => handleEditStaff(staffMember)}
-                        aria-label={`Edit ${staffMember.name}`}
+                        aria-label={`Editar a ${staffMember.name}`}
                         className="p-1.5 rounded-lg text-ink-soft hover:text-marker hover:bg-marker-light transition-colors duration-200"
                       >
                         <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -778,7 +784,7 @@ const Settings = () => {
                       </button>
                       <button
                         onClick={() => handleDeleteStaff(staffMember)}
-                        aria-label={`Delete ${staffMember.name}`}
+                        aria-label={`Eliminar a ${staffMember.name}`}
                         className="p-1.5 rounded-lg text-ink-soft hover:text-coral hover:bg-coral-light transition-colors duration-200"
                       >
                         <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -789,7 +795,7 @@ const Settings = () => {
                   </div>
                 </div>
                 <div className="mt-2">
-                  <p className="hd-help mb-2">Assigned Services:</p>
+                  <p className="hd-help mb-2">Servicios asignados:</p>
                   <div className="flex flex-wrap gap-2">
                     {services
                       .filter(service => staffMember.availableServices?.includes(service.id))
@@ -802,7 +808,7 @@ const Settings = () => {
                         </span>
                       ))}
                     {(!staffMember.availableServices || staffMember.availableServices.length === 0) && (
-                      <span className="hd-help">No services assigned</span>
+                      <span className="hd-help">Sin servicios asignados</span>
                     )}
                   </div>
                 </div>

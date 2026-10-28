@@ -37,26 +37,26 @@ const MonthCalendar = ({ selectedDate, onDateSelect, appointments }) => {
   return (
     <div className="hd-card p-3 sm:p-6 w-full">
       <div className="flex items-center justify-between gap-2 mb-4">
-        <h2 className="hd-title text-3xl" aria-live="polite">
+        <h2 className="hd-title text-3xl capitalize" aria-live="polite">
           {month.format('MMMM YYYY')}
         </h2>
         <div className="flex gap-2">
-          <button type="button" onClick={() => setMonth(month.subtract(1, 'month'))} aria-label="Previous month" className={navButton}>
+          <button type="button" onClick={() => setMonth(month.subtract(1, 'month'))} aria-label="Mes anterior" className={navButton}>
             <FiChevronLeft aria-hidden="true" />
           </button>
           {!month.isSame(dayjs(), 'month') && (
             <button type="button" onClick={() => setMonth(dayjs().startOf('month'))} className={`${navButton} text-sm font-semibold px-2`}>
-              Today
+              Hoy
             </button>
           )}
-          <button type="button" onClick={() => setMonth(month.add(1, 'month'))} aria-label="Next month" className={navButton}>
+          <button type="button" onClick={() => setMonth(month.add(1, 'month'))} aria-label="Mes siguiente" className={navButton}>
             <FiChevronRight aria-hidden="true" />
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
           <div key={day} className="text-center text-xs font-bold text-ink-soft mb-2">
             {day}
           </div>
@@ -68,7 +68,7 @@ const MonthCalendar = ({ selectedDate, onDateSelect, appointments }) => {
             key={day.date.format('YYYY-MM-DD')}
             onClick={() => onDateSelect(day.date)}
             aria-pressed={day.isSelected}
-            aria-label={`${day.date.format('dddd, MMMM D')}${day.count ? `, ${day.count} appointment${day.count === 1 ? '' : 's'}` : ''}`}
+            aria-label={`${day.date.format('dddd D [de] MMMM')}${day.count ? `, ${day.count} cita${day.count === 1 ? '' : 's'}` : ''}`}
             className={`
               flex flex-col items-center px-0 py-2 sm:p-2 rounded-lg border-2 cursor-pointer transition-colors
               ${day.isSelected
