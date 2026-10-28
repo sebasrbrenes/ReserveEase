@@ -1,111 +1,78 @@
-import { useEffect } from 'react';
-import { motion } from 'framer-motion';
-import BackButton from '../../components/common/BackButton';
+import { Link } from 'react-router-dom';
+import { CONTACT_EMAIL } from '../../config';
+import { LegalPage, List, Section } from '../../components/common/LegalPage';
 
-const Terms = () => {
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+const Terms = () => (
+  <LegalPage title="Términos de uso" updated="28 de octubre de 2026">
+    <Section title="1. Qué es ReserveEase">
+      <p>
+        ReserveEase es una agenda en línea: el negocio configura sus servicios, su personal y sus horarios, y sus
+        clientes reservan desde un enlace público. Al crear una cuenta o reservar una cita aceptas estos términos
+        y el <Link to="/privacy-policy" className="hd-link">aviso de privacidad</Link>.
+      </p>
+    </Section>
 
-  return (
-    <div className="hd-page pt-20 pb-16">
-      <BackButton />
-      <div className="max-w-4xl mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-12"
-        >
-          <h1 className="text-3xl md:text-4xl font-bold mb-4 text-center">
-            <span className="hd-title text-5xl md:text-6xl">Terms of Service</span>
-          </h1>
-          <p className="text-ink-soft text-center">Last updated: January 20, 2025</p>
-        </motion.div>
+    <Section title="2. Acceso anticipado y precio">
+      <p>
+        ReserveEase está en acceso anticipado y hoy es gratis. No pedimos datos de pago. Si en el futuro hay un
+        plan de pago, lo avisaremos a los negocios con al menos 30 días de anticipación y nunca cobraremos sin
+        que lo acepten de forma expresa.
+      </p>
+      <p>
+        Durante el acceso anticipado el servicio puede cambiar, tener errores o interrupciones. Lo mejoramos
+        continuamente, pero no garantizamos que esté disponible en todo momento.
+      </p>
+    </Section>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="space-y-8 text-ink"
-        >
-          <section>
-            <h2 className="text-2xl font-extrabold mb-4">1. Agreement to Terms</h2>
-            <p>
-              By accessing or using ReserveEase&apos;s services, you agree to be bound by these Terms of Service
-              and all applicable laws and regulations. If you do not agree with any of these terms, you
-              are prohibited from using or accessing our service.
-            </p>
-          </section>
+    <Section title="3. Cuentas de negocio">
+      <List>
+        <li>Debes ser mayor de edad y tener autorización para registrar el negocio.</li>
+        <li>La información del negocio (servicios, precios, horarios) debe ser verdadera; es la que ven tus clientes.</li>
+        <li>Cuida tu contraseña. Eres responsable de lo que se haga con tu cuenta y debes avisarnos si crees que alguien más entró.</li>
+        <li>Puedes cerrar tu cuenta cuando quieras escribiéndonos.</li>
+      </List>
+    </Section>
 
-          <section>
-            <h2 className="text-2xl font-extrabold mb-4">2. Use License</h2>
-            <div className="space-y-4">
-              <p>
-                Permission is granted to temporarily access and use ReserveEase&apos;s services for personal
-                or business use, subject to the following restrictions:
-              </p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>You must not modify or copy our software</li>
-                <li>You must not attempt to reverse engineer the software</li>
-                <li>You must not access without authorization</li>
-                <li>You must not transfer the materials to another person or mirror them</li>
-              </ul>
-            </div>
-          </section>
+    <Section title="4. Datos de tus clientes">
+      <p>
+        Los datos de quienes reservan contigo son tuyos y de ellos. Úsalos solo para atender sus citas y según la
+        ley de protección de datos que te aplique, y atiende sus solicitudes de acceso, corrección o borrado
+        (podemos ayudarte). Nosotros los tratamos por tu cuenta, como explica el aviso de privacidad.
+      </p>
+    </Section>
 
-          <section>
-            <h2 className="text-2xl font-extrabold mb-4">3. Service Terms</h2>
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold mb-2 text-marker">3.1 Account Terms</h3>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>You must be 18 years or older to use this service</li>
-                <li>You must provide accurate and complete information</li>
-                <li>You are responsible for maintaining account security</li>
-                <li>You must notify us of any security breaches</li>
-              </ul>
+    <Section title="5. Quien reserva una cita">
+      <p>
+        La cita es un acuerdo entre tú y el negocio. El negocio decide sus precios, sus políticas de cancelación
+        y cómo presta el servicio; ReserveEase solo registra la reserva y envía los avisos.
+      </p>
+    </Section>
 
-              <h3 className="text-xl font-semibold mb-2 text-marker">3.2 Payment Terms</h3>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>Subscription fees are billed in advance</li>
-                <li>All fees are non-refundable</li>
-                <li>We reserve the right to change pricing with notice</li>
-              </ul>
-            </div>
-          </section>
+    <Section title="6. Uso no permitido">
+      <List>
+        <li>Usar el servicio para algo ilegal, para enviar correo no deseado o para suplantar a otro negocio o persona.</li>
+        <li>Crear reservas falsas o de forma automatizada.</li>
+        <li>Intentar entrar a datos de otros negocios, saltarse los límites del servicio o interferir con su funcionamiento.</li>
+      </List>
+      <p>Podemos suspender una cuenta que incumpla estas reglas, avisando al negocio cuando sea posible.</p>
+    </Section>
 
-          <section>
-            <h2 className="text-2xl font-extrabold mb-4">4. Disclaimer</h2>
-            <p>
-              ReserveEase&apos;s services are provided &quot;as is&quot;. We make no warranties, expressed or implied,
-              and hereby disclaim and negate all other warranties including, without limitation,
-              implied warranties or conditions of merchantability, fitness for a particular purpose,
-              or non-infringement of intellectual property or other violation of rights.
-            </p>
-          </section>
+    <Section title="7. Responsabilidad">
+      <p>
+        Ofrecemos el servicio tal como está. En la medida que permita la ley, ReserveEase no responde por
+        pérdidas indirectas, como ganancias perdidas por una cita que no se registró o un aviso que no llegó.
+        Recomendamos revisar la agenda en el panel y no depender solo de los correos.
+      </p>
+    </Section>
 
-          <section>
-            <h2 className="text-2xl font-extrabold mb-4">5. Limitations</h2>
-            <p>
-              In no event shall ReserveEase or its suppliers be liable for any damages (including,
-              without limitation, damages for loss of data or profit, or due to business interruption)
-              arising out of the use or inability to use our services.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-extrabold mb-4">6. Contact</h2>
-            <p>
-              Questions about the Terms of Service should be sent to us at{' '}
-              <a href="mailto:contact@reservease.com" className="hd-link">
-                contact@reservease.com
-              </a>
-            </p>
-          </section>
-        </motion.div>
-      </div>
-    </div>
-  );
-};
+    <Section title="8. Cambios y contacto">
+      <p>
+        Si cambiamos estos términos de forma importante, lo avisaremos a los negocios antes de que entren en
+        vigor. Para cualquier consulta, escríbenos a{' '}
+        <a href={`mailto:${CONTACT_EMAIL}`} className="hd-link">{CONTACT_EMAIL}</a>.
+      </p>
+    </Section>
+  </LegalPage>
+);
 
 export default Terms;

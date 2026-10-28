@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Logo } from './Doodles';
+import { CONTACT_EMAIL } from '../config';
 
 const linkClass = 'text-ink-soft hover:text-marker';
 
@@ -13,10 +14,9 @@ const Footer = () => (
       <nav aria-label="Legal y contacto">
         <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
           <li><Link to="/about" className={linkClass}>Quiénes somos</Link></li>
-          <li><a href="mailto:contact@reservease.com" className={linkClass}>Contacto</a></li>
+          <li><a href={`mailto:${CONTACT_EMAIL}`} className={linkClass}>Contacto</a></li>
           <li><Link to="/privacy-policy" className={linkClass}>Privacidad</Link></li>
           <li><Link to="/terms" className={linkClass}>Términos</Link></li>
-          <li><Link to="/refund-policy" className={linkClass}>Reembolsos</Link></li>
         </ul>
       </nav>
     </div>

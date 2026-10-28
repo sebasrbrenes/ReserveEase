@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
+import { PRIVACY_URL, TERMS_URL } from '../../utils/links';
 import { Logo, Sparkle, Underline } from '../ui/Doodles';
 
 const SignUp = () => {
@@ -188,6 +189,12 @@ const SignUp = () => {
                 />
               </div>
             </div>
+
+            <p className="hd-help">
+              By creating an account you accept the{' '}
+              <a href={TERMS_URL} target="_blank" rel="noreferrer" className="hd-link">terms</a> and the{' '}
+              <a href={PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">privacy notice</a>.
+            </p>
 
             <button type="submit" disabled={loading} className="hd-btn w-full">
               {loading ? 'Creating Account...' : 'Sign Up'}

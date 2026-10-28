@@ -7,8 +7,9 @@ import { createPublicBooking, errorMessage, fieldErrors, getPublicAvailability, 
 import { COUNTRY_CODES, defaultCountryCode, isE164, toE164 } from '../../utils/countryCodes';
 import { formatLocalDate, formatMoney, formatTime, fromLocalDateString, toLocalDateString, todayIn } from '../../utils/datetime';
 import { Logo, Star, Underline } from '../ui/Doodles';
+import { PRIVACY_URL } from '../../utils/links';
 
-// Shown with the form; bump it when the privacy notice text changes.
+// Shown with the form; bump it when the privacy notice on the landing changes (PrivacyPolicy.jsx).
 const PRIVACY_NOTICE_VERSION = '2026-10';
 
 // Form fields for the paths the API reports in its field errors.
@@ -357,7 +358,8 @@ export default function PublicBookingForm() {
             {!form.startsAt && <p className="mt-2 hd-help text-center">Pick a time to book.</p>}
 
             <p className="mt-4 text-xs text-ink-soft">
-              {business.name} uses your name, email and phone only to manage this appointment and contact you about it.
+              {business.name} uses your name, email and phone only to manage this appointment and contact you about it.{' '}
+              <a href={PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">Privacy notice</a>
             </p>
           </aside>
         </div>
