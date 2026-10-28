@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import dayjs from 'dayjs';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 // A whole month at a glance. The arrows change the month shown; they never
 // change the selected day, so nothing jumps to a different weekday.
 const MonthCalendar = ({ selectedDate, onDateSelect, appointments }) => {
+  const { language, t: { calendar: copy } } = useLanguage();
   const [month, setMonth] = useState(() => (selectedDate || dayjs()).startOf('month'));
 
   // Follow the selection when it changes to a day in another month.
@@ -14,9 +16,11 @@ const MonthCalendar = ({ selectedDate, onDateSelect, appointments }) => {
     if (selectedDate && !selectedDate.isSame(month, 'month')) setMonth(selectedDate.startOf('month'));
   }
 
-  // Weeks start on Monday, matching the column headers (dayjs counts from Sunday).
-  const gridStart = month.subtract((month.day() + 6) % 7, 'day');
-  const weeks = Math.ceil(((month.day() + 6) % 7 + month.daysInMonth()) / 7);
+  // Weeks start on Monday or Sunday by language, matching the column headers
+  // (dayjs counts from Sunday).
+  const lead = (month.day() - copy.weekStartsOn + 7) % 7;
+  const gridStart = month.subtract(lead, 'day');
+  const weeks = Math.ceil((lead + month.daysInMonth()) / 7);
 
   const counts = {};
   for (const apt of appointments || []) counts[apt.localDate] = (counts[apt.localDate] || 0) + 1;
@@ -38,25 +42,25 @@ const MonthCalendar = ({ selectedDate, onDateSelect, appointments }) => {
     <div className="hd-card p-3 sm:p-6 w-full">
       <div className="flex items-center justify-between gap-2 mb-4">
         <h2 className="hd-title text-3xl capitalize" aria-live="polite">
-          {month.format('MMMM YYYY')}
+          {month.locale(language).format('MMMM YYYY')}
         </h2>
         <div className="flex gap-2">
-          <button type="button" onClick={() => setMonth(month.subtract(1, 'month'))} aria-label="Mes anterior" className={navButton}>
+          <button type="button" onClick={() => setMonth(month.subtract(1, 'month'))} aria-label={copy.previous} className={navButton}>
             <FiChevronLeft aria-hidden="true" />
           </button>
           {!month.isSame(dayjs(), 'month') && (
             <button type="button" onClick={() => setMonth(dayjs().startOf('month'))} className={`${navButton} text-sm font-semibold px-2`}>
-              Hoy
+              {copy.today}
             </button>
           )}
-          <button type="button" onClick={() => setMonth(month.add(1, 'month'))} aria-label="Mes siguiente" className={navButton}>
+          <button type="button" onClick={() => setMonth(month.add(1, 'month'))} aria-label={copy.next} className={navButton}>
             <FiChevronRight aria-hidden="true" />
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
-        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
+        {copy.weekdays.map((day) => (
           <div key={day} className="text-center text-xs font-bold text-ink-soft mb-2">
             {day}
           </div>
@@ -68,7 +72,7 @@ const MonthCalendar = ({ selectedDate, onDateSelect, appointments }) => {
             key={day.date.format('YYYY-MM-DD')}
             onClick={() => onDateSelect(day.date)}
             aria-pressed={day.isSelected}
-            aria-label={`${day.date.format('dddd D [de] MMMM')}${day.count ? `, ${day.count} cita${day.count === 1 ? '' : 's'}` : ''}`}
+            aria-label={`${day.date.locale(language).format(copy.dayLabel)}${day.count ? `, ${copy.count(day.count)}` : ''}`}
             className={`
               flex flex-col items-center px-0 py-2 sm:p-2 rounded-lg border-2 cursor-pointer transition-colors
               ${day.isSelected

@@ -1,35 +1,27 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import Scene from './Scene';
 import Highlight from './Highlight';
-import { APP_URL } from '../../config';
-
-const LINES = [
-  ['Tu página de reservas', 'incluido'],
-  ['Citas ilimitadas', 'incluido'],
-  ['Equipo, servicios y horario', 'incluido'],
-  ['Panel con tu semana', 'incluido'],
-  ['Teléfono y compu', 'incluido'],
-  ['Recordatorios por correo', 'pronto'],
-];
+import { useLanguage } from '../../i18n/LanguageContext';
 
 // Torn paper edge for the top and bottom of the receipt.
 const zigzag = 'conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%';
 
 const Ticket = () => {
   const reduce = useReducedMotion();
+  const { t, appLink } = useLanguage();
+  const copy = t.ticket;
   return (
-    <Scene id="precio" time="18:30" labelledBy="price-title">
+    <Scene id="precio" time={t.times.price} labelledBy="price-title">
       <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-12 lg:grid-cols-[1fr_0.9fr] lg:gap-16">
         <div>
-          <p className="font-hand text-2xl text-marker">cierre de caja</p>
+          <p className="font-hand text-2xl text-marker">{copy.kicker}</p>
           <h2 id="price-title" className="nb-display mt-2 text-5xl font-semibold sm:text-6xl md:text-7xl">
-            ¿Cuánto cuesta? <em className="font-medium"><Highlight>Nada</Highlight></em>, por ahora.
+            {copy.title[0]}<em className="font-medium"><Highlight>{copy.title[1]}</Highlight></em>{copy.title[2]}
           </h2>
           <p className="mt-6 max-w-xl text-lg text-ink-soft">
-            ReserveEase está en acceso anticipado. Mientras tanto es gratis y no te pedimos tarjeta. Antes de que
-            empiece cualquier plan de pago, te avisamos el precio y decides si te quedas.
+            {copy.lead}
           </p>
-          <a href={`${APP_URL}/signup`} className="hd-btn mt-8 px-7 py-3 text-lg">Crear mi agenda gratis</a>
+          <a href={appLink('/signup')} className="hd-btn mt-8 px-7 py-3 text-lg">{t.signupFree}</a>
         </div>
 
         <div className="relative mx-auto w-full max-w-sm">
@@ -49,25 +41,25 @@ const Ticket = () => {
             >
               <div className="bg-white px-6 pb-6 pt-8 font-mono text-sm">
                 <p className="text-center font-bold tracking-[0.2em]">RESERVEEASE</p>
-                <p className="text-center text-xs text-ink-soft">Acceso anticipado · {new Date().getFullYear()}</p>
+                <p className="text-center text-xs text-ink-soft">{copy.edition} · {new Date().getFullYear()}</p>
                 <ul className="mt-5 space-y-2 border-y border-dashed border-ink/40 py-4">
-                  {LINES.map(([item, state]) => (
+                  {copy.lines.map(([item, state, soon]) => (
                     <li key={item} className="flex items-baseline gap-2">
                       <span>{item}</span>
                       <span aria-hidden="true" className="min-w-4 flex-1 translate-y-[-3px] border-b border-dotted border-ink/40" />
-                      <span className={state === 'pronto' ? 'text-marker' : 'text-ink-soft'}>{state}</span>
+                      <span className={soon ? 'text-marker' : 'text-ink-soft'}>{state}</span>
                     </li>
                   ))}
                 </ul>
                 <p className="mt-4 flex items-baseline justify-between text-base font-bold">
                   <span>TOTAL</span>
-                  <span className="font-display text-4xl">₡0</span>
+                  <span className="font-display text-4xl">{copy.total}</span>
                 </p>
-                <p className="mt-1 text-right text-xs text-ink-soft">Sin tarjeta</p>
-                <p className="mt-6 text-center text-xs text-ink-soft">¡Gracias por llegar temprano!</p>
+                <p className="mt-1 text-right text-xs text-ink-soft">{copy.noCard}</p>
+                <p className="mt-6 text-center text-xs text-ink-soft">{copy.thanks}</p>
               </div>
               <div className="h-3 bg-white" style={{ mask: zigzag, WebkitMask: zigzag }} />
-              <span className="nb-stamp absolute bottom-16 left-6 rotate-[-12deg] bg-white/60 px-3 py-1 text-base">Gratis</span>
+              <span className="nb-stamp absolute bottom-16 left-6 rotate-[-12deg] bg-white/60 px-3 py-1 text-base">{copy.stamp}</span>
             </motion.div>
           </motion.div>
         </div>

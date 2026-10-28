@@ -9,6 +9,7 @@ import {
   createAppointment, errorMessage, getAvailability, rescheduleAppointment, updateAppointment,
 } from '../../services/api';
 import { formatTime, fromLocalDateString, toLocalDateString, todayIn } from '../../utils/datetime';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const inputClass = 'hd-input';
 const E164 = /^\+[1-9]\d{7,14}$/;
@@ -28,6 +29,7 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const canMove = !appointment || appointment.status === 'confirmed';
+  const { t: { appointment: copy, common } } = useLanguage();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -48,10 +50,10 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
     const active = (business?.services || []).filter((s) => s.active);
     // An edited appointment keeps its service even if it was removed since.
     if (appointment && !active.some((s) => s.id === appointment.serviceId)) {
-      return [...active, { id: appointment.serviceId, name: appointment.serviceSnapshot?.name || 'Servicio' }];
+      return [...active, { id: appointment.serviceId, name: appointment.serviceSnapshot?.name || copy.serviceFallback }];
     }
     return active;
-  }, [business, appointment]);
+  }, [business, appointment, copy]);
 
   const availableStaff = useMemo(
     () => (business?.staff || []).filter((s) => s.active && s.serviceIds.includes(form.serviceId)),
@@ -110,7 +112,7 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
       await createAppointment(businessId, {
         serviceId: form.serviceId, staffId: form.staffId, startsAt: form.startsAt, client: client(), notes: form.notes,
       }, idempotencyKey);
-      return 'Cita creada';
+      return copy.created;
     }
 
     let { version } = appointment;
@@ -133,18 +135,18 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
     if (Object.keys(changes).length) {
       await updateAppointment(businessId, appointment.id, { expectedVersion: version, ...changes });
     }
-    return moved ? 'Cita movida' : 'Cita actualizada';
+    return moved ? copy.moved : copy.updated;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
     if (canMove && !form.startsAt) {
-      toast.error('Elige una hora');
+      toast.error(copy.pickTime);
       return;
     }
     if (form.phone && !E164.test(form.phone)) {
-      toast.error('Escribe el teléfono con el código de país, por ejemplo +50688887777');
+      toast.error(copy.phoneFormat);
       return;
     }
     setSubmitting(true);
@@ -161,11 +163,7 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
     }
   };
 
-  const noSlotsMessage = {
-    closed: 'Cerrado este día.',
-    outside_window: 'Esta fecha está fuera del periodo de reservas.',
-    open: 'No quedan horas libres este día.',
-  }[availability.status];
+  const noSlotsMessage = copy.noSlots[availability.status];
 
   return (
     <AnimatePresence>
@@ -190,12 +188,12 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
           >
             <div className="flex items-center justify-between mb-6">
               <DialogTitle className="hd-title text-4xl">
-                {appointment ? 'Editar cita' : 'Nueva cita'}
+                {appointment ? copy.editTitle : copy.newTitle}
               </DialogTitle>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Cerrar"
+                aria-label={common.close}
                 className="p-1 text-ink-soft hover:text-ink hover:bg-paper-deep rounded-full transition duration-200"
               >
                 <FiX className="w-5 h-5" aria-hidden="true" />
@@ -204,12 +202,12 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="apt-service" className="hd-label">Servicio *</label>
+                <label htmlFor="apt-service" className="hd-label">{copy.service}</label>
                 <select
                   id="apt-service" name="serviceId" value={form.serviceId} onChange={handleChange}
                   className={inputClass} required disabled={Boolean(appointment)}
                 >
-                  <option value="">Elige un servicio</option>
+                  <option value="">{copy.chooseService}</option>
                   {services.map((service) => (
                     <option key={service.id} value={service.id}>{service.name}</option>
                   ))}
@@ -217,12 +215,12 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
               </div>
 
               <div>
-                <label htmlFor="apt-staff" className="hd-label">Atiende *</label>
+                <label htmlFor="apt-staff" className="hd-label">{copy.staff}</label>
                 <select
                   id="apt-staff" name="staffId" value={form.staffId} onChange={handleChange}
                   className={inputClass} required disabled={!canMove || !form.serviceId}
                 >
-                  <option value="">Elige quién atiende</option>
+                  <option value="">{copy.chooseStaff}</option>
                   {availableStaff.map((staff) => (
                     <option key={staff.id} value={staff.id}>{staff.displayName}</option>
                   ))}
@@ -235,7 +233,7 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Escape with the calendar open closes the calendar, not the dialog. */}
                 <div className="w-full" onKeyDown={(e) => pickerOpen && e.key === 'Escape' && e.stopPropagation()}>
-                  <label htmlFor="apt-date" className="hd-label">Fecha *</label>
+                  <label htmlFor="apt-date" className="hd-label">{copy.date}</label>
                   <DatePicker
                     onCalendarOpen={() => setPickerOpen(true)}
                     onCalendarClose={() => setPickerOpen(false)}
@@ -245,20 +243,20 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
                     minDate={fromLocalDateString(todayIn(timezone))}
                     disabled={!canMove}
                     className={inputClass}
-                    dateFormat="dd/MM/yyyy"
+                    dateFormat={copy.dateFormat}
                     wrapperClassName="w-full"
                     required
                   />
                 </div>
 
                 <div className="w-full">
-                  <label htmlFor="apt-time" className="hd-label">Hora *</label>
+                  <label htmlFor="apt-time" className="hd-label">{copy.time}</label>
                   <select
                     id="apt-time" name="startsAt" value={form.startsAt} onChange={handleChange}
                     className={inputClass} required={canMove} disabled={!canMove || !form.staffId}
                   >
                     <option value="">
-                      {availability.loading ? 'Cargando...' : slots.length ? 'Elige la hora' : (noSlotsMessage || 'Elige la hora')}
+                      {availability.loading ? copy.loadingSlots : slots.length ? copy.chooseTime : (noSlotsMessage || copy.chooseTime)}
                     </option>
                     {(canMove ? slots : [form.startsAt].filter(Boolean)).map((startsAt) => (
                       <option key={startsAt} value={startsAt}>{formatTime(startsAt, timezone)}</option>
@@ -269,22 +267,22 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="apt-name" className="hd-label">Nombre del cliente *</label>
+                  <label htmlFor="apt-name" className="hd-label">{copy.clientName}</label>
                   <input id="apt-name" type="text" name="clientName" value={form.clientName} onChange={handleChange} className={inputClass} maxLength={100} required />
                 </div>
                 <div>
-                  <label htmlFor="apt-email" className="hd-label">Correo electrónico *</label>
+                  <label htmlFor="apt-email" className="hd-label">{copy.email}</label>
                   <input id="apt-email" type="email" name="email" value={form.email} onChange={handleChange} className={inputClass} maxLength={200} required />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="apt-phone" className="hd-label">Teléfono (con código de país)</label>
+                <label htmlFor="apt-phone" className="hd-label">{copy.phone}</label>
                 <input id="apt-phone" type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="+50688887777" className={inputClass} maxLength={16} />
               </div>
 
               <div>
-                <label htmlFor="apt-notes" className="hd-label">Notas</label>
+                <label htmlFor="apt-notes" className="hd-label">{copy.notes}</label>
                 <textarea
                   id="apt-notes" name="notes" value={form.notes} onChange={handleChange} maxLength={500}
                   className="hd-input resize-none h-20"
@@ -297,14 +295,14 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
                   onClick={onClose}
                   className="hd-btn hd-btn-secondary"
                 >
-                  Cerrar
+                  {common.close}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="hd-btn flex-1"
                 >
-                  {submitting ? 'Guardando...' : (appointment ? 'Guardar cambios' : 'Crear cita')}
+                  {submitting ? common.saving : (appointment ? common.saveChanges : copy.create)}
                 </button>
               </div>
             </form>

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Arrow } from '../Doodles';
-import { colones, nextSaturday } from './demo';
+import { nextSaturday } from './demo';
 import { useBusiness } from './BusinessContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 // The day page of the demo business. Taken rows are written in pencil; free rows
 // can be booked by the visitor, exactly as a client would from the link.
@@ -14,12 +15,14 @@ const SPIRAL_RINGS = 9;
 const HeroAgenda = () => {
   const reduce = useReducedMotion();
   const { business } = useBusiness();
+  const { t, money } = useLanguage();
+  const copy = t.agenda;
   const [serviceId, setServiceId] = useState(business.services[0].id);
   const [booked, setBooked] = useState(null);
   const service = business.services.find((s) => s.id === serviceId) ?? business.services[0];
   const day = nextSaturday();
-  const weekday = day.toLocaleDateString('es-CR', { weekday: 'long' });
-  const month = day.toLocaleDateString('es-CR', { month: 'long' });
+  const weekday = day.toLocaleDateString(t.locale, { weekday: 'long' });
+  const month = day.toLocaleDateString(t.locale, { month: 'long' });
 
   return (
     <div className="relative mx-auto w-full max-w-md">
@@ -46,7 +49,7 @@ const HeroAgenda = () => {
         </div>
 
         <fieldset className="px-5 sm:px-7 pt-4">
-          <legend className="sr-only">Servicio</legend>
+          <legend className="sr-only">{copy.service}</legend>
           <div className="flex flex-wrap gap-2">
             {business.services.map((s) => (
               <button
@@ -56,7 +59,7 @@ const HeroAgenda = () => {
                 onClick={() => setServiceId(s.id)}
                 className="hd-choice text-xs sm:text-sm"
               >
-                {s.name} <span className="font-normal text-ink-soft">· {colones(s.price)}</span>
+                {s.name} <span className="font-normal text-ink-soft">· {money(s.price)}</span>
               </button>
             ))}
           </div>
@@ -83,7 +86,7 @@ const HeroAgenda = () => {
 
                 {taken ? (
                   <span className="relative font-hand text-xl text-ink-soft">
-                    <span className="sr-only">Ocupado: </span>{taken}
+                    <span className="sr-only">{copy.taken}</span>{taken}
                   </span>
                 ) : mine ? (
                   <span className="relative flex flex-1 items-center justify-between gap-2">
@@ -93,7 +96,7 @@ const HeroAgenda = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: reduce ? 0 : 0.35 }}
                     >
-                      Tú · {service.name.toLowerCase()}
+                      {copy.you} · {service.name.toLowerCase()}
                     </motion.span>
                     <motion.span
                       className="nb-stamp bg-white/70"
@@ -101,7 +104,7 @@ const HeroAgenda = () => {
                       animate={{ opacity: 1, scale: 1, rotate: -8 }}
                       transition={{ delay: reduce ? 0 : 0.55, type: 'spring', stiffness: 380, damping: 18 }}
                     >
-                      Reservado
+                      {copy.booked}
                     </motion.span>
                   </span>
                 ) : (
@@ -110,9 +113,9 @@ const HeroAgenda = () => {
                     onClick={() => setBooked(time)}
                     className="group relative flex flex-1 items-center justify-between self-stretch text-left text-sm text-ink-soft/70 hover:text-marker focus-visible:text-marker"
                   >
-                    <span className="font-hand text-xl">libre</span>
+                    <span className="font-hand text-xl">{copy.free}</span>
                     <span className="font-bold opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-                      Reservar las {time} →
+                      {copy.bookAt(time)}
                     </span>
                   </button>
                 )}
@@ -125,15 +128,15 @@ const HeroAgenda = () => {
           {booked ? (
             <div className="flex items-start justify-between gap-4">
               <p className="text-sm">
-                <strong>Listo, a las {booked}.</strong> Así de rápido reserva tu cliente, y en ese momento ya aparece en tu panel.
+                <strong>{copy.done(booked)}</strong> {copy.doneText}
               </p>
               <button type="button" onClick={() => setBooked(null)} className="hd-link text-sm shrink-0">
-                Otra vez
+                {copy.again}
               </button>
             </div>
           ) : (
             <p className="text-sm text-ink-soft">
-              {service.name}, {service.minutes} min, {colones(service.price)}. Solo se ven las horas que de verdad están libres.
+              {copy.summary(service, money(service.price))}
             </p>
           )}
         </div>
@@ -142,7 +145,7 @@ const HeroAgenda = () => {
       {/* Hint for first-time visitors, pointing up at the free times. */}
       <p aria-hidden="true" className={`mt-5 flex items-center justify-center gap-2 font-hand text-2xl text-marker transition-opacity ${booked ? 'opacity-0' : 'opacity-100'}`}>
         <Arrow className="h-7 w-12 -rotate-[100deg] -scale-y-100" />
-        pruébalo: toca una hora libre
+        {copy.hint}
       </p>
     </div>
   );

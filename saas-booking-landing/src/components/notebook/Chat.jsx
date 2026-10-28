@@ -4,26 +4,17 @@ import Scene from './Scene';
 import Highlight from './Highlight';
 import { useBusiness } from './BusinessContext';
 import { APP_URL } from '../../config';
-
-// The back-and-forth every appointment takes over chat. `me` is the business.
-const messages = (service) => [
-  { text: `Hola, ¿tienes espacio mañana para ${service}?` },
-  { me: true, text: '¡Hola! ¿A qué hora te sirve?' },
-  { text: '¿Tipo 3?' },
-  { me: true, text: 'A las 3 no tengo. ¿4:30?' },
-  { text: 'Uy, a esa hora salgo del trabajo. ¿Y el jueves?' },
-  { me: true, text: 'Jueves a las 10:00 o a las 5:00' },
-  { text: 'A las 5 perfecto' },
-  { me: true, text: 'Listo, te apunto' },
-  { text: 'Perdón, se me complicó el jueves. ¿Lo podemos mover?' },
-];
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const EVERY = 520; // ms between messages
 
 const Chat = () => {
   const reduce = useReducedMotion();
   const { business } = useBusiness();
-  const list = messages(business.services[0].name.toLowerCase());
+  const { t } = useLanguage();
+  const copy = t.chat;
+  // The back-and-forth every appointment takes over chat.
+  const list = copy.messages(business.services[0].name.toLowerCase());
   const stage = useRef(null);
   const inView = useInView(stage, { once: true, amount: 0.35 });
   const [shown, setShown] = useState(reduce ? list.length : 0);
@@ -40,24 +31,21 @@ const Chat = () => {
   }, [inView, reduce]);
 
   return (
-    <Scene id="el-chat" time="11:40" labelledBy="chat-title">
+    <Scene id="el-chat" time={t.times.chat} labelledBy="chat-title">
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
         <div className="lg:sticky lg:top-28">
-          <p className="font-hand text-2xl text-marker">entre cliente y cliente</p>
+          <p className="font-hand text-2xl text-marker">{copy.kicker}</p>
           <h2 id="chat-title" className="nb-display mt-2 text-5xl font-semibold sm:text-6xl md:text-7xl">
-            Nueve mensajes para una cita. <em className="font-medium"><Highlight>O un enlace.</Highlight></em>
+            {copy.title[0]}<em className="font-medium"><Highlight>{copy.title[1]}</Highlight></em>{copy.title[2]}
           </h2>
           <p className="mt-6 max-w-xl text-lg text-ink-soft">
-            Cada cita por chat es un ida y vuelta mientras atiendes a otra persona. Con ReserveEase pones tu enlace
-            en tu perfil, en tus estados o en Google, y cada cliente elige entre las horas que de verdad tienes libres.
-            Si algo cambia, la mueves en tu panel en un paso.
+            {copy.lead}
           </p>
         </div>
 
         <div ref={stage} className="relative mx-auto w-full max-w-md">
           <p className="sr-only">
-            Ejemplo: nueve mensajes de ida y vuelta para acordar una sola cita, reemplazados por un enlace a la página
-            de reservas.
+            {copy.srOnly}
           </p>
           <ol aria-hidden="true" className="space-y-2.5">
             {list.slice(0, shown).map((m, i) => (
@@ -96,9 +84,9 @@ const Chat = () => {
                 transition={{ delay: reduce ? 0 : 0.7, type: 'spring', stiffness: 220, damping: 18 }}
                 className="nb-sheet mt-6 bg-sun-light px-5 py-4"
               >
-                <p className="font-hand text-2xl leading-tight">Reserva aquí la hora que te sirva:</p>
+                <p className="font-hand text-2xl leading-tight">{copy.linkLead}</p>
                 <p className="mt-1 [overflow-wrap:anywhere] font-bold text-marker underline decoration-2 underline-offset-4">{link}</p>
-                <p className="mt-3 text-sm text-ink-soft">Un mensaje. El cliente elige solo y tú no tachas nada.</p>
+                <p className="mt-3 text-sm text-ink-soft">{copy.linkNote}</p>
               </motion.div>
             )}
           </AnimatePresence>

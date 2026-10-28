@@ -7,6 +7,7 @@ import { createPublicBooking, errorMessage, fieldErrors, getPublicAvailability, 
 import { countryOptions, defaultCountryCode, isE164, toE164 } from '../../utils/countryCodes';
 import { formatLocalDate, formatMoney, formatTime, fromLocalDateString, localeFor, toLocalDateString, todayIn } from '../../utils/datetime';
 import { clientCopy, clientLanguage } from '../../i18n/clientCopy';
+import { useDocumentLanguage } from '../../i18n/LanguageContext';
 import { Logo, Star, Underline } from '../ui/Doodles';
 import { PRIVACY_URL, PRIVACY_URL_EN } from '../../utils/links';
 
@@ -62,9 +63,10 @@ export default function PublicBookingForm() {
   // One key per booking attempt: a retry after a network error reuses it, so
   // the server returns the same booking instead of creating a second one.
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
-  // The business picks the language of this page (Spanish until it loads).
+  // The business picks the language of this page (the visitor's until it loads).
   const language = clientLanguage(business?.language);
   const t = clientCopy(language);
+  useDocumentLanguage(language);
   const locale = localeFor(language);
 
   useEffect(() => {

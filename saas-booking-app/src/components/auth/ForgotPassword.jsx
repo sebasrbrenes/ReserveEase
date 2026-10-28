@@ -5,12 +5,15 @@ import { motion } from 'framer-motion';
 import { FiMail, FiArrowLeft, FiCheck } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { Logo, Underline } from '../ui/Doodles';
+import LanguageSwitch from '../common/LanguageSwitch';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const { t: { auth: { forgot: f }, common } } = useLanguage();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,9 +24,7 @@ const ForgotPassword = () => {
       await sendPasswordResetEmail(auth, email);
       setSuccess(true);
     } catch (err) {
-      setError(err.code === 'auth/invalid-email'
-        ? 'El correo no es válido.'
-        : 'No pudimos enviar el enlace. Inténtalo de nuevo en unos minutos.');
+      setError(err.code === 'auth/invalid-email' ? f.invalidEmail : f.failed);
     } finally {
       setLoading(false);
     }
@@ -36,6 +37,9 @@ const ForgotPassword = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
+        <div className="mb-2 flex justify-end">
+          <LanguageSwitch />
+        </div>
         <div className="mb-6 flex justify-center">
           <Logo />
         </div>
@@ -45,17 +49,17 @@ const ForgotPassword = () => {
           className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-ink-soft hover:text-ink"
         >
           <FiArrowLeft aria-hidden="true" />
-          Volver a iniciar sesión
+          {f.backToLogin}
         </Link>
 
         <div className="hd-card p-6 sm:p-8">
           <div className="text-center">
             <h2 className="relative inline-block">
-              <span className="hd-title text-4xl sm:text-5xl">Recuperar contraseña</span>
+              <span className="hd-title text-4xl sm:text-5xl">{f.title}</span>
               <Underline className="absolute -bottom-3 left-0 w-full h-4 text-sun" />
             </h2>
             <p className="mt-5 hd-help">
-              Escribe tu correo y te enviaremos un enlace para crear una contraseña nueva.
+              {f.help}
             </p>
           </div>
 
@@ -69,18 +73,18 @@ const ForgotPassword = () => {
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border-2 border-ink bg-white">
                 <FiCheck className="text-2xl text-ink" aria-hidden="true" />
               </div>
-              <h3 className="hd-title text-3xl mb-2">Revisa tu correo</h3>
+              <h3 className="hd-title text-3xl mb-2">{f.checkEmail}</h3>
               <p className="mb-4 break-words">
-                Enviamos el enlace para cambiar la contraseña a {email}
+                {f.sent(email)}
               </p>
               <Link to="/login" className="hd-link">
-                Volver a iniciar sesión
+                {f.backToLogin}
               </Link>
             </motion.div>
           ) : (
             <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
               <div>
-                <label htmlFor="email" className="hd-label">Correo electrónico</label>
+                <label htmlFor="email" className="hd-label">{common.email}</label>
                 <div className="relative">
                   <div className="pointer-events-none absolute top-1 bottom-0 left-0 pl-3 flex items-center">
                     <FiMail className="text-ink-soft" aria-hidden="true" />
@@ -92,7 +96,7 @@ const ForgotPassword = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="hd-input pl-10"
-                    placeholder="tu@correo.com"
+                    placeholder={common.emailPlaceholder}
                     aria-invalid={error ? 'true' : undefined}
                     aria-describedby={error ? 'reset-error' : undefined}
                   />
@@ -110,10 +114,10 @@ const ForgotPassword = () => {
                   <span
                     className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"
                     role="status"
-                    aria-label="Enviando"
+                    aria-label={f.sending}
                   />
                 ) : (
-                  'Enviar enlace'
+                  f.submit
                 )}
               </button>
             </form>
