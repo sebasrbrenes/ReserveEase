@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import v1Router from './src/http/v1.js';
+import paddleWebhook from './src/http/paddleWebhook.js';
 import { notFound, errorHandler } from './src/http/errors.js';
 
 dotenv.config();
@@ -29,6 +30,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'PATCH'],
   credentials: true
 }));
+// Paddle signs the raw body, so its webhook is read before the JSON parser.
+app.use('/api/v1/billing/paddle/webhook', paddleWebhook);
 app.use(express.json({ limit: '20kb' }));
 
 // Health check endpoint

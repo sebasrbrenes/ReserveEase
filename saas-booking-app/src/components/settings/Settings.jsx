@@ -5,6 +5,8 @@ import { FiArrowLeft, FiEdit2, FiTrash2, FiLink, FiCopy } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { Star, Underline } from '../ui/Doodles';
 import { CLIENT_LANGUAGES, clientLanguage } from '../../i18n/clientCopy';
+import { useAuth } from '../../context/AuthContext';
+import SubscriptionSection from '../billing/SubscriptionSection';
 
 // Why the booking page is not published yet (codes from the API).
 const PUBLISH_PROBLEMS = {
@@ -52,6 +54,7 @@ const Settings = () => {
   const navigate = useNavigate();
   const { hash } = useLocation();
   const { settings, updateSettings, business } = useSettings();
+  const { user } = useAuth();
 
   // Links from the dashboard's first steps open the section they name.
   useEffect(() => {
@@ -843,6 +846,10 @@ const Settings = () => {
             ))}
           </div>
         </section>
+
+        <div className="mt-6">
+          <SubscriptionSection businessId={business.data?.businessId} email={user?.email} />
+        </div>
       </div>
     </div>
   );

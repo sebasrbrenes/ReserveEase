@@ -156,3 +156,9 @@ export const errorMessage = (error, language = 'es') => {
 };
 export const retryNotifications = (businessId, id) =>
   request('POST', apt(businessId, id, '/notifications/retry'), { signedIn: true });
+
+// Subscription ($15 USD/month, Paddle). The server creates the checkout and
+// only a signed Paddle webhook activates the subscription.
+export const getBilling = (businessId) => request('GET', biz(businessId, '/billing'), { signedIn: true });
+export const startCheckout = (businessId) => request('POST', biz(businessId, '/billing/checkout'), { signedIn: true });
+export const openBillingPortal = (businessId) => request('POST', biz(businessId, '/billing/portal'), { signedIn: true });

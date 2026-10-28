@@ -147,9 +147,28 @@ La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobacione
 | Reglas de Firestore | Firebase | `npx firebase deploy --only firestore:rules,firestore:indexes --project <id-del-proyecto>` desde la raíz |
 | Landing | Vercel | Proyecto con raíz `saas-booking-landing/`; definir `VITE_APP_URL` y `VITE_CONTACT_EMAIL` |
 
+### Suscripción ($15 USD/mes con Paddle)
+
+Paddle es el comerciante registrado (Merchant of Record): cobra, emite la factura y declara impuestos. El
+servidor crea el checkout con el precio y el negocio (`POST /api/v1/businesses/:id/billing/checkout`) y la app
+lo abre con Paddle.js. La suscripción solo cambia con el webhook firmado
+`POST /api/v1/billing/paddle/webhook`, que guarda el estado en `businesses/{id}/billing/subscription`
+(las reglas de Firestore no dejan escribirlo desde el navegador). `POST .../billing/portal` abre el portal de
+Paddle para cambiar la tarjeta, ver facturas o cancelar.
+
+1. En una cuenta sandbox de Paddle: crear el producto y su precio de $15 USD mensuales, una API key, un
+   client-side token y un destino de notificaciones con la URL del webhook y los eventos `subscription.*`.
+2. En Checkout settings, poner como enlace de pago por defecto la URL de la app (Paddle exige un dominio aprobado).
+3. Render: `PADDLE_ENV=sandbox`, `PADDLE_API_KEY`, `PADDLE_PRICE_ID`, `PADDLE_WEBHOOK_SECRET`. Vercel (app):
+   `VITE_PADDLE_CLIENT_TOKEN`. Probar con la tarjeta `4242 4242 4242 4242`.
+4. Para cobrar de verdad: verificar la cuenta live, aprobar el dominio, repetir el paso 1 en live y cambiar a
+   `PADDLE_ENV=production` con las claves live.
+
+Sin esas variables la app dice que los pagos todavía no están disponibles y no ofrece checkout.
+
 ## Limitaciones conocidas
 
 - Sin SendGrid configurado (`NOTIFICATIONS_MODE=live`) los correos solo se simulan. No hay SMS.
 - Si el proceso se detiene justo después de que el proveedor acepta un correo y antes de guardarlo, ese correo puede enviarse dos veces: SendGrid no deduplica por clave. El id de la tarea viaja en `custom_args` para poder conciliarlo.
 - Las citas guardadas con el modelo anterior (colección raíz `appointments`) no aparecen en el panel; no hay migración.
-- La landing dice que el servicio es gratis durante el acceso anticipado; no hay cobro conectado al núcleo nuevo.
+- Tener o no una suscripción activa todavía no limita el uso de la app: solo se registra y se muestra.
