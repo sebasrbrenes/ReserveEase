@@ -32,7 +32,7 @@ const en = {
     terms: 'Terms',
   },
   times: {
-    hero: '8:00', race: '9:15', chat: '11:40', business: '2:00',
+    hero: '8:00', race: '9:15', chat: '11:40', business: '2:00', demo: '4:00',
     price: '6:30', notes: '6:45', night: '7:00', closing: '8:00',
   },
   signupFree: 'Create my calendar',
@@ -107,6 +107,31 @@ const en = {
     lead: 'Add what you do, how long it takes and what it costs, who does it and when you’re open. Your booking page builds itself from that. Tap a tab: this whole page switches to that business.',
     tabs: 'Type of business',
     note: (name) => `↑ and up there, the calendar and the phones are already about ${name}.`,
+  },
+  demo: {
+    // The recording of this language's app (demo-video/README.md). Chapter
+    // times are the ones build.py prints for the take.
+    video: '/demo/reserveease-demo-en.mp4',
+    poster: '/demo/reserveease-demo-en-poster.webp',
+    kicker: 'no mockups, no tricks',
+    title: ['Watch it work, ', 'for real', '.'],
+    lead: 'Forty seconds recorded in ReserveEase: the barber sets up his schedule, a client books from his link, and the appointment shows up on his calendar by itself.',
+    label: 'Video of ReserveEase at work',
+    play: 'Play the video',
+    pause: 'Pause the video',
+    soundOn: 'Turn the sound on',
+    soundOff: 'Mute',
+    fullscreen: 'Watch full screen',
+    chapters: 'Steps in the video',
+    goTo: 'Go to',
+    unavailable: 'The video isn’t available right now.',
+    steps: [
+      [0, 'The barber opens on Sundays and adds a service'],
+      [17.5, 'A client opens his booking link'],
+      [19.2, 'She picks the service, the barber, the day and the time'],
+      [32.8, 'The appointment is confirmed'],
+      [36.0, 'And it shows up on the barber’s calendar by itself'],
+    ],
   },
   ticket: {
     kicker: 'closing out the register',

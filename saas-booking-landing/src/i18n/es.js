@@ -33,7 +33,7 @@ const es = {
   },
   // The hour written in the red margin of each scene.
   times: {
-    hero: '8:00', race: '9:15', chat: '11:40', business: '14:00',
+    hero: '8:00', race: '9:15', chat: '11:40', business: '14:00', demo: '16:00',
     price: '18:30', notes: '18:45', night: '19:00', closing: '8:00',
   },
   signupFree: 'Crear mi agenda',
@@ -109,6 +109,31 @@ const es = {
     lead: 'Agregas lo que haces, cuánto dura y cuánto cuesta, quién lo atiende y a qué horas abres. Tu página de reservas se arma sola con eso. Toca una pestaña: toda esta página cambia a ese negocio.',
     tabs: 'Tipo de negocio',
     note: (name) => `↑ y arriba, la agenda y los teléfonos ya hablan de ${name}.`,
+  },
+  demo: {
+    // La grabación de la app en este idioma (demo-video/README.md). Los tiempos
+    // de los pasos son los que imprime build.py para esa toma.
+    video: '/demo/reserveease-demo-es.mp4',
+    poster: '/demo/reserveease-demo-es-poster.webp',
+    kicker: 'sin maqueta, sin trucos',
+    title: ['Míralo funcionar, ', 'de verdad', '.'],
+    lead: 'Cuarenta segundos grabados en ReserveEase: el barbero arma su agenda, una clienta reserva desde su enlace y la cita aparece sola en el calendario.',
+    label: 'Video de ReserveEase funcionando',
+    play: 'Reproducir el video',
+    pause: 'Pausar el video',
+    soundOn: 'Activar el sonido',
+    soundOff: 'Silenciar',
+    fullscreen: 'Ver en pantalla completa',
+    chapters: 'Pasos del video',
+    goTo: 'Ir a',
+    unavailable: 'El video no está disponible en este momento.',
+    steps: [
+      [0, 'El barbero abre los domingos y agrega un servicio'],
+      [17.5, 'Su clienta abre el enlace de reservas'],
+      [19.2, 'Elige servicio, barbero, día y hora'],
+      [33.0, 'La cita queda confirmada'],
+      [36.1, 'Y aparece sola en la agenda del barbero'],
+    ],
   },
   ticket: {
     kicker: 'cierre de caja',
