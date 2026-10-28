@@ -5,15 +5,17 @@ import { toast } from 'react-hot-toast';
 import { Underline } from '../ui/Doodles';
 import { db } from '../../firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const Feedback = ({ isOpen, onClose }) => {
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t: { feedback: copy, common } } = useLanguage();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!feedback.trim()) {
-      toast.error('Escribe tu comentario');
+      toast.error(copy.empty);
       return;
     }
 
@@ -24,12 +26,12 @@ const Feedback = ({ isOpen, onClose }) => {
         createdAt: new Date().toISOString()
       });
 
-      toast.success('¡Gracias por tu comentario!');
+      toast.success(copy.thanks);
       setFeedback('');
       onClose();
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      toast.error('No pudimos enviar el comentario');
+      toast.error(copy.failed);
     } finally {
       setIsSubmitting(false);
     }
@@ -56,21 +58,21 @@ const Feedback = ({ isOpen, onClose }) => {
           >
             <button
               onClick={onClose}
-              aria-label="Cerrar"
+              aria-label={common.close}
               className="absolute top-3 right-3 p-1 rounded-lg text-ink-soft hover:text-ink hover:bg-paper-deep focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
             >
               <FiX size={24} />
             </button>
 
             <h2 id="feedback-title" className="relative inline-block mb-6 pr-8">
-              <span className="hd-title text-4xl">Envíanos un comentario</span>
+              <span className="hd-title text-4xl">{copy.title}</span>
               <Underline className="absolute -bottom-2 left-0 w-full h-3 text-sun" />
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="feedback-text" className="hd-label">
-                  Tu comentario
+                  {copy.label}
                 </label>
                 <textarea
                   id="feedback-text"
@@ -78,7 +80,7 @@ const Feedback = ({ isOpen, onClose }) => {
                   onChange={(e) => setFeedback(e.target.value)}
                   className="hd-input focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
                   rows="4"
-                  placeholder="Cuéntanos qué te gusta, qué falta o qué falla..."
+                  placeholder={copy.placeholder}
                 />
               </div>
 
@@ -88,14 +90,14 @@ const Feedback = ({ isOpen, onClose }) => {
                   onClick={onClose}
                   className="hd-btn hd-btn-secondary focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
                 >
-                  Cancelar
+                  {common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="hd-btn focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
                 >
-                  {isSubmitting ? 'Enviando...' : 'Enviar'}
+                  {isSubmitting ? copy.sending : copy.send}
                 </button>
               </div>
             </form>

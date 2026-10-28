@@ -1,34 +1,35 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import Scene from './Scene';
-import { BUSINESSES, colones } from './demo';
 import { useBusiness } from './BusinessContext';
 import { APP_URL } from '../../config';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const TAB_COLORS = ['bg-sun', 'bg-coral-light', 'bg-marker-light', 'bg-leaf-light'];
 
 const YourBusiness = () => {
   const reduce = useReducedMotion();
-  const { business, setBusinessId } = useBusiness();
-  const index = BUSINESSES.findIndex((b) => b.id === business.id);
+  const { business, businesses, setBusinessId } = useBusiness();
+  const { t, money } = useLanguage();
+  const copy = t.business;
+  const index = businesses.findIndex((b) => b.id === business.id);
 
   return (
-    <Scene id="tu-negocio" time="14:00" labelledBy="business-title">
+    <Scene id="tu-negocio" time={t.times.business} labelledBy="business-title">
       <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-12 lg:grid-cols-[1fr_1fr] lg:gap-16">
         <div>
-          <p className="font-hand text-2xl text-marker">no es una agenda genérica</p>
+          <p className="font-hand text-2xl text-marker">{copy.kicker}</p>
           <h2 id="business-title" className="nb-display mt-2 text-5xl font-semibold sm:text-6xl md:text-7xl">
-            Con tus servicios, tus precios y <em className="font-medium">tu</em> horario.
+            {copy.title[0]}<em className="font-medium">{copy.title[1]}</em>{copy.title[2]}
           </h2>
           <p className="mt-6 max-w-xl text-lg text-ink-soft">
-            Agregas lo que haces, cuánto dura y cuánto cuesta, quién lo atiende y a qué horas abres. Tu página de
-            reservas se arma sola con eso. Toca una pestaña: toda esta página cambia a ese negocio.
+            {copy.lead}
           </p>
         </div>
 
         <div className="mx-auto w-full max-w-md">
           {/* Notebook divider tabs */}
-          <div role="radiogroup" aria-label="Tipo de negocio" className="flex gap-0.5 pl-2 sm:gap-1 sm:pl-4">
-            {BUSINESSES.map((b, i) => {
+          <div role="radiogroup" aria-label={copy.tabs} className="flex gap-0.5 pl-2 sm:gap-1 sm:pl-4">
+            {businesses.map((b, i) => {
               const active = b.id === business.id;
               return (
                 <button
@@ -69,13 +70,13 @@ const YourBusiness = () => {
                     <li key={s.id} className="flex items-baseline gap-3 py-3">
                       <span className="font-semibold">{s.name}</span>
                       <span className="text-sm text-ink-soft">{s.minutes} min</span>
-                      <span className="ml-auto font-display text-lg font-semibold tabular-nums">{colones(s.price)}</span>
+                      <span className="ml-auto font-display text-lg font-semibold tabular-nums">{money(s.price)}</span>
                     </li>
                   ))}
                 </ul>
 
                 <p className="mt-5 font-hand text-2xl text-ink-soft">
-                  ↑ y arriba, la agenda y los teléfonos ya hablan de {business.name}.
+                  {copy.note(business.name)}
                 </p>
               </motion.div>
             </AnimatePresence>

@@ -3,7 +3,11 @@ import { CONTACT_EMAIL } from '../../config';
 import { LegalPage, List, Section } from '../../components/common/LegalPage';
 
 const Terms = () => (
-  <LegalPage title="Términos de uso" updated="28 de octubre de 2026">
+  <LegalPage
+    title="Términos de uso"
+    updated="28 de octubre de 2026"
+    other={{ to: '/terms/en', lang: 'en', label: 'Read in English' }}
+  >
     <Section title="1. Qué es ReserveEase">
       <p>
         ReserveEase es una agenda en línea: el negocio configura sus servicios, su personal y sus horarios, y sus

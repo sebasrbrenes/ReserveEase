@@ -27,9 +27,9 @@ const loadScript = () => {
 
 /**
  * Opens the checkout for a transaction the server created.
- * @param {{ transactionId: string, environment: 'sandbox'|'production', email?: string, onEvent?: Function }} options
+ * @param {{ transactionId: string, environment: 'sandbox'|'production', email?: string, language?: string, onEvent?: Function }} options
  */
-export const openCheckout = async ({ transactionId, environment, email, onEvent: handler }) => {
+export const openCheckout = async ({ transactionId, environment, email, language = 'en', onEvent: handler }) => {
   const Paddle = await loadScript();
   onEvent = handler || (() => {});
   if (!Paddle.Initialized) {
@@ -39,6 +39,6 @@ export const openCheckout = async ({ transactionId, environment, email, onEvent:
   Paddle.Checkout.open({
     transactionId,
     ...(email ? { customer: { email } } : {}),
-    settings: { displayMode: 'overlay', locale: 'es', theme: 'light' },
+    settings: { displayMode: 'overlay', locale: language, theme: 'light' },
   });
 };

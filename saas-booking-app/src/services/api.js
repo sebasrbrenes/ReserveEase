@@ -1,6 +1,7 @@
 // Client for the booking API (/api/v1). Every booking change goes through it:
 // the browser never writes appointments to Firestore directly.
 import { auth } from '../firebase/config';
+import { getUiLanguage } from '../i18n/language';
 
 // A trailing slash in the Vercel variable would turn paths into //api/v1.
 const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').trim().replace(/\/+$/, '');
@@ -89,7 +90,7 @@ export const transitionAppointment = (businessId, id, body) =>
   request('POST', apt(businessId, id, '/transition'), { body, signedIn: true });
 
 // What to tell the person about each field the API can reject, by language.
-// The dashboard is in Spanish; the client pages follow business.language.
+// The dashboard follows the owner's language; the client pages follow business.language.
 const FIELD_MESSAGES = {
   es: {
     'client.name': 'Escribe el nombre.',
@@ -139,14 +140,14 @@ const ERROR_MESSAGES = {
 const messagesFor = (table, language) => table[language] || table.es;
 
 // The API's field errors as { path: message } for the person to read.
-export const fieldErrors = (error, language = 'es') => Object.fromEntries(
+export const fieldErrors = (error, language = getUiLanguage()) => Object.fromEntries(
   (error?.code === 'INVALID_INPUT' ? error.fields || [] : [])
     .map(({ path }) => [path, messagesFor(FIELD_MESSAGES, language)[path]])
     .filter(([, message]) => message)
 );
 
 // Messages for the error codes a person can act on.
-export const errorMessage = (error, language = 'es') => {
+export const errorMessage = (error, language = getUiLanguage()) => {
   const messages = messagesFor(ERROR_MESSAGES, language);
   if (error?.code === 'INVALID_INPUT') {
     const [first] = Object.values(fieldErrors(error, language));
