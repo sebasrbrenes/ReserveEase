@@ -5,7 +5,7 @@
 
 import crypto from 'crypto';
 import {
-  businessSchema, DAYS, publicBusinessSchema, SCHEMA_VERSION, serviceSchema, slugSchema, staffSchema,
+  businessSchema, DAYS, languageSchema, publicBusinessSchema, SCHEMA_VERSION, serviceSchema, slugSchema, staffSchema,
 } from './schemas.js';
 
 const DEFAULT_TIMEZONE = 'America/Costa_Rica';
@@ -66,6 +66,7 @@ export const legacyToV2 = ({ uid, settings = {}, existingSlug }) => {
   const currency = /^[A-Z]{3}$/.test(legacy.currency ?? '') ? legacy.currency : DEFAULT_CURRENCY;
   const timezone = isTimeZone(legacy.timezone) ? legacy.timezone : DEFAULT_TIMEZONE;
   const name = String(legacy.name ?? '').trim().slice(0, 100);
+  const language = languageSchema.parse(legacy.language);
 
   const services = [];
   for (const svc of legacy.services ?? []) {
@@ -122,6 +123,7 @@ export const legacyToV2 = ({ uid, settings = {}, existingSlug }) => {
     },
     weeklySchedule,
     clientEmails: legacy.clientEmails !== false,
+    language,
     schemaVersion: SCHEMA_VERSION,
   });
 
@@ -131,6 +133,7 @@ export const legacyToV2 = ({ uid, settings = {}, existingSlug }) => {
     name: business.name,
     timezone,
     currency,
+    language,
     status: business.status,
     services: services.filter((s) => s.active),
     staff: staff.filter((m) => m.active),
@@ -175,6 +178,7 @@ export const syncLegacyBusiness = (db, uid) => {
       name: v2.business.name,
       timezone: v2.business.timezone,
       currency: v2.business.currency,
+      language: v2.business.language,
       services: v2.services,
       staff: v2.staff,
     };

@@ -157,3 +157,36 @@ test('settings sections save on their own and show their errors next to the fiel
   await expect(page.getByText('Persona eliminada')).toBeVisible();
   await expect(page.getByRole('heading', { name: staffName })).toHaveCount(0);
 });
+
+test('the business can show its booking pages in English; Spanish is the default', async ({ page }) => {
+  await login(page, 'salon@demo.test');
+  await page.goto('/settings');
+  const language = page.locator('#language');
+  await expect(language).toHaveValue('es');
+  await language.selectOption('en');
+  await page.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(page.getByText('Datos del negocio guardados')).toBeVisible();
+
+  try {
+    await page.goto('/book/salon-demo');
+    await expect(page.getByText('Book an appointment with')).toBeVisible();
+    await page.selectOption('#serviceId', 'svc-peinado');
+    await page.selectOption('#staffId', 'staff-ana-salon');
+    await pickDate(page, nextOpenDate(5), 'en');
+    await page.locator('fieldset button').first().click();
+    await page.fill('#clientName', `Visitor ${Date.now()}`);
+    await page.fill('#email', 'visitor@example.com');
+    await page.getByRole('button', { name: 'Book appointment' }).click();
+    await expect(page.getByText('Your appointment is confirmed')).toBeVisible();
+    await page.getByRole('link', { name: 'Change or cancel this appointment' }).click();
+    await expect(page.getByText('Your appointment with')).toBeVisible();
+    await expect(page.getByText('Confirmed', { exact: true })).toBeVisible();
+  } finally {
+    await page.goto('/settings');
+    await page.locator('#language').selectOption('es');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText('Datos del negocio guardados')).toBeVisible();
+  }
+  await page.goto('/book/salon-demo');
+  await expect(page.getByText('Reserva tu cita con')).toBeVisible();
+});
