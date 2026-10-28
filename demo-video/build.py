@@ -1,6 +1,6 @@
 """Turns a recording made by record.mjs into the landing's demo video, its sound and its poster.
 
-Usage: python3 demo-video/build.py [OUT_DIR] [DEST_DIR]
+Usage: python3 demo-video/build.py LANG [DEST_DIR]   (LANG: en or es, the take record.mjs made)
 Needs ffmpeg (with libx264) and numpy.
 """
 import json
@@ -11,7 +11,8 @@ from pathlib import Path
 
 import numpy as np
 
-OUT = Path(sys.argv[1] if len(sys.argv) > 1 else 'demo-video/out')
+LANG = sys.argv[1] if len(sys.argv) > 1 else 'en'
+OUT = Path('demo-video/out') / LANG
 DEST = Path(sys.argv[2] if len(sys.argv) > 2 else 'saas-booking-landing/public/demo')
 RATE = 48000
 SIZE = '1280:720'
@@ -105,14 +106,14 @@ subprocess.run([
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '22', '-tune', 'stillimage',
     '-c:a', 'aac', '-b:a', '64k',
     '-movflags', '+faststart', '-t', f'{duration:.2f}',
-    str(DEST / 'reserveease-demo.mp4'),
+    str(DEST / f'reserveease-demo-{LANG}.mp4'),
 ], check=True)
 
 # Poster: the confirmation page, a second after the booking goes through.
 success = next(e['t'] for e in events if e['type'] == 'success')
 subprocess.run([
-    'ffmpeg', '-y', '-loglevel', 'error', '-ss', f'{success + 2.4:.2f}', '-i', str(DEST / 'reserveease-demo.mp4'),
-    '-frames:v', '1', '-c:v', 'libwebp', '-quality', '82', str(DEST / 'reserveease-demo-poster.webp'),
+    'ffmpeg', '-y', '-loglevel', 'error', '-ss', f'{success + 2.4:.2f}', '-i', str(DEST / f'reserveease-demo-{LANG}.mp4'),
+    '-frames:v', '1', '-c:v', 'libwebp', '-quality', '82', str(DEST / f'reserveease-demo-{LANG}-poster.webp'),
 ], check=True)
 
 # Where each of the five steps starts, for the chapter list next to the player

@@ -4,6 +4,8 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { syncMyBusiness } from '../services/api';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { toast } from 'react-hot-toast';
+import { getUiLanguage } from '../i18n/language';
+import { uiCopy } from '../i18n/copy';
 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -102,13 +104,21 @@ export const SettingsProvider = ({ children }) => {
             }
           });
         } else {
-          await setDoc(userSettingsRef, defaultSettings);
-          setSettings(defaultSettings);
+          // A new business starts with its booking pages and client emails in
+          // the language its owner signed up in.
+          const language = getUiLanguage();
+          const initial = {
+            ...defaultSettings,
+            business: { ...defaultSettings.business, language },
+            ui: { ...defaultSettings.ui, language },
+          };
+          await setDoc(userSettingsRef, initial);
+          setSettings(initial);
         }
         await refreshBusiness();
       } catch (error) {
         console.error('Error loading settings:', error);
-        toast.error('No pudimos cargar la configuración');
+        toast.error(uiCopy().settingsLoadFailed);
         setBusiness((prev) => ({ ...prev, loading: false, error }));
       }
     };

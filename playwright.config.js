@@ -18,6 +18,13 @@ export default defineConfig({
   globalSetup: './e2e/global-setup.js',
   use: {
     baseURL: 'http://localhost:3000',
+    // The interface is in English unless the visitor picks Spanish; these tests
+    // read the Spanish copy, so they start with Spanish chosen.
+    // e2e/language.spec.js checks the English default.
+    storageState: {
+      cookies: [],
+      origins: [{ origin: 'http://localhost:3000', localStorage: [{ name: 'reserveease.language', value: 'es' }] }],
+    },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

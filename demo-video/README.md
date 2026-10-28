@@ -13,26 +13,32 @@ What it shows, in about 40 seconds:
 4. The booking is confirmed.
 5. The barber's dashboard, already open on that day, refreshes and shows it.
 
-## Re-recording (for example once the app is in English)
+There is one take per language, `reserveease-demo-en.mp4` and
+`reserveease-demo-es.mp4`, each with its poster. The English take renames the
+seeded services and uses dollars and New York time off camera; the Spanish one
+uses colones and Costa Rica time. The landing plays the take of the visitor's
+language.
+
+## Re-recording
 
 Needs ffmpeg (with libx264) and Python with numpy.
 
 ```sh
 npm run emulators                     # terminal 1, from the repo root
-npm run seed                          # fresh demo data
+npm run seed                          # fresh demo data, before each take
 # terminal 2: the API and the app, as in playwright.config.js
 (cd saas-booking-backend && APP_ENV=local FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 \
   FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIREBASE_PROJECT_ID=demo-reserveease \
   PORT=3001 FRONTEND_URL=http://localhost:3000 NOTIFICATIONS_MODE=mock node server.js) &
 (cd saas-booking-app && VITE_USE_EMULATORS=true VITE_BACKEND_URL=http://localhost:3001 npx vite --port 3000) &
 
-node demo-video/record.mjs            # frames and timings in demo-video/out/
-python3 demo-video/build.py           # writes the .mp4 and the poster to the landing
+DEMO_LANG=en node demo-video/record.mjs   # frames and timings in demo-video/out/en/
+python3 demo-video/build.py en            # writes the .mp4 and the poster to the landing
 ```
 
-`build.py` prints the time where each step starts; copy them into `CHAPTERS`
-in `saas-booking-landing/src/components/notebook/Demo.jsx`. The texts the
-script clicks on (button names, labels) are the app's Spanish copy; update them
-in `record.mjs` if the app's wording changes. Set `CHROMIUM_PATH` to use a
-specific Chromium build. Run `npm run seed` (or restart the emulators) before
-each take: the script adds a service and a booking.
+Then `npm run seed` again and the same with `es`. `build.py` prints the time
+where each step starts; copy them into `demo.steps` in
+`saas-booking-landing/src/i18n/en.js` (or `es.js`). The texts the script clicks
+on come from the app's own copy (`saas-booking-app/src/i18n/`), so they follow
+its wording. Set `CHROMIUM_PATH` to use a specific Chromium build. The seed
+leaves earlier bookings in place: to start from nothing, restart the emulators.

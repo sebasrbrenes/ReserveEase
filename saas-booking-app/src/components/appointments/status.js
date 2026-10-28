@@ -1,26 +1,23 @@
 // Appointment states of the booking API and what the dashboard can do from each.
-// className holds the Hand-Drawn badge colors; pair it with `hd-badge`.
+// className holds the Hand-Drawn badge colors; pair it with `hd-badge`. The
+// labels are in the interface copy (t.status and t.statusActions).
 export const STATUS = {
-  confirmed: { label: 'Confirmada', className: 'text-marker bg-marker-light' },
-  completed: { label: 'Completada', className: 'text-leaf bg-leaf-light' },
-  no_show: { label: 'No asistió', className: 'text-ink bg-sun-light' },
-  cancelled: { label: 'Cancelada', className: 'text-coral bg-coral-light' },
+  confirmed: 'text-marker bg-marker-light',
+  completed: 'text-leaf bg-leaf-light',
+  no_show: 'text-ink bg-sun-light',
+  cancelled: 'text-coral bg-coral-light',
 };
 
 // Actions offered on a confirmed appointment. completed and no_show are only
 // accepted by the server once the appointment has started.
-export const STATUS_ACTIONS = [
-  { value: 'completed', label: 'Marcar completada' },
-  { value: 'no_show', label: 'Marcar que no asistió' },
-  { value: 'cancelled', label: 'Cancelar cita' },
-];
+export const STATUS_ACTIONS = ['completed', 'no_show', 'cancelled'];
 
 // The actions that make sense now: before the start only cancelling does.
-export const statusActionsFor = (appointment, now = Date.now()) => (
+export const statusActionsFor = (appointment, t, now = Date.now()) => (
   Date.parse(appointment.startsAt) <= now
     ? STATUS_ACTIONS
-    : STATUS_ACTIONS.filter((action) => action.value === 'cancelled')
-);
+    : STATUS_ACTIONS.filter((action) => action === 'cancelled')
+).map((value) => ({ value, label: t.statusActions[value] }));
 
-export const statusLabel = (status) => STATUS[status]?.label || status;
-export const statusClass = (status) => STATUS[status]?.className || 'text-ink-soft bg-paper-deep';
+export const statusLabel = (status, t) => t.status[status] || status;
+export const statusClass = (status) => STATUS[status] || 'text-ink-soft bg-paper-deep';

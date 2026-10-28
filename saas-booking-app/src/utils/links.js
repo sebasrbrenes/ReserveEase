@@ -3,3 +3,4 @@ export const LANDING_URL = (import.meta.env.VITE_LANDING_URL || 'https://reserve
 export const PRIVACY_URL = `${LANDING_URL}/privacy-policy`;
 export const PRIVACY_URL_EN = `${LANDING_URL}/privacy-policy/en`;
 export const TERMS_URL = `${LANDING_URL}/terms`;
+export const TERMS_URL_EN = `${LANDING_URL}/terms/en`;

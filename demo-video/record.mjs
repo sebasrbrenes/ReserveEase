@@ -7,12 +7,42 @@ import { join } from 'path';
 import { chromium } from '@playwright/test';
 
 const APP = process.env.APP_URL || 'http://localhost:3000';
-const OUT = process.env.OUT_DIR || 'demo-video/out';
+const OUT = process.env.OUT_DIR || `demo-video/out/${process.env.DEMO_LANG || 'en'}`;
 const OWNER = { email: 'barberia@demo.test', password: 'demo1234' };
-const BUSINESS_NAME = process.env.DEMO_BUSINESS_NAME || 'Barbería El Roble';
-const SERVICE = { name: 'Fade', minutes: '45', price: '7000' };
-const CLIENT = { name: 'María Rodríguez', email: 'maria@example.com' };
 const VIEWPORT = { width: 1280, height: 720 };
+
+// One take per language (DEMO_LANG=en|es). The interface texts the script
+// clicks on come from the app's own copy, so they follow its wording.
+const LANG = process.env.DEMO_LANG || 'en';
+const { default: ui } = await import(`../saas-booking-app/src/i18n/${LANG}.js`);
+const TAKES = {
+  en: {
+    business: { name: 'Oak Street Barbers', currency: 'USD', timezone: 'America/New_York' },
+    service: { name: 'Fade', minutes: '45', price: '35' },
+    // The seeded services are Spanish and priced in colones.
+    services: [['Corte', 'Haircut', '30'], ['Barba', 'Beard trim', '20'], ['Corte y barba', 'Haircut & beard', '45']],
+    client: { name: 'Emily Carter', email: 'emily@example.com' },
+    locale: 'en-US',
+    // Client page copy (saas-booking-app/src/i18n/clientCopy.js).
+    book: 'Book appointment',
+    confirmed: 'Your appointment is confirmed',
+    dayLabel: (d) => `${d.toLocaleDateString('en-US', { weekday: 'long' })}, ${d.toLocaleDateString('en-US', { month: 'long' })} ${d.getDate()}`,
+  },
+  es: {
+    business: { name: 'Barbería El Roble', currency: 'CRC', timezone: 'America/Costa_Rica' },
+    service: { name: 'Fade', minutes: '45', price: '7000' },
+    services: [],
+    client: { name: 'María Rodríguez', email: 'maria@example.com' },
+    locale: 'es-CR',
+    book: 'Reservar cita',
+    confirmed: 'Tu cita está confirmada',
+    dayLabel: (d) => `${d.toLocaleDateString('es', { weekday: 'long' })} ${d.getDate()} de ${d.toLocaleDateString('es', { month: 'long' })}`,
+  },
+};
+const TAKE = TAKES[LANG];
+const { service: SERVICE, client: CLIENT } = TAKE;
+const BUSINESS_NAME = TAKE.business.name;
+const S = ui.settings;
 
 // A pointer drawn in the page, since headless screenshots have no cursor.
 const CURSOR = () => {
@@ -171,11 +201,14 @@ const main = async () => {
   mkdirSync(join(OUT, 'frames'), { recursive: true });
 
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
-  const options = { viewport: VIEWPORT, deviceScaleFactor: 1.5, locale: 'es-CR', timezoneId: 'America/Costa_Rica' };
+  const options = { viewport: VIEWPORT, deviceScaleFactor: 1.5, locale: TAKE.locale, timezoneId: TAKE.business.timezone };
+  // The owner's interface language (the app's EN/ES switch keeps it here).
+  const setLanguage = (lang) => { try { localStorage.setItem('reserveease.language', lang); } catch { /* ignore */ } };
 
-  // Off camera: the owner signs in and names the business.
+  // Off camera: the owner signs in and sets up the business for this take.
   const owner = await browser.newContext(options);
   await owner.addInitScript(CURSOR);
+  await owner.addInitScript(setLanguage, LANG);
   const barber = await owner.newPage();
   await barber.goto(`${APP}/login`);
   await barber.fill('input[type=email]', OWNER.email);
@@ -186,10 +219,22 @@ const main = async () => {
   const nameInput = barber.locator('#businessName');
   await nameInput.waitFor();
   await sleep(800);
-  if ((await nameInput.inputValue()) !== BUSINESS_NAME) {
-    await nameInput.fill(BUSINESS_NAME);
-    await barber.getByRole('button', { name: 'Guardar cambios' }).click();
+  await nameInput.fill(BUSINESS_NAME);
+  await barber.locator('#timezone').selectOption(TAKE.business.timezone);
+  await barber.locator('#currency').selectOption(TAKE.business.currency);
+  await barber.locator('#language').selectOption(LANG);
+  const save = barber.getByRole('button', { name: ui.common.saveChanges });
+  if (await save.isEnabled()) {
+    await save.click();
     await sleep(2500);
+  }
+  for (const [from, name, price] of TAKE.services) {
+    await barber.getByRole('button', { name: S.services.edit(from), exact: true }).click();
+    await barber.getByLabel(S.services.name).fill(name);
+    await barber.getByLabel(S.services.price, { exact: true }).fill(price);
+    await barber.getByRole('button', { name: S.services.update, exact: true }).click();
+    await barber.getByRole('button', { name: S.services.edit(name), exact: true }).waitFor();
+    await sleep(600);
   }
   await barber.reload();
   await barber.locator('#horario').waitFor();
@@ -203,22 +248,22 @@ const main = async () => {
   // 1. The barber opens Sundays and adds a service.
   await rec.start(barber);
   await sleep(900);
-  const sunday = barber.locator('#horario label', { hasText: 'Domingo' }).locator('input[type=checkbox]');
+  const sunday = barber.locator('#horario label', { hasText: S.days.sunday }).locator('input[type=checkbox]');
   await click(barber, sunday, 500);
-  await choose(barber, barber.getByLabel('Domingo: hora de cierre'), '1:00 PM');
+  await choose(barber, barber.getByLabel(S.hours.closes(S.days.sunday)), '1:00 PM');
   await sleep(300);
 
   await scrollTo(barber.locator('#servicios'), 'start');
-  await type(barber, barber.getByLabel('Nombre del servicio'), SERVICE.name);
-  await type(barber, barber.getByLabel('Duración en minutos'), SERVICE.minutes);
-  await type(barber, barber.getByLabel('Precio'), SERVICE.price);
-  await click(barber, barber.getByRole('button', { name: 'Agregar', exact: true }), 1100);
+  await type(barber, barber.getByLabel(S.services.name), SERVICE.name);
+  await type(barber, barber.getByLabel(S.services.duration), SERVICE.minutes);
+  await type(barber, barber.getByLabel(S.services.price, { exact: true }), SERVICE.price);
+  await click(barber, barber.getByRole('button', { name: S.services.addButton, exact: true }), 1100);
 
   // Luis offers it.
   await scrollTo(barber.locator('#personal'), 'start');
-  await click(barber, barber.getByRole('button', { name: 'Editar a Luis' }), 600);
+  await click(barber, barber.getByRole('button', { name: S.staff.edit('Luis'), exact: true }), 600);
   await click(barber, barber.locator('#personal label', { hasText: SERVICE.name }).locator('input[type=checkbox]'), 400);
-  await click(barber, barber.getByRole('button', { name: 'Actualizar persona' }), 1300);
+  await click(barber, barber.getByRole('button', { name: S.staff.update }), 1300);
   await rec.stop();
 
   // Off camera: the dashboard is already open on that Sunday, still empty.
@@ -226,9 +271,9 @@ const main = async () => {
   await barber.goto(`${APP}/dashboard`);
   await barber.locator('.grid-cols-7 > button').first().waitFor();
   await sleep(1200);
-  const dayLabel = `${day.toLocaleDateString('es', { weekday: 'long' })} ${day.getDate()} de ${day.toLocaleDateString('es', { month: 'long' })}`;
-  if (day.getMonth() !== new Date().getMonth()) await barber.getByRole('button', { name: 'Mes siguiente' }).click();
-  await barber.locator(`.grid-cols-7 > button[aria-label^="${dayLabel}"]`).click();
+  const dayLabel = TAKE.dayLabel(day);
+  if (day.getMonth() !== new Date().getMonth()) await barber.getByRole('button', { name: ui.calendar.next }).click();
+  await barber.locator(`.grid-cols-7 > button:is([aria-label="${dayLabel}"], [aria-label^="${dayLabel},"])`).click();
   await barber.mouse.move(1000, 640);
   pointers.set(barber, { x: 1000, y: 640 });
   await sleep(1200);
@@ -236,6 +281,7 @@ const main = async () => {
   // 2–4. A client opens the booking link and books.
   const visitor = await browser.newContext(options);
   await visitor.addInitScript(CURSOR);
+  await visitor.addInitScript(setLanguage, LANG);
   const client = await visitor.newPage();
   await client.goto(`${APP}/book/barberia-demo`);
   await client.getByText(BUSINESS_NAME, { exact: true }).waitFor();
@@ -261,9 +307,9 @@ const main = async () => {
   await type(client, client.locator('#clientName'), CLIENT.name);
   await type(client, client.locator('#email'), CLIENT.email);
   await sleep(200);
-  await click(client, client.getByRole('button', { name: 'Reservar cita' }), 0);
+  await click(client, client.getByRole('button', { name: TAKE.book }), 0);
   await client.waitForURL(/\/booking\/success\//);
-  await client.getByText('Tu cita está confirmada').waitFor();
+  await client.getByText(TAKE.confirmed).waitFor();
   rec.mark('success');
   await sleep(2600);
   await rec.stop();

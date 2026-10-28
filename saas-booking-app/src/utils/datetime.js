@@ -26,16 +26,20 @@ export const shiftDate = (localDate, days) => {
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 };
 
-// Interface language and number/date conventions. The client pages can use
-// English when the business picks it (business.language).
+// Number and date conventions of each language: English as in the United
+// States, Spanish as in Costa Rica. The interface follows the owner's choice
+// (i18n/language.js); the client pages pass the business's locale.
 export const LOCALE = 'es-CR';
 export const localeFor = (language) => (language === 'en' ? 'en-US' : LOCALE);
 
-export const formatTime = (iso, timeZone, locale = LOCALE) =>
+let uiLocale = localeFor('en');
+export const setUiLocale = (locale) => { uiLocale = locale; };
+
+export const formatTime = (iso, timeZone, locale = uiLocale) =>
   new Intl.DateTimeFormat(locale, { timeZone, hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
 
 // "YYYY-MM-DD" -> "lunes, 12 de octubre de 2026" (no time zone involved).
-export const formatLocalDate = (localDate, options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }, locale = LOCALE) => {
+export const formatLocalDate = (localDate, options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }, locale = uiLocale) => {
   const [y, m, d] = localDate.split('-').map(Number);
   return new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(new Date(Date.UTC(y, m - 1, d)));
 };
@@ -43,7 +47,7 @@ export const formatLocalDate = (localDate, options = { weekday: 'long', month: '
 // Spanish dates start in lower case; titles start with a capital.
 export const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
-export const formatMoney = (minor, currency, locale = LOCALE) => {
+export const formatMoney = (minor, currency, locale = uiLocale) => {
   try {
     return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(minor / 100);
   } catch {

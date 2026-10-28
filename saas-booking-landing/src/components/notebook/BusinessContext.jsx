@@ -1,14 +1,17 @@
 import { createContext, useContext, useMemo, useState } from 'react';
-import { BUSINESSES } from './demo';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const BusinessContext = createContext(null);
 
+// The demo business picked in the "Tu negocio" scene, in the visitor's language.
 export function BusinessProvider({ children }) {
-  const [id, setId] = useState(BUSINESSES[0].id);
+  const { t } = useLanguage();
+  const [id, setId] = useState(t.businesses[0].id);
   const value = useMemo(() => ({
-    business: BUSINESSES.find((b) => b.id === id),
+    business: t.businesses.find((b) => b.id === id) ?? t.businesses[0],
+    businesses: t.businesses,
     setBusinessId: setId,
-  }), [id]);
+  }), [id, t]);
   return <BusinessContext.Provider value={value}>{children}</BusinessContext.Provider>;
 }
 

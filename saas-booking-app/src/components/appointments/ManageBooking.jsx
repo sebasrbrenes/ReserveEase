@@ -8,6 +8,7 @@ import {
 } from '../../services/api';
 import { capitalize, formatLocalDate, formatTime, fromLocalDateString, localeFor, toLocalDateString, todayIn } from '../../utils/datetime';
 import { clientCopy, clientLanguage } from '../../i18n/clientCopy';
+import { useDocumentLanguage } from '../../i18n/LanguageContext';
 import { Logo, Scribble } from '../ui/Doodles';
 
 const localDateIn = (iso, timeZone) => new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date(iso));
@@ -26,9 +27,10 @@ export default function ManageBooking() {
   const [startsAt, setStartsAt] = useState('');
   const [refreshSlots, setRefreshSlots] = useState(0);
   const [saving, setSaving] = useState(false);
-  // The business picks the language of this page (Spanish until it loads).
+  // The business picks the language of this page (the visitor's until it loads).
   const language = clientLanguage(apt?.language);
   const t = clientCopy(language);
+  useDocumentLanguage(language);
   const locale = localeFor(language);
 
   useEffect(() => {

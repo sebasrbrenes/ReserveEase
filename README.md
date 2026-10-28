@@ -85,6 +85,15 @@ npm ci
 npm run dev
 ```
 
+## Idiomas
+
+La landing y la app están en inglés (en-US, predeterminado) y español (es). El selector EN/ES guarda la elección en el navegador (`reserveease.language`), y los enlaces de la landing a la app llevan `?lang=` para abrirla en el mismo idioma. Los textos están centralizados:
+
+- Landing: `saas-booking-landing/src/i18n/en.js` y `es.js`.
+- Panel, registro y acceso: `saas-booking-app/src/i18n/en.js` y `es.js`.
+- Páginas que ven los clientes (reserva, confirmación, gestionar cita): `saas-booking-app/src/i18n/clientCopy.js`, en el idioma que el negocio elige en Configuración. Un negocio nuevo empieza con el idioma en que se registró su dueño.
+- Correos de citas: `saas-booking-backend/src/notifications/templates.js`, en el idioma del negocio. Los correos de verificación y de cambio de contraseña los envía Firebase en el idioma de la interfaz.
+
 ## API v1
 
 El núcleo nuevo de reservas se construye en `saas-booking-backend/src/` con el modelo de datos v2 del documento maestro:

@@ -24,6 +24,8 @@ import Feedback from '../feedback/Feedback';
 import HelpButton from '../common/HelpButton';
 import GettingStarted from './GettingStarted';
 import { Logo, Sparkle, Star, Underline } from '../ui/Doodles';
+import LanguageSwitch from '../common/LanguageSwitch';
+import { useLanguage } from '../../i18n/LanguageContext';
 import {
   cancelAppointment, errorMessage, listAppointments, retryNotifications, transitionAppointment,
 } from '../../services/api';
@@ -42,6 +44,8 @@ const dialogFocus = 'focus-visible:outline focus-visible:outline-[3px] focus-vis
 
 const Dashboard = () => {
   const { business } = useSettings();
+  const { t } = useLanguage();
+  const copy = t.dashboard;
   const businessId = business.data?.businessId;
   const timezone = business.data?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const currency = business.data?.currency;
@@ -108,7 +112,7 @@ const Dashboard = () => {
     setAppointmentToCancel(null);
     await runChange(
       () => cancelAppointment(businessId, apt.id, { expectedVersion: apt.version }),
-      'Cita cancelada. La hora quedó libre.'
+      copy.cancelled
     );
   };
 
@@ -121,13 +125,13 @@ const Dashboard = () => {
     }
     await runChange(
       () => transitionAppointment(businessId, appointment.id, { expectedVersion: appointment.version, to: action }),
-      'Estado actualizado'
+      copy.statusUpdated
     );
   };
 
   const handleRetryEmail = (appointment) => runChange(
     () => retryNotifications(businessId, appointment.id),
-    'Correo en cola otra vez'
+    copy.emailRequeued
   );
 
   const selectedLocalDate = selectedDate?.format('YYYY-MM-DD');
@@ -154,8 +158,8 @@ const Dashboard = () => {
   const metricsReady = !business.loading && !(businessId && isLoading);
   const canBook = businessReady && business.data.status === 'published';
   const newAppointmentHint = business.loading
-    ? 'Cargando tu negocio...'
-    : !canBook ? 'Completa la configuración para recibir reservas' : undefined;
+    ? copy.loadingBusiness
+    : !canBook ? copy.finishSetup : undefined;
 
   const staffList = business.data?.staff || [];
   const activeStaff = staffList.filter((staff) => staff.active);
@@ -173,20 +177,20 @@ const Dashboard = () => {
       {
         id: 'todayAppointments',
         value: todayAppointments.length,
-        title: 'Citas de hoy',
-        subtext: diff === 0 ? 'Igual que ayer' : diff > 0 ? `${diff} más que ayer` : `${-diff} menos que ayer`,
+        title: copy.todayAppointments,
+        subtext: diff === 0 ? copy.sameAsYesterday : diff > 0 ? copy.moreThanYesterday(diff) : copy.fewerThanYesterday(-diff),
         type: diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative',
         icon: FiCalendar
       },
       {
         id: 'activeStaff',
         value: activeStaff.length,
-        title: 'Personal activo',
+        title: copy.activeStaff,
         subtext: !staffList.length
-          ? 'Sin personal'
+          ? copy.noStaff
           : activeStaff.length === staffList.length
-          ? 'Todo el personal activo'
-          : `${staffList.length - activeStaff.length} inactivo${staffList.length - activeStaff.length === 1 ? '' : 's'}`,
+          ? copy.allStaffActive
+          : copy.inactive(staffList.length - activeStaff.length),
         type: 'neutral',
         icon: FiUsers
       },
@@ -195,13 +199,13 @@ const Dashboard = () => {
         value: currency
           ? formatMoney(todayAppointments.reduce((total, apt) => total + (apt.serviceSnapshot?.priceMinor || 0), 0), currency)
           : '—',
-        title: 'Valor reservado hoy',
-        subtext: `${completedToday.length} de ${todayAppointments.length} completadas`,
+        title: copy.todayValue,
+        subtext: copy.completedOf(completedToday.length, todayAppointments.length),
         type: 'neutral',
         icon: FiDollarSign
       }
     ];
-  }, [appointments, timezone, currency, activeStaff.length, staffList.length]);
+  }, [appointments, timezone, currency, activeStaff.length, staffList.length, copy]);
 
   return (
     <div className="hd-page">
@@ -212,29 +216,30 @@ const Dashboard = () => {
               <Logo />
               <Sparkle className="absolute -right-7 -top-2 w-6 h-6 text-marker" />
             </h1>
-            <p className="text-ink-soft mt-1">Administra tus citas y tu agenda</p>
+            <p className="text-ink-soft mt-1">{copy.tagline}</p>
           </div>
           <nav className="flex flex-wrap items-center sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
+            <LanguageSwitch className="mr-1" />
             <button
               onClick={() => setIsFeedbackOpen(true)}
               className="hd-btn hd-btn-secondary !px-3 !py-1.5 text-sm"
             >
               <FiMessageSquare className="w-4 h-4" aria-hidden="true" />
-              <span>Comentarios</span>
+              <span>{copy.feedback}</span>
             </button>
             <Link
               to="/settings"
               className="hd-btn hd-btn-secondary !px-3 !py-1.5 text-sm"
             >
               <FiSettings className="w-4 h-4" aria-hidden="true" />
-              <span>Configuración</span>
+              <span>{copy.settings}</span>
             </Link>
             <button
               onClick={() => signOut(auth)}
               className="hd-btn hd-btn-secondary !px-3 !py-1.5 text-sm"
             >
               <FiLogOut className="w-4 h-4" aria-hidden="true" />
-              <span>Salir</span>
+              <span>{copy.signOut}</span>
             </button>
           </nav>
         </header>
@@ -268,7 +273,7 @@ const Dashboard = () => {
                     <span className="text-2xl font-extrabold text-ink">{business.data ? metric.value : '—'}</span>
                   ) : (
                     <span className="block h-8 w-20 my-0.5 rounded-md bg-paper-deep animate-pulse motion-reduce:animate-none">
-                      <span className="sr-only">Cargando</span>
+                      <span className="sr-only">{t.common.loading}</span>
                     </span>
                   )}
                   <p className={`text-sm ${
@@ -293,7 +298,7 @@ const Dashboard = () => {
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
                 <h2 className="relative inline-block self-start">
                   <span className="hd-title text-4xl">
-                    {selectedDate ? capitalize(formatLocalDate(selectedLocalDate, { weekday: 'long', month: 'long', day: 'numeric' })) : 'Próximas citas'}
+                    {selectedDate ? capitalize(formatLocalDate(selectedLocalDate, { weekday: 'long', month: 'long', day: 'numeric' })) : copy.upcoming}
                   </span>
                   <Underline className="absolute -bottom-2 left-0 w-full h-3 text-sun" />
                 </h2>
@@ -303,7 +308,7 @@ const Dashboard = () => {
                       onClick={() => setSelectedDate(null)}
                       className="hd-btn hd-btn-secondary !px-4 !py-2 text-sm flex-1 sm:flex-none"
                     >
-                      Ver próximas
+                      {copy.showUpcoming}
                     </button>
                   )}
                   <button
@@ -311,7 +316,7 @@ const Dashboard = () => {
                     className="hd-btn hd-btn-secondary !px-4 !py-2 text-sm flex-1 sm:flex-none"
                   >
                     <FiCalendar className="w-4 h-4" aria-hidden="true" />
-                    Ver todas
+                    {copy.viewAll}
                   </button>
                   <button
                     onClick={() => {
@@ -323,7 +328,7 @@ const Dashboard = () => {
                     className="hd-btn !px-4 !py-2 text-sm flex-1 sm:flex-none"
                   >
                     <FiPlus className="w-4 h-4" aria-hidden="true" />
-                    Nueva cita
+                    {copy.newAppointment}
                   </button>
                 </div>
               </div>
@@ -335,7 +340,7 @@ const Dashboard = () => {
               ) : currentViewAppointments.length === 0 ? (
                 <div className="text-center py-8">
                   <Star className="mx-auto w-8 h-8 text-sun mb-2" />
-                  <p className="hd-title text-3xl text-ink">{selectedDate ? 'No hay citas para este día' : 'No hay próximas citas'}</p>
+                  <p className="hd-title text-3xl text-ink">{selectedDate ? copy.noneThisDay : copy.noneUpcoming}</p>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar" data-testid="day-list">
@@ -353,7 +358,7 @@ const Dashboard = () => {
                         <div className="min-w-0 break-words">
                           <h3 className="text-lg font-bold text-ink">{appointment.client?.name}</h3>
                           <p className="text-ink text-sm">
-                            {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} a las {formatTime(appointment.startsAt, timezone)}
+                            {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} {copy.at} {formatTime(appointment.startsAt, timezone)}
                           </p>
                           <p className="text-ink-soft text-sm">{appointment.serviceSnapshot?.name}</p>
                           <NotificationStatus notification={appointment.notification} onRetry={() => handleRetryEmail(appointment)} />
@@ -364,14 +369,14 @@ const Dashboard = () => {
                             {editingStatus === appointment.id ? (
                               <select
                                 autoFocus
-                                aria-label="Cambiar estado"
+                                aria-label={copy.changeStatus}
                                 className="hd-input !mt-0 !w-auto !py-1 text-xs"
                                 value=""
                                 onChange={(e) => handleStatusChange(appointment, e.target.value)}
                                 onBlur={() => setEditingStatus(null)}
                               >
-                                <option value="">{statusLabel(appointment.status)}</option>
-                                {statusActionsFor(appointment).map((option) => (
+                                <option value="">{statusLabel(appointment.status, t)}</option>
+                                {statusActionsFor(appointment, t).map((option) => (
                                   <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
                               </select>
@@ -379,16 +384,16 @@ const Dashboard = () => {
                               <button
                                 onClick={() => appointment.status === 'confirmed' && setEditingStatus(appointment.id)}
                                 className={`hd-badge ${statusClass(appointment.status)} ${appointment.status === 'confirmed' ? 'hover:opacity-80' : 'cursor-default'}`}
-                                title={appointment.status === 'confirmed' ? 'Cambiar estado' : undefined}
+                                title={appointment.status === 'confirmed' ? copy.changeStatus : undefined}
                               >
-                                {statusLabel(appointment.status)}
+                                {statusLabel(appointment.status, t)}
                               </button>
                             )}
                             <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
                               <button
                                 onClick={() => handleEditAppointment(appointment)}
                                 className="p-1.5 rounded-lg text-marker hover:bg-marker-light transition-colors"
-                                aria-label="Editar cita"
+                                aria-label={copy.edit}
                               >
                                 <FiEdit2 className="w-4 h-4" aria-hidden="true" />
                               </button>
@@ -396,7 +401,7 @@ const Dashboard = () => {
                                 <button
                                   onClick={() => setAppointmentToCancel(appointment)}
                                   className="p-1.5 rounded-lg text-ink-soft hover:text-coral hover:bg-coral-light transition-colors"
-                                  aria-label="Cancelar cita"
+                                  aria-label={copy.cancel}
                                 >
                                   <FiXCircle className="w-4 h-4" aria-hidden="true" />
                                 </button>
@@ -475,10 +480,10 @@ const Dashboard = () => {
                   className="hd-card mx-auto w-full max-w-sm p-6 font-sans text-ink"
                 >
                   <Dialog.Title className="hd-title text-3xl mb-3">
-                    Cancelar cita
+                    {copy.cancelTitle}
                   </Dialog.Title>
                   <Dialog.Description className="text-ink-soft mb-6">
-                    ¿Cancelar la cita de {appointmentToCancel.client?.name}? La hora queda libre para otros clientes.
+                    {copy.cancelText(appointmentToCancel.client?.name)}
                   </Dialog.Description>
 
                   <div className="flex flex-wrap justify-end gap-3">
@@ -486,13 +491,13 @@ const Dashboard = () => {
                       className={`hd-btn hd-btn-secondary !px-4 ${dialogFocus}`}
                       onClick={() => setAppointmentToCancel(null)}
                     >
-                      Mantenerla
+                      {copy.keep}
                     </button>
                     <button
                       className={`hd-btn !bg-coral !px-4 ${dialogFocus}`}
                       onClick={handleConfirmCancel}
                     >
-                      Cancelar cita
+                      {copy.cancelTitle}
                     </button>
                   </div>
                 </Dialog.Panel>
