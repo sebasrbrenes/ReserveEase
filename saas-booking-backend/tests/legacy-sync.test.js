@@ -140,4 +140,11 @@ describe.skipIf(!hasEmulators)('POST /api/v1/me/business/sync', () => {
     expect(page.body.data).toMatchObject({ name: 'Otro nombre' });
     expect(page.body.data.services).toHaveLength(1);
   });
+
+  it('answers several syncs at once, as when a page loads while another is still saving', async () => {
+    const started = Date.now();
+    const results = await Promise.all([sync(), sync(), sync()]);
+    expect(results.map((r) => r.status)).toEqual([200, 200, 200]);
+    expect(Date.now() - started).toBeLessThan(1500);
+  });
 });
