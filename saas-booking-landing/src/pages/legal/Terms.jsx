@@ -12,14 +12,16 @@ const Terms = () => (
       </p>
     </Section>
 
-    <Section title="2. Acceso anticipado y precio">
+    <Section title="2. Precio y suscripción">
       <p>
-        ReserveEase está en acceso anticipado y hoy es gratis. No pedimos datos de pago. Si en el futuro hay un
-        plan de pago, lo avisaremos a los negocios con al menos 30 días de anticipación y nunca cobraremos sin
-        que lo acepten de forma expresa.
+        ReserveEase tiene un solo plan de $15 USD al mes. Lo contratas desde la configuración de tu cuenta y lo
+        cobra Paddle.com, nuestro revendedor en línea y comerciante registrado (Merchant of Record), que procesa
+        el pago y emite la factura; al pagar también aceptas sus términos para compradores. La suscripción se renueva cada mes hasta que la canceles. Si la cancelas,
+        sigues teniendo acceso hasta el final del período ya pagado. Nunca cobramos sin que contrates el plan de
+        forma expresa.
       </p>
       <p>
-        Durante el acceso anticipado el servicio puede cambiar, tener errores o interrupciones. Lo mejoramos
+        El servicio puede cambiar, tener errores o interrupciones. Lo mejoramos
         continuamente, pero no garantizamos que esté disponible en todo momento.
       </p>
     </Section>

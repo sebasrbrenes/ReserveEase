@@ -23,8 +23,8 @@ const NOTES = [
     a: 'Solo tú, después de entrar con un correo verificado. Cada negocio ve solo sus citas, y tus clientes solo ven horas libres, nunca las reservas de otras personas.',
   },
   {
-    q: '¿Y si después cobran?',
-    a: 'Te avisamos el precio antes de que se aplique y decides si te quedas. Mientras dure el acceso anticipado, es gratis.',
+    q: '¿Cómo se paga?',
+    a: 'Son $15 USD al mes con tarjeta, a través de Paddle, nuestro proveedor de pagos. Desde la configuración de tu cuenta ves tu próximo cobro, cambias la tarjeta o cancelas; si cancelas, sigues teniendo acceso hasta el final del mes ya pagado.',
   },
 ];
 

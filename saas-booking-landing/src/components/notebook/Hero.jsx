@@ -35,10 +35,10 @@ const Hero = () => {
             libres. Tú lo ves todo en tu panel, sin contestar mensajes ni tachar la libreta.
           </motion.p>
           <motion.div {...rise(0.26)} className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
-            <a href={`${APP_URL}/signup`} className="hd-btn px-7 py-3 text-lg">Crear mi agenda gratis</a>
+            <a href={`${APP_URL}/signup`} className="hd-btn px-7 py-3 text-lg">Crear mi agenda</a>
             <a href="#la-carrera" className="hd-link">Mira la carrera por las 10:30</a>
           </motion.div>
-          <motion.p {...rise(0.32)} className="mt-4 hd-help">Gratis durante el acceso anticipado. Sin tarjeta.</motion.p>
+          <motion.p {...rise(0.32)} className="mt-4 hd-help">$15 USD al mes. Cancelas cuando quieras.</motion.p>
         </div>
 
         <motion.div

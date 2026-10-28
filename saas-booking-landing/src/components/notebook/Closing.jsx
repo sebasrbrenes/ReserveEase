@@ -14,7 +14,7 @@ const Closing = () => (
           Agrega tus servicios, tu equipo y tu horario. En unos minutos tienes tu enlace listo para Instagram,
           WhatsApp o Google.
         </p>
-        <a href={`${APP_URL}/signup`} className="hd-btn mt-8 px-7 py-3 text-lg">Crear mi agenda gratis</a>
+        <a href={`${APP_URL}/signup`} className="hd-btn mt-8 px-7 py-3 text-lg">Crear mi agenda</a>
       </div>
       <LogoMark className="h-40 w-40 md:h-56 md:w-56 -rotate-6" />
     </div>

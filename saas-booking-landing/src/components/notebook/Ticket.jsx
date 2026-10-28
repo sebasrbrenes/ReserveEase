@@ -23,13 +23,13 @@ const Ticket = () => {
         <div>
           <p className="font-hand text-2xl text-marker">cierre de caja</p>
           <h2 id="price-title" className="nb-display mt-2 text-5xl font-semibold sm:text-6xl md:text-7xl">
-            ¿Cuánto cuesta? <em className="font-medium"><Highlight>Nada</Highlight></em>, por ahora.
+            ¿Cuánto cuesta? <em className="font-medium"><Highlight>$15</Highlight></em> al mes.
           </h2>
           <p className="mt-6 max-w-xl text-lg text-ink-soft">
-            ReserveEase está en acceso anticipado. Mientras tanto es gratis y no te pedimos tarjeta. Antes de que
-            empiece cualquier plan de pago, te avisamos el precio y decides si te quedas.
+            Un solo plan, con todo lo que ves en el recibo. Se cobra en dólares cada mes a través de Paddle, nuestro
+            proveedor de pagos, y cancelas cuando quieras desde la configuración de tu cuenta.
           </p>
-          <a href={`${APP_URL}/signup`} className="hd-btn mt-8 px-7 py-3 text-lg">Crear mi agenda gratis</a>
+          <a href={`${APP_URL}/signup`} className="hd-btn mt-8 px-7 py-3 text-lg">Suscribirme por $15 al mes</a>
         </div>
 
         <div className="relative mx-auto w-full max-w-sm">
@@ -49,7 +49,7 @@ const Ticket = () => {
             >
               <div className="bg-white px-6 pb-6 pt-8 font-mono text-sm">
                 <p className="text-center font-bold tracking-[0.2em]">RESERVEEASE</p>
-                <p className="text-center text-xs text-ink-soft">Acceso anticipado · {new Date().getFullYear()}</p>
+                <p className="text-center text-xs text-ink-soft">Plan mensual · {new Date().getFullYear()}</p>
                 <ul className="mt-5 space-y-2 border-y border-dashed border-ink/40 py-4">
                   {LINES.map(([item, state]) => (
                     <li key={item} className="flex items-baseline gap-2">
@@ -61,13 +61,13 @@ const Ticket = () => {
                 </ul>
                 <p className="mt-4 flex items-baseline justify-between text-base font-bold">
                   <span>TOTAL</span>
-                  <span className="font-display text-4xl">₡0</span>
+                  <span className="font-display text-4xl">$15</span>
                 </p>
-                <p className="mt-1 text-right text-xs text-ink-soft">Sin tarjeta</p>
-                <p className="mt-6 text-center text-xs text-ink-soft">¡Gracias por llegar temprano!</p>
+                <p className="mt-1 text-right text-xs text-ink-soft">USD al mes</p>
+                <p className="mt-6 text-center text-xs text-ink-soft">¡Gracias por tu visita!</p>
               </div>
               <div className="h-3 bg-white" style={{ mask: zigzag, WebkitMask: zigzag }} />
-              <span className="nb-stamp absolute bottom-16 left-6 rotate-[-12deg] bg-white/60 px-3 py-1 text-base">Gratis</span>
+              <span className="nb-stamp absolute bottom-16 left-6 rotate-[-12deg] bg-white/60 px-3 py-1 text-base">Mensual</span>
             </motion.div>
           </motion.div>
         </div>
