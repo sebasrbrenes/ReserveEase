@@ -1,10 +1,15 @@
 import { CONTACT_EMAIL } from '../../config';
 import { LegalPage, List, Section } from '../../components/common/LegalPage';
 
-// Keep in step with PRIVACY_NOTICE_VERSION in saas-booking-app (PublicBookingForm.jsx):
-// change both when this text changes in substance.
+// Keep in step with PRIVACY_NOTICE_VERSION in saas-booking-app (PublicBookingForm.jsx)
+// and with the English version (PrivacyPolicyEn.jsx): change all three when this text
+// changes in substance.
 const PrivacyPolicy = () => (
-  <LegalPage title="Aviso de privacidad" updated="28 de octubre de 2026 (versión 2026-10)">
+  <LegalPage
+    title="Aviso de privacidad"
+    updated="28 de octubre de 2026 (versión 2026-10)"
+    other={{ to: '/privacy-policy/en', lang: 'en', label: 'Read in English' }}
+  >
     <Section title="En pocas palabras">
       <p>
         ReserveEase es una agenda en línea para negocios que trabajan con citas. Guardamos solo lo necesario
