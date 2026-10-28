@@ -1,9 +1,11 @@
 import { expect } from '@playwright/test';
 
 // A date picked in the react-datepicker field, typed as "12/10/2026".
-export const pickDate = async (page, date) => {
+export const pickDate = async (page, date, language = 'es') => {
   const pad = (n) => String(n).padStart(2, '0');
-  const label = `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+  const label = language === 'en'
+    ? `${date.toLocaleString('en-US', { month: 'short' })} ${date.getDate()}, ${date.getFullYear()}`
+    : `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
   const input = page.locator('.react-datepicker__input-container input').first();
   await input.fill(label);
   await input.press('Escape');

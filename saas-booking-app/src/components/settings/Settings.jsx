@@ -4,6 +4,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { FiArrowLeft, FiEdit2, FiTrash2, FiLink, FiCopy } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { Star, Underline } from '../ui/Doodles';
+import { CLIENT_LANGUAGES, clientLanguage } from '../../i18n/clientCopy';
 
 // Why the booking page is not published yet (codes from the API).
 const PUBLISH_PROBLEMS = {
@@ -74,6 +75,7 @@ const Settings = () => {
     timeInterval: settings?.business?.timeInterval || 30,
     timezone: settings?.business?.timezone || '',
     currency: settings?.business?.currency || 'USD',
+    language: clientLanguage(settings?.business?.language),
   });
 
   useEffect(() => {
@@ -86,6 +88,7 @@ const Settings = () => {
         timeInterval: settings.business.timeInterval || 30,
         timezone: settings.business.timezone || '',
         currency: settings.business.currency || 'USD',
+        language: clientLanguage(settings.business.language),
       });
     }
   }, [settings?.business]);
@@ -151,8 +154,9 @@ const Settings = () => {
     timeInterval: settings?.business?.timeInterval || 30,
     timezone: settings?.business?.timezone || '',
     currency: settings?.business?.currency || 'USD',
+    language: clientLanguage(settings?.business?.language),
   };
-  const businessFormDirty = ['name', 'timeInterval', 'timezone', 'currency']
+  const businessFormDirty = ['name', 'timeInterval', 'timezone', 'currency', 'language']
     .some((key) => String(businessForm[key]) !== String(savedBusinessForm[key]));
   const [businessNameError, setBusinessNameError] = useState('');
   const [savingBusiness, setSavingBusiness] = useState(false);
@@ -266,6 +270,7 @@ const Settings = () => {
           timeInterval: Number(businessForm.timeInterval) || 30,
           timezone: businessForm.timezone,
           currency: businessForm.currency,
+          language: businessForm.language,
         },
       },
       { success: 'Datos del negocio guardados', failure: 'No pudimos guardar los datos del negocio.' },
@@ -473,6 +478,21 @@ const Settings = () => {
                   {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="language" className="hd-label">Idioma de la página de reservas</label>
+              <select
+                name="language"
+                id="language"
+                value={businessForm.language}
+                onChange={handleBusinessSettingsChange}
+                className="hd-input"
+                aria-describedby="language-help"
+              >
+                {CLIENT_LANGUAGES.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+              </select>
+              <p id="language-help" className="hd-help mt-1">Tus clientes ven la página de reservas, la confirmación y los correos en este idioma.</p>
             </div>
 
             <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">

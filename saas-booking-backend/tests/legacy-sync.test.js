@@ -49,6 +49,16 @@ describe('legacyToV2', () => {
     expect(JSON.stringify(v2.publicBusiness)).not.toContain('uid-1');
   });
 
+  it('uses Spanish for the client pages unless the business picks English', () => {
+    const withLanguage = (language) => legacyToV2({
+      uid: 'uid-1', settings: { ...settings, business: { ...settings.business, language } },
+    });
+    expect(legacyToV2({ uid: 'uid-1', settings }).business.language).toBe('es');
+    expect(withLanguage('en').business.language).toBe('en');
+    expect(withLanguage('en').publicBusiness.language).toBe('en');
+    expect(withLanguage('fr').business.language).toBe('es');
+  });
+
   it('keeps an existing slug so shared links survive a rename', () => {
     const v2 = legacyToV2({ uid: 'uid-1', settings, existingSlug: 'mi-enlace-abc123' });
     expect(v2.business.slug).toBe('mi-enlace-abc123');

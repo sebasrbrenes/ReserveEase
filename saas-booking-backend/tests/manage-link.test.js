@@ -73,7 +73,7 @@ describe.skipIf(!hasEmulator)('client manage link', () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({
       status: 'confirmed', startsAt: local('09:00'), serviceName: 'Corte', staffName: 'Ana',
-      businessName: 'Barbería Link', businessSlug: SLUG, version: 1, canChange: true,
+      businessName: 'Barbería Link', businessSlug: SLUG, version: 1, canChange: true, language: 'es',
     });
     expect(res.body.data).not.toHaveProperty('notes');
     expect(res.body.data).not.toHaveProperty('client');
@@ -135,5 +135,19 @@ describe.skipIf(!hasEmulator)('client manage link', () => {
       expect(email.html).toContain(`href="${manageUrl}"`);
     }
     expect(renderEmail('cancellation_email', { appointment, businessName: 'B', manageUrl }).text).not.toContain(manageUrl);
+  });
+
+  it('writes the emails in the business language, Spanish by default', () => {
+    const appointment = {
+      id: 'a1', client: { name: 'Cliente', email: 'c@example.com' }, businessTimezone: TZ,
+      startsAt: { toDate: () => new Date(local('09:00')) }, serviceSnapshot: { name: 'Corte' }, staffSnapshot: { displayName: 'Ana' },
+    };
+    const es = renderEmail('confirmation_email', { appointment, businessName: 'B' });
+    expect(es.subject).toBe('Tu cita con B está confirmada');
+    expect(es.text).toMatch(/a las 9:00\sa\.\sm\./);
+    const en = renderEmail('confirmation_email', { appointment, businessName: 'B', language: 'en' });
+    expect(en.subject).toBe('Your appointment with B is confirmed');
+    expect(en.text).toMatch(/Hello Cliente,/);
+    expect(en.text).toMatch(/at 9:00\sAM/);
   });
 });

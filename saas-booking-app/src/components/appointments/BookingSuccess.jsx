@@ -1,11 +1,15 @@
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { formatLocalDate, formatTime } from '../../utils/datetime';
+import { formatLocalDate, formatTime, localeFor } from '../../utils/datetime';
+import { clientCopy, clientLanguage } from '../../i18n/clientCopy';
 import { Scribble, Sparkle } from '../ui/Doodles';
 
 export default function BookingSuccess() {
   const { slug } = useParams();
   const { state } = useLocation();
   const booking = state?.booking;
+  const language = clientLanguage(state?.language);
+  const t = clientCopy(language);
+  const locale = localeFor(language);
   const localDate = booking
     ? new Intl.DateTimeFormat('en-CA', { timeZone: booking.timezone }).format(new Date(booking.startsAt))
     : null;
@@ -21,34 +25,34 @@ export default function BookingSuccess() {
         </div>
 
         <h1 className="relative inline-block mb-6">
-          <span className="hd-title text-4xl">Tu cita está confirmada</span>
+          <span className="hd-title text-4xl">{t.confirmed}</span>
         </h1>
         {booking ? (
           <div className="mb-8 space-y-1">
-            <p className="font-bold text-lg">{state.serviceName} con {state.staffName}</p>
+            <p className="font-bold text-lg">{t.serviceWith(state.serviceName, state.staffName)}</p>
             <p className="relative inline-block px-7 py-4 font-semibold">
               <Scribble className="absolute inset-0 w-full h-full text-sun" />
-              <span className="relative">{formatLocalDate(localDate)} a las {formatTime(booking.startsAt, booking.timezone)}</span>
+              <span className="relative">{formatLocalDate(localDate, undefined, locale)} {t.at} {formatTime(booking.startsAt, booking.timezone, locale)}</span>
             </p>
             <p className="text-ink-soft">{state.businessName}</p>
             <p className="text-sm pt-2">
-              Referencia: <span className="font-mono font-bold">{booking.bookingReference}</span>
+              {t.reference}: <span className="font-mono font-bold">{booking.bookingReference}</span>
             </p>
             <p className="hd-help pt-2">
-              Tu reserva quedó guardada. Guarda la referencia por si necesitas contactar al negocio.
+              {t.saved}
             </p>
             {booking.managePath && (
               <p className="pt-2">
-                <Link to={booking.managePath} className="hd-link">Cambiar o cancelar esta cita</Link>
+                <Link to={booking.managePath} className="hd-link">{t.changeOrCancel}</Link>
               </p>
             )}
           </div>
         ) : (
-          <p className="text-ink-soft mb-8">Gracias por tu reserva.</p>
+          <p className="text-ink-soft mb-8">{t.thanks}</p>
         )}
 
         <Link to={`/book/${slug}`} className="hd-btn hd-btn-secondary">
-          Reservar otra cita
+          {t.bookAnother}
         </Link>
       </div>
     </div>

@@ -13,7 +13,7 @@ import { retryFailedJobs } from '../notifications/worker.js';
 import { requireAuth, requireMember } from './auth.js';
 import { createRateLimiter } from '../../middleware/rateLimit.js';
 import {
-  idSchema, phoneE164Schema, publicBookingRequestSchema, slugSchema,
+  idSchema, languageSchema, phoneE164Schema, publicBookingRequestSchema, slugSchema,
 } from '../domain/schemas.js';
 import { shiftLocalDate } from '../domain/time.js';
 import { getBookingContext, getBusyIntervals, getPublishedBusinessBySlug } from '../repositories/businesses.js';
@@ -174,6 +174,7 @@ const toClientView = ({ apt, business, noticeMinutes }, nowMs = Date.now()) => {
     clientName: apt.client?.name ?? '',
     businessName: business.name ?? '',
     businessSlug: business.status === 'published' ? business.slug ?? null : null,
+    language: languageSchema.parse(business.language),
     version: apt.version,
     changeableUntil: new Date(changeableUntilMs).toISOString(),
     canChange: apt.status === 'confirmed' && nowMs <= changeableUntilMs,

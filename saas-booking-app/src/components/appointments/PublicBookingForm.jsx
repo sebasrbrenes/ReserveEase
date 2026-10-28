@@ -4,8 +4,9 @@ import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { createPublicBooking, errorMessage, fieldErrors, getPublicAvailability, getPublicBusiness } from '../../services/api';
-import { COUNTRY_CODES, defaultCountryCode, isE164, toE164 } from '../../utils/countryCodes';
-import { formatLocalDate, formatMoney, formatTime, fromLocalDateString, toLocalDateString, todayIn } from '../../utils/datetime';
+import { countryOptions, defaultCountryCode, isE164, toE164 } from '../../utils/countryCodes';
+import { formatLocalDate, formatMoney, formatTime, fromLocalDateString, localeFor, toLocalDateString, todayIn } from '../../utils/datetime';
+import { clientCopy, clientLanguage } from '../../i18n/clientCopy';
 import { Logo, Star, Underline } from '../ui/Doodles';
 import { PRIVACY_URL } from '../../utils/links';
 
@@ -61,6 +62,10 @@ export default function PublicBookingForm() {
   // One key per booking attempt: a retry after a network error reuses it, so
   // the server returns the same booking instead of creating a second one.
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  // The business picks the language of this page (Spanish until it loads).
+  const language = clientLanguage(business?.language);
+  const t = clientCopy(language);
+  const locale = localeFor(language);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,10 +100,10 @@ export default function PublicBookingForm() {
       .catch((error) => {
         if (cancelled) return;
         setAvailability({ loading: false, status: null, slots: [] });
-        toast.error(errorMessage(error));
+        toast.error(errorMessage(error, language));
       });
     return () => { cancelled = true; };
-  }, [slug, form.serviceId, form.staffId, form.date, refreshSlots]);
+  }, [language, slug, form.serviceId, form.staffId, form.date, refreshSlots]);
 
   const update = (changes) => {
     setForm((prev) => ({ ...prev, ...changes }));
@@ -125,7 +130,7 @@ export default function PublicBookingForm() {
     if (submitting || !form.startsAt) return;
     const phone = toE164(countryCode, form.phone);
     if (phone && !isE164(phone)) {
-      showErrors({ phone: `Este número parece muy corto o muy largo. Escríbelo completo, por ejemplo ${countryCode} 8888 7777.` });
+      showErrors({ phone: t.phoneLength(countryCode) });
       return;
     }
     setErrors({});
@@ -143,7 +148,7 @@ export default function PublicBookingForm() {
       const service = business.services.find((s) => s.id === form.serviceId);
       const staff = business.staff.find((s) => s.id === form.staffId);
       navigate(`/booking/success/${slug}`, {
-        state: { booking, businessName: business.name, serviceName: service?.name, staffName: staff?.displayName },
+        state: { booking, businessName: business.name, serviceName: service?.name, staffName: staff?.displayName, language },
       });
     } catch (error) {
       // The server answered: this attempt is settled, the next one is new.
@@ -153,10 +158,10 @@ export default function PublicBookingForm() {
         setRefreshSlots((n) => n + 1);
       }
       const byField = Object.fromEntries(
-        Object.entries(fieldErrors(error)).map(([path, message]) => [FIELD_BY_PATH[path], message])
+        Object.entries(fieldErrors(error, language)).map(([path, message]) => [FIELD_BY_PATH[path], message])
       );
       if (Object.keys(byField).length) showErrors(byField);
-      toast.error(errorMessage(error));
+      toast.error(errorMessage(error, language));
     } finally {
       setSubmitting(false);
     }
@@ -166,7 +171,7 @@ export default function PublicBookingForm() {
     return (
       <div className="hd-page flex flex-col items-center justify-center gap-4" role="status">
         <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin motion-reduce:animate-none" aria-hidden="true"></div>
-        <p className="font-hand text-3xl">Cargando...</p>
+        <p className="font-hand text-3xl">{t.loading}</p>
       </div>
     );
   }
@@ -175,20 +180,16 @@ export default function PublicBookingForm() {
     return (
       <div className="hd-page flex flex-col items-center justify-center p-4">
         <div className="hd-card max-w-md p-8 text-center">
-          <h1 className="hd-title text-4xl mb-3">No encontramos esta página de reservas</h1>
+          <h1 className="hd-title text-4xl mb-3">{t.notFoundTitle}</h1>
           <p className="text-ink-soft">
-            Este enlace no está activo. Revisa la dirección o pídele al negocio su enlace de reservas.
+            {t.notFoundText}
           </p>
         </div>
       </div>
     );
   }
 
-  const noSlotsMessage = {
-    closed: 'Cerrado este día. Elige otra fecha.',
-    outside_window: 'Todavía no se puede reservar para esta fecha.',
-    open: 'No quedan horas libres este día. Elige otra fecha u otra persona.',
-  }[availability.status];
+  const noSlotsMessage = t.noSlots[availability.status];
 
   const service = business.services.find((s) => s.id === form.serviceId);
   const staff = business.staff.find((s) => s.id === form.staffId);
@@ -198,7 +199,7 @@ export default function PublicBookingForm() {
     <div className="hd-page py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <header className="mb-8 text-center sm:text-left">
-          <p className="text-ink-soft mb-1">Reserva tu cita con</p>
+          <p className="text-ink-soft mb-1">{t.bookWith}</p>
           <h1 className="relative inline-block">
             <span className="hd-title text-5xl sm:text-6xl">{business.name}</span>
             <Underline className="absolute -bottom-3 left-0 w-full h-4 text-sun" />
@@ -208,22 +209,22 @@ export default function PublicBookingForm() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
           <form id="booking-form" onSubmit={handleSubmit} className="space-y-6">
-            <Step number={1} title="¿Qué necesitas?">
+            <Step number={1} title={t.stepWhat}>
               <div>
-                <label htmlFor="serviceId" className="hd-label">Servicio *</label>
+                <label htmlFor="serviceId" className="hd-label">{t.service} *</label>
                 <select id="serviceId" name="serviceId" value={form.serviceId} onChange={handleChange} className="hd-input" required>
-                  <option value="">Elige un servicio</option>
+                  <option value="">{t.chooseService}</option>
                   {business.services.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name} · {s.durationMinutes} min · {formatMoney(s.priceMinor, s.currency)}
+                      {s.name} · {s.durationMinutes} min · {formatMoney(s.priceMinor, s.currency, locale)}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label htmlFor="staffId" className="hd-label">Te atiende *</label>
+                <label htmlFor="staffId" className="hd-label">{t.staff} *</label>
                 <select id="staffId" name="staffId" value={form.staffId} onChange={handleChange} className="hd-input" required disabled={!form.serviceId}>
-                  <option value="">{form.serviceId ? 'Elige quién te atiende' : 'Primero elige un servicio'}</option>
+                  <option value="">{form.serviceId ? t.chooseStaff : t.chooseServiceFirst}</option>
                   {availableStaff.map((s) => (
                     <option key={s.id} value={s.id}>{s.displayName}</option>
                   ))}
@@ -231,16 +232,17 @@ export default function PublicBookingForm() {
               </div>
             </Step>
 
-            <Step number={2} title="¿Cuándo?">
+            <Step number={2} title={t.stepWhen}>
               <div>
-                <label htmlFor="date" className="hd-label">Fecha *</label>
+                <label htmlFor="date" className="hd-label">{t.date} *</label>
                 <DatePicker
                   id="date"
                   selected={form.date ? fromLocalDateString(form.date) : null}
                   onChange={(date) => date && update({ date: toLocalDateString(date), startsAt: '' })}
                   minDate={fromLocalDateString(todayIn(business.timezone))}
                   className="hd-input"
-                  dateFormat="dd/MM/yyyy"
+                  locale={language}
+                  dateFormat={language === 'en' ? 'MMM d, yyyy' : 'dd/MM/yyyy'}
                   wrapperClassName="w-full"
                   required
                 />
@@ -248,12 +250,12 @@ export default function PublicBookingForm() {
 
               <fieldset>
                 <legend className="hd-label">
-                  Hora * <span className="font-normal text-ink-soft">({timezone})</span>
+                  {t.time} * <span className="font-normal text-ink-soft">({timezone})</span>
                 </legend>
                 {!form.staffId ? (
-                  <p className="mt-2 hd-help">Elige el servicio y quién te atiende para ver las horas libres.</p>
+                  <p className="mt-2 hd-help">{t.pickServiceAndStaff}</p>
                 ) : availability.loading ? (
-                  <p className="mt-2 hd-help" role="status">Buscando horas libres...</p>
+                  <p className="mt-2 hd-help" role="status">{t.lookingForSlots}</p>
                 ) : availability.slots.length === 0 ? (
                   <p className="mt-2 hd-help">{noSlotsMessage}</p>
                 ) : (
@@ -266,7 +268,7 @@ export default function PublicBookingForm() {
                         aria-pressed={form.startsAt === slot.startsAt}
                         className="hd-choice"
                       >
-                        {formatTime(slot.startsAt, business.timezone)}
+                        {formatTime(slot.startsAt, business.timezone, locale)}
                       </button>
                     ))}
                   </div>
@@ -274,9 +276,9 @@ export default function PublicBookingForm() {
               </fieldset>
             </Step>
 
-            <Step number={3} title="Tus datos">
+            <Step number={3} title={t.stepAbout}>
               <div>
-                <label htmlFor="clientName" className="hd-label">Nombre completo *</label>
+                <label htmlFor="clientName" className="hd-label">{t.fullName} *</label>
                 <input
                   id="clientName" ref={fieldRefs.clientName} type="text" name="clientName" value={form.clientName} onChange={handleChange}
                   className="hd-input" maxLength={100} autoComplete="name" required
@@ -286,7 +288,7 @@ export default function PublicBookingForm() {
               </div>
 
               <div>
-                <label htmlFor="email" className="hd-label">Correo electrónico *</label>
+                <label htmlFor="email" className="hd-label">{t.email} *</label>
                 <input
                   id="email" ref={fieldRefs.email} type="email" name="email" value={form.email} onChange={handleChange}
                   className="hd-input" maxLength={200} autoComplete="email" required
@@ -296,10 +298,10 @@ export default function PublicBookingForm() {
               </div>
 
               <div>
-                <label htmlFor="phone" className="hd-label">Teléfono</label>
+                <label htmlFor="phone" className="hd-label">{t.phone}</label>
                 <div className="grid grid-cols-3 gap-2">
                   <select
-                    aria-label="Código de país"
+                    aria-label={t.countryCode}
                     value={countryCode}
                     onChange={(e) => {
                       setCountryCode(e.target.value);
@@ -307,7 +309,7 @@ export default function PublicBookingForm() {
                     }}
                     className="hd-input"
                   >
-                    {COUNTRY_CODES.map((country) => (
+                    {countryOptions(language).map((country) => (
                       <option key={country.code} value={country.code}>{country.name} ({country.code})</option>
                     ))}
                   </select>
@@ -327,11 +329,11 @@ export default function PublicBookingForm() {
                   />
                 </div>
                 <FieldError id="phone-error" message={errors.phone} />
-                {!errors.phone && <p id="phone-help" className="mt-1 hd-help">Opcional. Elige el país y escribe el número sin el código.</p>}
+                {!errors.phone && <p id="phone-help" className="mt-1 hd-help">{t.phoneHelp}</p>}
               </div>
 
               <div>
-                <label htmlFor="notes" className="hd-label">Notas</label>
+                <label htmlFor="notes" className="hd-label">{t.notes}</label>
                 <textarea
                   id="notes" ref={fieldRefs.notes} name="notes" value={form.notes} onChange={handleChange} rows="3" maxLength={500} className="hd-input"
                   aria-invalid={Boolean(errors.notes)} aria-describedby={errors.notes ? 'notes-error' : undefined}
@@ -342,30 +344,30 @@ export default function PublicBookingForm() {
           </form>
 
           <aside className="hd-card p-5 sm:p-6 lg:sticky lg:top-6" aria-labelledby="summary-title">
-            <h2 id="summary-title" className="hd-title text-3xl mb-3">Tu reserva</h2>
+            <h2 id="summary-title" className="hd-title text-3xl mb-3">{t.summary}</h2>
             <dl className="text-sm mb-5">
-              <SummaryRow label="Servicio" value={service?.name} />
-              <SummaryRow label="Duración" value={service && `${service.durationMinutes} min`} />
-              <SummaryRow label="Precio" value={service && formatMoney(service.priceMinor, service.currency)} />
-              <SummaryRow label="Con" value={staff?.displayName} />
-              <SummaryRow label="Fecha" value={form.date && formatLocalDate(form.date)} />
-              <SummaryRow label="Hora" value={form.startsAt && `${formatTime(form.startsAt, business.timezone)} (${timezone})`} />
+              <SummaryRow label={t.service} value={service?.name} />
+              <SummaryRow label={t.duration} value={service && `${service.durationMinutes} min`} />
+              <SummaryRow label={t.price} value={service && formatMoney(service.priceMinor, service.currency, locale)} />
+              <SummaryRow label={t.with} value={staff?.displayName} />
+              <SummaryRow label={t.date} value={form.date && formatLocalDate(form.date, undefined, locale)} />
+              <SummaryRow label={t.time} value={form.startsAt && `${formatTime(form.startsAt, business.timezone, locale)} (${timezone})`} />
             </dl>
 
             <button type="submit" form="booking-form" disabled={submitting || !form.startsAt} className="hd-btn w-full text-lg">
-              {submitting ? 'Reservando...' : 'Reservar cita'}
+              {submitting ? t.booking : t.book}
             </button>
-            {!form.startsAt && <p className="mt-2 hd-help text-center">Elige una hora para reservar.</p>}
+            {!form.startsAt && <p className="mt-2 hd-help text-center">{t.pickTime}</p>}
 
             <p className="mt-4 text-xs text-ink-soft">
-              {business.name} usa tu nombre, correo y teléfono solo para gestionar esta cita y avisarte sobre ella.{' '}
-              <a href={PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">Aviso de privacidad</a>
+              {t.privacyUse(business.name)}{' '}
+              <a href={PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">{t.privacyNotice}</a>
             </p>
           </aside>
         </div>
 
         <footer className="mt-10 flex justify-center opacity-70">
-          <span className="text-xs text-ink-soft mr-2 self-center">Reservas con</span>
+          <span className="text-xs text-ink-soft mr-2 self-center">{t.bookingsBy}</span>
           <Logo className="scale-75 origin-left" />
         </footer>
       </div>

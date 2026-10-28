@@ -88,39 +88,71 @@ export const cancelAppointment = (businessId, id, body) =>
 export const transitionAppointment = (businessId, id, body) =>
   request('POST', apt(businessId, id, '/transition'), { body, signedIn: true });
 
-// What to tell the person about each field the API can reject.
+// What to tell the person about each field the API can reject, by language.
+// The dashboard is in Spanish; the client pages follow business.language.
 const FIELD_MESSAGES = {
-  'client.name': 'Escribe el nombre.',
-  'client.email': 'Escribe un correo válido, por ejemplo nombre@ejemplo.com.',
-  'client.phoneE164': 'Revisa el teléfono: escríbelo con el código de país, por ejemplo +506 8888 7777.',
-  notes: 'Las notas pueden tener hasta 500 caracteres.',
+  es: {
+    'client.name': 'Escribe el nombre.',
+    'client.email': 'Escribe un correo válido, por ejemplo nombre@ejemplo.com.',
+    'client.phoneE164': 'Revisa el teléfono: escríbelo con el código de país, por ejemplo +506 8888 7777.',
+    notes: 'Las notas pueden tener hasta 500 caracteres.',
+  },
+  en: {
+    'client.name': 'Write your name.',
+    'client.email': 'Write a valid email, for example name@example.com.',
+    'client.phoneE164': 'Check the phone number: write it with its country code, for example +506 8888 7777.',
+    notes: 'Notes can be up to 500 characters.',
+  },
 };
 
+const ERROR_MESSAGES = {
+  es: {
+    INVALID_INPUT: 'Algunos datos no son válidos. Revisa el formulario e inténtalo de nuevo.',
+    SLOT_UNAVAILABLE: 'Alguien acaba de tomar esa hora. Elige otra.',
+    SLOT_NOT_OFFERED: 'Esa hora ya no está disponible. Elige otra.',
+    VERSION_CONFLICT: 'Esta cita cambió en otro lugar. Actualizamos los datos; inténtalo de nuevo.',
+    TOO_EARLY: 'Esto solo se puede hacer cuando la cita ya empezó.',
+    INVALID_TRANSITION: 'Esta cita ya no se puede cambiar de esa forma.',
+    TOO_LATE_TO_CHANGE: 'Ya es tarde para cambiar esta cita en línea. Contacta al negocio.',
+    BUSINESS_NOT_FOUND: 'Esta página de reservas no está disponible.',
+    EMAIL_NOT_VERIFIED: 'Verifica tu correo para continuar.',
+    RATE_LIMITED: 'Demasiados intentos. Espera un momento e inténtalo de nuevo.',
+    NETWORK: 'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+    DEFAULT: 'Algo salió mal. Inténtalo de nuevo.',
+  },
+  en: {
+    INVALID_INPUT: 'Some details are not valid. Check the form and try again.',
+    SLOT_UNAVAILABLE: 'That time was just taken. Please choose another one.',
+    SLOT_NOT_OFFERED: 'That time is no longer available. Please choose another one.',
+    VERSION_CONFLICT: 'This appointment was changed elsewhere. It has been refreshed; try again.',
+    TOO_EARLY: 'This can only be done once the appointment has started.',
+    INVALID_TRANSITION: 'This appointment can no longer be changed that way.',
+    TOO_LATE_TO_CHANGE: 'It is too late to change this appointment online. Please contact the business.',
+    BUSINESS_NOT_FOUND: 'This booking page is not available.',
+    EMAIL_NOT_VERIFIED: 'Verify your email to continue.',
+    RATE_LIMITED: 'Too many attempts. Please wait a moment and try again.',
+    NETWORK: 'Could not reach the server. Check your connection and try again.',
+    DEFAULT: 'Something went wrong. Please try again.',
+  },
+};
+
+const messagesFor = (table, language) => table[language] || table.es;
+
 // The API's field errors as { path: message } for the person to read.
-export const fieldErrors = (error) => Object.fromEntries(
+export const fieldErrors = (error, language = 'es') => Object.fromEntries(
   (error?.code === 'INVALID_INPUT' ? error.fields || [] : [])
-    .map(({ path }) => [path, FIELD_MESSAGES[path]])
+    .map(({ path }) => [path, messagesFor(FIELD_MESSAGES, language)[path]])
     .filter(([, message]) => message)
 );
 
 // Messages for the error codes a person can act on.
-export const errorMessage = (error) => {
-  switch (error?.code) {
-    case 'INVALID_INPUT': {
-      const [first] = Object.values(fieldErrors(error));
-      return first || 'Algunos datos no son válidos. Revisa el formulario e inténtalo de nuevo.';
-    }
-    case 'SLOT_UNAVAILABLE': return 'Alguien acaba de tomar esa hora. Elige otra.';
-    case 'SLOT_NOT_OFFERED': return 'Esa hora ya no está disponible. Elige otra.';
-    case 'VERSION_CONFLICT': return 'Esta cita cambió en otro lugar. Actualizamos los datos; inténtalo de nuevo.';
-    case 'TOO_EARLY': return 'Esto solo se puede hacer cuando la cita ya empezó.';
-    case 'INVALID_TRANSITION': return 'Esta cita ya no se puede cambiar de esa forma.';
-    case 'TOO_LATE_TO_CHANGE': return 'Ya es tarde para cambiar esta cita en línea. Contacta al negocio.';
-    case 'BUSINESS_NOT_FOUND': return 'Esta página de reservas no está disponible.';
-    case 'EMAIL_NOT_VERIFIED': return 'Verifica tu correo para continuar.';
-    case 'RATE_LIMITED': return 'Demasiados intentos. Espera un momento e inténtalo de nuevo.';
-    default: return 'Algo salió mal. Inténtalo de nuevo.';
+export const errorMessage = (error, language = 'es') => {
+  const messages = messagesFor(ERROR_MESSAGES, language);
+  if (error?.code === 'INVALID_INPUT') {
+    const [first] = Object.values(fieldErrors(error, language));
+    return first || messages.INVALID_INPUT;
   }
+  return messages[error?.code] || messages.DEFAULT;
 };
 export const retryNotifications = (businessId, id) =>
   request('POST', apt(businessId, id, '/notifications/retry'), { signedIn: true });

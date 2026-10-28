@@ -105,6 +105,7 @@ const processJob = async (db, ref, { adapter, nowMs, workerId }) => {
   try {
     const message = renderEmail(job.template, {
       appointment: apt, businessName: bizSnap.data()?.name ?? '', manageUrl: manageUrlFor(apt),
+      language: bizSnap.data()?.language,
     });
     const result = await adapter.send(message, { idempotencyKey: job.id });
     outcome = { status: result.status, providerMessageId: result.providerMessageId ?? null, lastErrorCode: null, sentAt: FieldValue.serverTimestamp() };

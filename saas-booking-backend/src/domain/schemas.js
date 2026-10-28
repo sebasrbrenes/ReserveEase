@@ -36,6 +36,11 @@ const toMinutes = (t) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3));
 const intervalSchema = z.object({ start: localTimeSchema, end: localTimeSchema })
   .refine((i) => toMinutes(i.end) > toMinutes(i.start), 'end must be after start');
 
+// Language of what the business's clients see: booking pages and emails.
+export const LANGUAGES = ['es', 'en'];
+export const DEFAULT_LANGUAGE = 'es';
+export const languageSchema = z.enum(LANGUAGES).catch(DEFAULT_LANGUAGE);
+
 export const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 // Each day lists its open intervals; an empty list means closed.
@@ -63,6 +68,7 @@ export const businessSchema = z.object({
   weeklySchedule: weeklyScheduleSchema,
   // Whether clients receive booking emails (confirmation, changes, reminders).
   clientEmails: z.boolean().default(true),
+  language: languageSchema.default(DEFAULT_LANGUAGE),
   schemaVersion: z.literal(SCHEMA_VERSION),
 });
 
@@ -116,6 +122,7 @@ export const publicBusinessSchema = z.object({
   description: z.string().default(''),
   timezone: timeZoneSchema,
   currency: currencySchema,
+  language: languageSchema.default(DEFAULT_LANGUAGE),
   status: z.enum(['draft', 'published']),
   services: z.array(z.object({
     id: idSchema,
