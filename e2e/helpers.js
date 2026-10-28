@@ -32,3 +32,16 @@ export const openAllAppointments = async (page) => {
   await page.getByRole('button', { name: 'Ver todas' }).click();
   return page.locator('.max-h-\\[60vh\\]');
 };
+
+// A new, verified business account with nothing set up yet (password demo1234).
+export const createVerifiedAccount = async (request, email) => {
+  const auth = 'http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1';
+  const signUp = await request.post(`${auth}/accounts:signUp?key=fake`, {
+    data: { email, password: 'demo1234', returnSecureToken: true },
+  });
+  const { localId } = await signUp.json();
+  await request.post(`${auth}/projects/demo-reserveease/accounts:update`, {
+    headers: { Authorization: 'Bearer owner' },
+    data: { localId, emailVerified: true },
+  });
+};

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { login, nextOpenDate, openAllAppointments, pickDate } from './helpers.js';
+import { createVerifiedAccount, login, nextOpenDate, openAllAppointments, pickDate } from './helpers.js';
 
 const bookAsVisitor = async (page, slug, serviceId, staffId, name, offset) => {
   await page.goto(`/book/${slug}`);
@@ -161,6 +161,8 @@ test('settings sections save on their own and show their errors next to the fiel
 test('the business can show its booking pages in English; Spanish is the default', async ({ page }) => {
   await login(page, 'salon@demo.test');
   await page.goto('/settings');
+  // Wait for the saved settings, which replace the form when they load.
+  await expect(page.locator('#businessName')).toHaveValue('Salón Demo');
   const language = page.locator('#language');
   await expect(language).toHaveValue('es');
   await language.selectOption('en');
@@ -183,10 +185,31 @@ test('the business can show its booking pages in English; Spanish is the default
     await expect(page.getByText('Confirmed', { exact: true })).toBeVisible();
   } finally {
     await page.goto('/settings');
+    await expect(page.locator('#businessName')).toHaveValue('Salón Demo');
+    await expect(page.locator('#language')).toHaveValue('en');
     await page.locator('#language').selectOption('es');
     await page.getByRole('button', { name: 'Guardar cambios' }).click();
     await expect(page.getByText('Datos del negocio guardados')).toBeVisible();
   }
   await page.goto('/book/salon-demo');
   await expect(page.getByText('Reserva tu cita con')).toBeVisible();
+});
+
+test('a new business sees its first steps, and each one opens its settings section', async ({ page, request }) => {
+  const email = `nuevo${Date.now()}@demo.test`;
+  await createVerifiedAccount(request, email);
+  await login(page, email);
+  const steps = page.getByRole('region', { name: 'Primeros pasos' });
+  await expect(steps).toBeVisible();
+  await expect(steps.getByText(/de 4\)/)).toBeVisible();
+  await steps.getByRole('link', { name: 'Agrega al menos un servicio' }).click();
+  await expect(page).toHaveURL(/\/settings#servicios$/);
+  await expect(page.locator('#servicios')).toBeInViewport();
+
+  // A set-up business with appointments does not see the steps.
+  await page.goto('/dashboard');
+  await page.getByRole('button', { name: 'Salir' }).click();
+  await login(page, 'barberia@demo.test');
+  await expect(page.getByTestId('metrics')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Primeros pasos' })).toHaveCount(0);
 });
