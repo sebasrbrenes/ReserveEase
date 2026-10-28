@@ -21,34 +21,34 @@ export default function BookingSuccess() {
         </div>
 
         <h1 className="relative inline-block mb-6">
-          <span className="hd-title text-4xl">Your appointment is confirmed</span>
+          <span className="hd-title text-4xl">Tu cita está confirmada</span>
         </h1>
         {booking ? (
           <div className="mb-8 space-y-1">
-            <p className="font-bold text-lg">{state.serviceName} with {state.staffName}</p>
+            <p className="font-bold text-lg">{state.serviceName} con {state.staffName}</p>
             <p className="relative inline-block px-7 py-4 font-semibold">
               <Scribble className="absolute inset-0 w-full h-full text-sun" />
-              <span className="relative">{formatLocalDate(localDate)} at {formatTime(booking.startsAt, booking.timezone)}</span>
+              <span className="relative">{formatLocalDate(localDate)} a las {formatTime(booking.startsAt, booking.timezone)}</span>
             </p>
             <p className="text-ink-soft">{state.businessName}</p>
             <p className="text-sm pt-2">
-              Reference: <span className="font-mono font-bold">{booking.bookingReference}</span>
+              Referencia: <span className="font-mono font-bold">{booking.bookingReference}</span>
             </p>
             <p className="hd-help pt-2">
-              Your booking is saved. Keep this reference in case you need to contact the business.
+              Tu reserva quedó guardada. Guarda la referencia por si necesitas contactar al negocio.
             </p>
             {booking.managePath && (
               <p className="pt-2">
-                <Link to={booking.managePath} className="hd-link">Change or cancel this appointment</Link>
+                <Link to={booking.managePath} className="hd-link">Cambiar o cancelar esta cita</Link>
               </p>
             )}
           </div>
         ) : (
-          <p className="text-ink-soft mb-8">Thank you for your booking.</p>
+          <p className="text-ink-soft mb-8">Gracias por tu reserva.</p>
         )}
 
         <Link to={`/book/${slug}`} className="hd-btn hd-btn-secondary">
-          Book Another Appointment
+          Reservar otra cita
         </Link>
       </div>
     </div>

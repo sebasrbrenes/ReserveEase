@@ -107,7 +107,7 @@ describe.skipIf(!hasEmulator)('client manage link', () => {
     expect((await request(app).post(api(link, '/cancel')).send({ expectedVersion: 1 })).status).toBe(200);
 
     const apt = (await db.doc(`businesses/${BIZ}/appointments/${res.body.data.id}`).get()).data();
-    expect(apt.cancellationReason).toBe('Cancelled by the client');
+    expect(apt.cancellationReason).toBe('Cancelada por el cliente');
     const cancelJob = await db.doc(`notificationJobs/${res.body.data.id}_v2_cancellation_email`).get();
     expect(cancelJob.exists).toBe(true);
   });

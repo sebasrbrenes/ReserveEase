@@ -6,14 +6,14 @@ import "react-datepicker/dist/react-datepicker.css";
 import {
   cancelManagedAppointment, errorMessage, getManagedAppointment, getManagedAvailability, rescheduleManagedAppointment,
 } from '../../services/api';
-import { formatLocalDate, formatTime, fromLocalDateString, toLocalDateString, todayIn } from '../../utils/datetime';
+import { capitalize, formatLocalDate, formatTime, fromLocalDateString, toLocalDateString, todayIn } from '../../utils/datetime';
 import { Logo, Scribble } from '../ui/Doodles';
 
 const STATUS_TEXT = {
-  confirmed: 'Confirmed',
-  cancelled: 'Cancelled',
-  completed: 'Completed',
-  no_show: 'Missed',
+  confirmed: 'Confirmada',
+  cancelled: 'Cancelada',
+  completed: 'Completada',
+  no_show: 'No asististe',
 };
 
 const localDateIn = (iso, timeZone) => new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date(iso));
@@ -75,7 +75,7 @@ export default function ManageBooking() {
         : await rescheduleManagedAppointment(businessId, appointmentId, key, { expectedVersion: apt.version, startsAt });
       setApt(updated);
       setMode('view');
-      toast.success(action === 'cancel' ? 'Your appointment was cancelled.' : 'Your appointment has a new time.');
+      toast.success(action === 'cancel' ? 'Tu cita quedó cancelada.' : 'Tu cita tiene una nueva hora.');
     } catch (error) {
       toast.error(errorMessage(error));
       if (['VERSION_CONFLICT', 'TOO_LATE_TO_CHANGE', 'INVALID_TRANSITION'].includes(error.code)) {
@@ -95,7 +95,7 @@ export default function ManageBooking() {
     return (
       <div className="hd-page flex flex-col items-center justify-center gap-4" role="status">
         <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin motion-reduce:animate-none" aria-hidden="true"></div>
-        <p className="font-hand text-3xl">Loading...</p>
+        <p className="font-hand text-3xl">Cargando...</p>
       </div>
     );
   }
@@ -104,9 +104,9 @@ export default function ManageBooking() {
     return (
       <div className="hd-page flex flex-col items-center justify-center p-4">
         <div className="hd-card max-w-md p-8 text-center">
-          <h1 className="hd-title text-4xl mb-3">Appointment not found</h1>
+          <h1 className="hd-title text-4xl mb-3">No encontramos la cita</h1>
           <p className="text-ink-soft">
-            This link is not valid. Open the link from your latest email, or contact the business.
+            Este enlace no es válido. Abre el enlace de tu correo más reciente o contacta al negocio.
           </p>
         </div>
       </div>
@@ -114,81 +114,81 @@ export default function ManageBooking() {
   }
 
   const timezone = apt.timezone.replace(/_/g, ' ');
-  const when = `${formatLocalDate(localDateIn(apt.startsAt, apt.timezone))} at ${formatTime(apt.startsAt, apt.timezone)}`;
-  const deadline = `${formatLocalDate(localDateIn(apt.changeableUntil, apt.timezone))} at ${formatTime(apt.changeableUntil, apt.timezone)}`;
+  const when = `${capitalize(formatLocalDate(localDateIn(apt.startsAt, apt.timezone)))} a las ${formatTime(apt.startsAt, apt.timezone)}`;
+  const deadline = `el ${formatLocalDate(localDateIn(apt.changeableUntil, apt.timezone))} a las ${formatTime(apt.changeableUntil, apt.timezone)}`;
   const noSlotsMessage = {
-    closed: 'Closed on this day. Choose another date.',
-    outside_window: 'Bookings are not open for this date.',
-    open: 'No free times on this day. Choose another date.',
+    closed: 'Cerrado este día. Elige otra fecha.',
+    outside_window: 'No se puede reservar para esta fecha.',
+    open: 'No quedan horas libres este día. Elige otra fecha.',
   }[slots.status];
 
   return (
     <div className="hd-page py-10 px-4">
       <div className="max-w-lg mx-auto space-y-6">
         <header className="text-center">
-          <p className="text-ink-soft mb-1">Your appointment with</p>
+          <p className="text-ink-soft mb-1">Tu cita con</p>
           <h1 className="hd-title text-5xl">{apt.businessName}</h1>
         </header>
 
         <section className="hd-card p-6" aria-labelledby="details-title">
-          <h2 id="details-title" className="sr-only">Details</h2>
+          <h2 id="details-title" className="sr-only">Detalles</h2>
           <p className="mb-3">
             <span className={`inline-block px-3 py-0.5 border-2 border-ink rounded-full text-sm font-bold ${apt.status === 'cancelled' ? 'bg-coral-light' : 'bg-leaf/20'}`}>{STATUS_TEXT[apt.status] || apt.status}</span>
           </p>
-          <p className="font-bold text-lg">{apt.serviceName} with {apt.staffName}</p>
+          <p className="font-bold text-lg">{apt.serviceName} con {apt.staffName}</p>
           <p className="relative inline-block px-6 py-3 my-1 font-semibold">
             <Scribble className="absolute inset-0 w-full h-full text-sun" />
             <span className={`relative ${apt.status === 'cancelled' ? 'line-through' : ''}`}>{when}</span>
           </p>
-          <p className="hd-help">Times in {timezone}. Reference: <span className="font-mono font-bold">{apt.id}</span></p>
+          <p className="hd-help">Horas en {timezone}. Referencia: <span className="font-mono font-bold">{apt.id}</span></p>
 
           {apt.status === 'confirmed' && (apt.canChange ? (
             mode === 'view' && (
               <>
-                <p className="hd-help mt-4">You can change or cancel it online until {deadline}.</p>
+                <p className="hd-help mt-4">Puedes cambiarla o cancelarla en línea hasta {deadline}.</p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <button type="button" onClick={startReschedule} className="hd-btn">Change time</button>
-                  <button type="button" onClick={() => setMode('cancel')} className="hd-btn hd-btn-secondary">Cancel appointment</button>
+                  <button type="button" onClick={startReschedule} className="hd-btn">Cambiar la hora</button>
+                  <button type="button" onClick={() => setMode('cancel')} className="hd-btn hd-btn-secondary">Cancelar la cita</button>
                 </div>
               </>
             )
           ) : (
-            <p className="hd-help mt-4">It is too late to change it online. If you need to, contact {apt.businessName}.</p>
+            <p className="hd-help mt-4">Ya es tarde para cambiarla en línea. Si lo necesitas, contacta a {apt.businessName}.</p>
           ))}
         </section>
 
         {mode === 'cancel' && (
           <section className="hd-card p-6" aria-labelledby="cancel-title">
-            <h2 id="cancel-title" className="hd-title text-3xl mb-2">Cancel this appointment?</h2>
-            <p className="mb-4">The time will be freed for someone else. This cannot be undone.</p>
+            <h2 id="cancel-title" className="hd-title text-3xl mb-2">¿Cancelar esta cita?</h2>
+            <p className="mb-4">La hora quedará libre para otra persona. No se puede deshacer.</p>
             <div className="flex flex-wrap gap-3">
               <button type="button" onClick={() => submit('cancel')} disabled={saving} className="hd-btn bg-coral text-white">
-                {saving ? 'Cancelling...' : 'Yes, cancel it'}
+                {saving ? 'Cancelando...' : 'Sí, cancelarla'}
               </button>
-              <button type="button" onClick={() => setMode('view')} disabled={saving} className="hd-btn hd-btn-secondary">Keep it</button>
+              <button type="button" onClick={() => setMode('view')} disabled={saving} className="hd-btn hd-btn-secondary">Mantenerla</button>
             </div>
           </section>
         )}
 
         {mode === 'reschedule' && (
           <section className="hd-card p-6 space-y-4" aria-labelledby="reschedule-title">
-            <h2 id="reschedule-title" className="hd-title text-3xl">Choose a new time</h2>
+            <h2 id="reschedule-title" className="hd-title text-3xl">Elige la nueva hora</h2>
             <div>
-              <label htmlFor="date" className="hd-label">Date</label>
+              <label htmlFor="date" className="hd-label">Fecha</label>
               <DatePicker
                 id="date"
                 selected={date ? fromLocalDateString(date) : null}
                 onChange={(d) => d && (setDate(toLocalDateString(d)), setStartsAt(''))}
                 minDate={fromLocalDateString(todayIn(apt.timezone))}
                 className="hd-input"
-                dateFormat="MMM d, yyyy"
+                dateFormat="dd/MM/yyyy"
                 wrapperClassName="w-full"
               />
             </div>
             <fieldset>
-              <legend className="hd-label">Time <span className="font-normal text-ink-soft">({timezone})</span></legend>
+              <legend className="hd-label">Hora <span className="font-normal text-ink-soft">({timezone})</span></legend>
               {slots.loading ? (
-                <p className="mt-2 hd-help" role="status">Looking for free times...</p>
+                <p className="mt-2 hd-help" role="status">Buscando horas libres...</p>
               ) : slots.list.length === 0 ? (
                 <p className="mt-2 hd-help">{noSlotsMessage}</p>
               ) : (
@@ -209,16 +209,16 @@ export default function ManageBooking() {
             </fieldset>
             <div className="flex flex-wrap gap-3">
               <button type="button" onClick={() => submit('reschedule')} disabled={saving || !startsAt || startsAt === apt.startsAt} className="hd-btn">
-                {saving ? 'Saving...' : 'Move my appointment'}
+                {saving ? 'Guardando...' : 'Mover mi cita'}
               </button>
-              <button type="button" onClick={() => setMode('view')} disabled={saving} className="hd-btn hd-btn-secondary">Back</button>
+              <button type="button" onClick={() => setMode('view')} disabled={saving} className="hd-btn hd-btn-secondary">Volver</button>
             </div>
           </section>
         )}
 
         {apt.status === 'cancelled' && apt.businessSlug && (
           <p className="text-center">
-            <Link to={`/book/${apt.businessSlug}`} className="hd-btn hd-btn-secondary">Book a new appointment</Link>
+            <Link to={`/book/${apt.businessSlug}`} className="hd-btn hd-btn-secondary">Reservar una cita nueva</Link>
           </p>
         )}
 

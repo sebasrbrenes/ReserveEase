@@ -13,7 +13,7 @@ const Feedback = ({ isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!feedback.trim()) {
-      toast.error('Please enter your feedback');
+      toast.error('Escribe tu comentario');
       return;
     }
 
@@ -24,12 +24,12 @@ const Feedback = ({ isOpen, onClose }) => {
         createdAt: new Date().toISOString()
       });
 
-      toast.success('Thank you for your feedback!');
+      toast.success('¡Gracias por tu comentario!');
       setFeedback('');
       onClose();
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      toast.error('Failed to submit feedback');
+      toast.error('No pudimos enviar el comentario');
     } finally {
       setIsSubmitting(false);
     }
@@ -56,21 +56,21 @@ const Feedback = ({ isOpen, onClose }) => {
           >
             <button
               onClick={onClose}
-              aria-label="Close"
+              aria-label="Cerrar"
               className="absolute top-3 right-3 p-1 rounded-lg text-ink-soft hover:text-ink hover:bg-paper-deep focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
             >
               <FiX size={24} />
             </button>
 
             <h2 id="feedback-title" className="relative inline-block mb-6 pr-8">
-              <span className="hd-title text-4xl">Send Feedback</span>
+              <span className="hd-title text-4xl">Envíanos un comentario</span>
               <Underline className="absolute -bottom-2 left-0 w-full h-3 text-sun" />
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="feedback-text" className="hd-label">
-                  Your Feedback
+                  Tu comentario
                 </label>
                 <textarea
                   id="feedback-text"
@@ -78,7 +78,7 @@ const Feedback = ({ isOpen, onClose }) => {
                   onChange={(e) => setFeedback(e.target.value)}
                   className="hd-input focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
                   rows="4"
-                  placeholder="Tell us what you think..."
+                  placeholder="Cuéntanos qué te gusta, qué falta o qué falla..."
                 />
               </div>
 
@@ -88,14 +88,14 @@ const Feedback = ({ isOpen, onClose }) => {
                   onClick={onClose}
                   className="hd-btn hd-btn-secondary focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
                 >
-                  Cancel
+                  Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="hd-btn focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-marker"
                 >
-                  {isSubmitting ? 'Sending...' : 'Send Feedback'}
+                  {isSubmitting ? 'Enviando...' : 'Enviar'}
                 </button>
               </div>
             </form>

@@ -108,7 +108,7 @@ export const SettingsProvider = ({ children }) => {
         await refreshBusiness();
       } catch (error) {
         console.error('Error loading settings:', error);
-        toast.error('Failed to load settings');
+        toast.error('No pudimos cargar la configuración');
         setBusiness((prev) => ({ ...prev, loading: false, error }));
       }
     };

@@ -3,20 +3,20 @@ import { FiMail } from 'react-icons/fi';
 // What happened to the latest email of an appointment. "Simulated" means the
 // server runs without a real email provider: nothing reached the client.
 const LABELS = {
-  queued: { text: 'Email pending', className: 'text-ink-soft' },
-  processing: { text: 'Sending email', className: 'text-ink-soft' },
-  simulated: { text: 'Email simulated (test mode)', className: 'text-ink-soft' },
-  accepted: { text: 'Email sent', className: 'text-leaf font-semibold' },
-  delivered: { text: 'Email delivered', className: 'text-leaf font-semibold' },
-  failed: { text: 'Email failed', className: 'text-coral font-semibold' },
-  disabled: { text: 'Client emails off', className: 'text-ink-soft' },
+  queued: { text: 'Correo pendiente', className: 'text-ink-soft' },
+  processing: { text: 'Enviando correo', className: 'text-ink-soft' },
+  simulated: { text: 'Correo simulado (modo de prueba)', className: 'text-ink-soft' },
+  accepted: { text: 'Correo enviado', className: 'text-leaf font-semibold' },
+  delivered: { text: 'Correo entregado', className: 'text-leaf font-semibold' },
+  failed: { text: 'Falló el correo', className: 'text-coral font-semibold' },
+  disabled: { text: 'Correos a clientes apagados', className: 'text-ink-soft' },
 };
 
 const TEMPLATE = {
-  confirmation_email: 'confirmation',
-  reschedule_email: 'new time',
-  reminder_email: 'reminder',
-  cancellation_email: 'cancellation',
+  confirmation_email: 'confirmación',
+  reschedule_email: 'nueva hora',
+  reminder_email: 'recordatorio',
+  cancellation_email: 'cancelación',
 };
 
 const NotificationStatus = ({ notification, onRetry }) => {
@@ -28,7 +28,7 @@ const NotificationStatus = ({ notification, onRetry }) => {
       {label.text}
       {TEMPLATE[notification.template] && <span className="text-ink-soft font-normal">· {TEMPLATE[notification.template]}</span>}
       {notification.status === 'failed' && onRetry && (
-        <button type="button" onClick={onRetry} className="ml-1 font-bold text-coral underline decoration-2 underline-offset-2 hover:text-ink">Retry</button>
+        <button type="button" onClick={onRetry} className="ml-1 font-bold text-coral underline decoration-2 underline-offset-2 hover:text-ink">Reintentar</button>
       )}
     </p>
   );

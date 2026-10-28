@@ -1,8 +1,9 @@
 import { expect } from '@playwright/test';
 
-// A date picked in the react-datepicker field, typed as "Oct 12, 2026".
+// A date picked in the react-datepicker field, typed as "12/10/2026".
 export const pickDate = async (page, date) => {
-  const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const pad = (n) => String(n).padStart(2, '0');
+  const label = `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
   const input = page.locator('.react-datepicker__input-container input').first();
   await input.fill(label);
   await input.press('Escape');
@@ -24,8 +25,8 @@ export const login = async (page, email) => {
   await expect(page).toHaveURL(/\/dashboard/);
 };
 
-// Opens "View All" and returns the list container.
+// Opens "Ver todas" and returns the list container.
 export const openAllAppointments = async (page) => {
-  await page.getByRole('button', { name: 'View All' }).click();
+  await page.getByRole('button', { name: 'Ver todas' }).click();
   return page.locator('.max-h-\\[60vh\\]');
 };

@@ -48,7 +48,7 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
     const active = (business?.services || []).filter((s) => s.active);
     // An edited appointment keeps its service even if it was removed since.
     if (appointment && !active.some((s) => s.id === appointment.serviceId)) {
-      return [...active, { id: appointment.serviceId, name: appointment.serviceSnapshot?.name || 'Service' }];
+      return [...active, { id: appointment.serviceId, name: appointment.serviceSnapshot?.name || 'Servicio' }];
     }
     return active;
   }, [business, appointment]);
@@ -110,7 +110,7 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
       await createAppointment(businessId, {
         serviceId: form.serviceId, staffId: form.staffId, startsAt: form.startsAt, client: client(), notes: form.notes,
       }, idempotencyKey);
-      return 'Appointment created';
+      return 'Cita creada';
     }
 
     let { version } = appointment;
@@ -133,18 +133,18 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
     if (Object.keys(changes).length) {
       await updateAppointment(businessId, appointment.id, { expectedVersion: version, ...changes });
     }
-    return moved ? 'Appointment moved' : 'Appointment updated';
+    return moved ? 'Cita movida' : 'Cita actualizada';
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
     if (canMove && !form.startsAt) {
-      toast.error('Choose a time');
+      toast.error('Elige una hora');
       return;
     }
     if (form.phone && !E164.test(form.phone)) {
-      toast.error('Write the phone with its country code, for example +50688887777');
+      toast.error('Escribe el teléfono con el código de país, por ejemplo +50688887777');
       return;
     }
     setSubmitting(true);
@@ -162,9 +162,9 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
   };
 
   const noSlotsMessage = {
-    closed: 'Closed on this day.',
-    outside_window: 'Outside the booking window for this date.',
-    open: 'No free times on this day.',
+    closed: 'Cerrado este día.',
+    outside_window: 'Esta fecha está fuera del periodo de reservas.',
+    open: 'No quedan horas libres este día.',
   }[availability.status];
 
   return (
@@ -190,12 +190,12 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
           >
             <div className="flex items-center justify-between mb-6">
               <DialogTitle className="hd-title text-4xl">
-                {appointment ? 'Edit Appointment' : 'New Appointment'}
+                {appointment ? 'Editar cita' : 'Nueva cita'}
               </DialogTitle>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close"
+                aria-label="Cerrar"
                 className="p-1 text-ink-soft hover:text-ink hover:bg-paper-deep rounded-full transition duration-200"
               >
                 <FiX className="w-5 h-5" aria-hidden="true" />
@@ -204,12 +204,12 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="apt-service" className="hd-label">Service *</label>
+                <label htmlFor="apt-service" className="hd-label">Servicio *</label>
                 <select
                   id="apt-service" name="serviceId" value={form.serviceId} onChange={handleChange}
                   className={inputClass} required disabled={Boolean(appointment)}
                 >
-                  <option value="">Select a service</option>
+                  <option value="">Elige un servicio</option>
                   {services.map((service) => (
                     <option key={service.id} value={service.id}>{service.name}</option>
                   ))}
@@ -217,12 +217,12 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
               </div>
 
               <div>
-                <label htmlFor="apt-staff" className="hd-label">Staff Member *</label>
+                <label htmlFor="apt-staff" className="hd-label">Atiende *</label>
                 <select
                   id="apt-staff" name="staffId" value={form.staffId} onChange={handleChange}
                   className={inputClass} required disabled={!canMove || !form.serviceId}
                 >
-                  <option value="">Select staff member</option>
+                  <option value="">Elige quién atiende</option>
                   {availableStaff.map((staff) => (
                     <option key={staff.id} value={staff.id}>{staff.displayName}</option>
                   ))}
@@ -235,7 +235,7 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Escape with the calendar open closes the calendar, not the dialog. */}
                 <div className="w-full" onKeyDown={(e) => pickerOpen && e.key === 'Escape' && e.stopPropagation()}>
-                  <label htmlFor="apt-date" className="hd-label">Date *</label>
+                  <label htmlFor="apt-date" className="hd-label">Fecha *</label>
                   <DatePicker
                     onCalendarOpen={() => setPickerOpen(true)}
                     onCalendarClose={() => setPickerOpen(false)}
@@ -245,20 +245,20 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
                     minDate={fromLocalDateString(todayIn(timezone))}
                     disabled={!canMove}
                     className={inputClass}
-                    dateFormat="MMM d, yyyy"
+                    dateFormat="dd/MM/yyyy"
                     wrapperClassName="w-full"
                     required
                   />
                 </div>
 
                 <div className="w-full">
-                  <label htmlFor="apt-time" className="hd-label">Time *</label>
+                  <label htmlFor="apt-time" className="hd-label">Hora *</label>
                   <select
                     id="apt-time" name="startsAt" value={form.startsAt} onChange={handleChange}
                     className={inputClass} required={canMove} disabled={!canMove || !form.staffId}
                   >
                     <option value="">
-                      {availability.loading ? 'Loading...' : slots.length ? 'Select time' : (noSlotsMessage || 'Select time')}
+                      {availability.loading ? 'Cargando...' : slots.length ? 'Elige la hora' : (noSlotsMessage || 'Elige la hora')}
                     </option>
                     {(canMove ? slots : [form.startsAt].filter(Boolean)).map((startsAt) => (
                       <option key={startsAt} value={startsAt}>{formatTime(startsAt, timezone)}</option>
@@ -269,22 +269,22 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="apt-name" className="hd-label">Client Name *</label>
+                  <label htmlFor="apt-name" className="hd-label">Nombre del cliente *</label>
                   <input id="apt-name" type="text" name="clientName" value={form.clientName} onChange={handleChange} className={inputClass} maxLength={100} required />
                 </div>
                 <div>
-                  <label htmlFor="apt-email" className="hd-label">Email *</label>
+                  <label htmlFor="apt-email" className="hd-label">Correo electrónico *</label>
                   <input id="apt-email" type="email" name="email" value={form.email} onChange={handleChange} className={inputClass} maxLength={200} required />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="apt-phone" className="hd-label">Phone (with country code)</label>
+                <label htmlFor="apt-phone" className="hd-label">Teléfono (con código de país)</label>
                 <input id="apt-phone" type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="+50688887777" className={inputClass} maxLength={16} />
               </div>
 
               <div>
-                <label htmlFor="apt-notes" className="hd-label">Notes</label>
+                <label htmlFor="apt-notes" className="hd-label">Notas</label>
                 <textarea
                   id="apt-notes" name="notes" value={form.notes} onChange={handleChange} maxLength={500}
                   className="hd-input resize-none h-20"
@@ -297,14 +297,14 @@ const AppointmentModal = ({ isOpen, onClose, appointment, businessId, business, 
                   onClick={onClose}
                   className="hd-btn hd-btn-secondary"
                 >
-                  Close
+                  Cerrar
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="hd-btn flex-1"
                 >
-                  {submitting ? 'Saving...' : (appointment ? 'Save Changes' : 'Create Appointment')}
+                  {submitting ? 'Guardando...' : (appointment ? 'Guardar cambios' : 'Crear cita')}
                 </button>
               </div>
             </form>

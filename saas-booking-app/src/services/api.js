@@ -19,7 +19,7 @@ const request = async (method, path, { body, headers = {}, signedIn = false } = 
   if (body !== undefined) allHeaders['Content-Type'] = 'application/json';
   if (signedIn) {
     const user = auth.currentUser;
-    if (!user) throw new ApiError(401, 'UNAUTHENTICATED', 'Sign in required');
+    if (!user) throw new ApiError(401, 'UNAUTHENTICATED', 'Inicia sesión para continuar');
     allHeaders.Authorization = `Bearer ${await user.getIdToken()}`;
   }
   let response;
@@ -30,12 +30,12 @@ const request = async (method, path, { body, headers = {}, signedIn = false } = 
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new ApiError(0, 'NETWORK', 'Could not reach the server. Check your connection and try again.');
+    throw new ApiError(0, 'NETWORK', 'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.');
   }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = payload.error || {};
-    throw new ApiError(response.status, error.code || 'UNKNOWN', error.message || 'Something went wrong', error.fields);
+    throw new ApiError(response.status, error.code || 'UNKNOWN', error.message || 'Algo salió mal', error.fields);
   }
   return payload.data;
 };
@@ -90,10 +90,10 @@ export const transitionAppointment = (businessId, id, body) =>
 
 // What to tell the person about each field the API can reject.
 const FIELD_MESSAGES = {
-  'client.name': 'Write the client\'s name.',
-  'client.email': 'Write a valid email, for example name@example.com.',
-  'client.phoneE164': 'Check the phone number: write it with its country code, for example +506 8888 7777.',
-  notes: 'Notes can be up to 500 characters.',
+  'client.name': 'Escribe el nombre.',
+  'client.email': 'Escribe un correo válido, por ejemplo nombre@ejemplo.com.',
+  'client.phoneE164': 'Revisa el teléfono: escríbelo con el código de país, por ejemplo +506 8888 7777.',
+  notes: 'Las notas pueden tener hasta 500 caracteres.',
 };
 
 // The API's field errors as { path: message } for the person to read.
@@ -108,18 +108,18 @@ export const errorMessage = (error) => {
   switch (error?.code) {
     case 'INVALID_INPUT': {
       const [first] = Object.values(fieldErrors(error));
-      return first || 'Some details are not valid. Check the form and try again.';
+      return first || 'Algunos datos no son válidos. Revisa el formulario e inténtalo de nuevo.';
     }
-    case 'SLOT_UNAVAILABLE': return 'That time was just taken. Please choose another one.';
-    case 'SLOT_NOT_OFFERED': return 'That time is no longer available. Please choose another one.';
-    case 'VERSION_CONFLICT': return 'This appointment was changed elsewhere. The list has been refreshed; try again.';
-    case 'TOO_EARLY': return 'This can only be done once the appointment has started.';
-    case 'INVALID_TRANSITION': return 'This appointment can no longer be changed that way.';
-    case 'TOO_LATE_TO_CHANGE': return 'It is too late to change this appointment online. Please contact the business.';
-    case 'BUSINESS_NOT_FOUND': return 'This booking page is not available.';
-    case 'EMAIL_NOT_VERIFIED': return 'Verify your email to continue.';
-    case 'RATE_LIMITED': return 'Too many attempts. Please wait a moment and try again.';
-    default: return error?.message || 'Something went wrong. Please try again.';
+    case 'SLOT_UNAVAILABLE': return 'Alguien acaba de tomar esa hora. Elige otra.';
+    case 'SLOT_NOT_OFFERED': return 'Esa hora ya no está disponible. Elige otra.';
+    case 'VERSION_CONFLICT': return 'Esta cita cambió en otro lugar. Actualizamos los datos; inténtalo de nuevo.';
+    case 'TOO_EARLY': return 'Esto solo se puede hacer cuando la cita ya empezó.';
+    case 'INVALID_TRANSITION': return 'Esta cita ya no se puede cambiar de esa forma.';
+    case 'TOO_LATE_TO_CHANGE': return 'Ya es tarde para cambiar esta cita en línea. Contacta al negocio.';
+    case 'BUSINESS_NOT_FOUND': return 'Esta página de reservas no está disponible.';
+    case 'EMAIL_NOT_VERIFIED': return 'Verifica tu correo para continuar.';
+    case 'RATE_LIMITED': return 'Demasiados intentos. Espera un momento e inténtalo de nuevo.';
+    default: return 'Algo salió mal. Inténtalo de nuevo.';
   }
 };
 export const retryNotifications = (businessId, id) =>

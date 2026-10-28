@@ -26,7 +26,7 @@ const SignUp = () => {
     try {
       // Validate passwords match
       if (formData.password !== formData.confirmPassword) {
-        toast.error('Passwords do not match');
+        toast.error('Las contraseñas no coinciden');
         return;
       }
 
@@ -45,7 +45,7 @@ const SignUp = () => {
       });
 
       // Show success message
-      toast.success('Account created! Please check your email to verify your account.');
+      toast.success('¡Cuenta creada! Revisa tu correo para verificarla.');
       
       // Navigate to a verification pending page
       navigate('/verify-email', { 
@@ -57,22 +57,22 @@ const SignUp = () => {
 
     } catch (error) {
       console.error('Signup error:', error);
-      let errorMessage = 'Failed to create account';
+      let errorMessage = 'No pudimos crear la cuenta';
       
       switch (error.code) {
         // Same answer whether or not the email has an account, so the form
         // does not tell strangers who is registered.
         case 'auth/email-already-in-use':
-          errorMessage = 'We could not create an account with this email. If you already have one, log in or reset your password.';
+          errorMessage = 'No pudimos crear una cuenta con este correo. Si ya tienes una, inicia sesión o recupera tu contraseña.';
           break;
         case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
+          errorMessage = 'El correo no es válido';
           break;
         case 'auth/weak-password':
-          errorMessage = 'Password should be at least 6 characters';
+          errorMessage = 'La contraseña debe tener al menos 6 caracteres';
           break;
         default:
-          errorMessage = error.message;
+          errorMessage = 'No pudimos crear la cuenta. Inténtalo de nuevo.';
       }
       
       toast.error(errorMessage);
@@ -88,7 +88,7 @@ const SignUp = () => {
       navigate('/dashboard');
     } catch (error) {
       console.error('Google sign in error:', error);
-      toast.error('Failed to sign in with Google');
+      toast.error('No pudimos entrar con Google');
     } finally {
       setLoading(false);
     }
@@ -111,14 +111,14 @@ const SignUp = () => {
         <div className="hd-card p-6 sm:p-8">
           <div className="text-center">
             <h2 className="relative inline-block">
-              <span className="hd-title text-4xl sm:text-5xl">Create Account</span>
+              <span className="hd-title text-4xl sm:text-5xl">Crea tu cuenta</span>
               <Underline className="absolute -bottom-3 left-0 w-full h-4 text-sun" />
               <Sparkle className="hidden sm:block absolute -right-9 -top-3 w-6 h-6 text-marker" />
             </h2>
             <p className="mt-5 hd-help">
-              Already have an account?{' '}
+              ¿Ya tienes cuenta?{' '}
               <Link to="/login" className="hd-link">
-                Sign in
+                Inicia sesión
               </Link>
             </p>
           </div>
@@ -127,7 +127,7 @@ const SignUp = () => {
             <div className="space-y-4">
               <div>
                 <label htmlFor="name" className="hd-label">
-                  Full Name
+                  Nombre completo
                 </label>
                 <input
                   id="name"
@@ -137,12 +137,12 @@ const SignUp = () => {
                   value={formData.name}
                   onChange={handleChange}
                   className="hd-input"
-                  placeholder="John Doe"
+                  placeholder="María Rodríguez"
                 />
               </div>
               <div>
                 <label htmlFor="email" className="hd-label">
-                  Email Address
+                  Correo electrónico
                 </label>
                 <input
                   id="email"
@@ -153,12 +153,12 @@ const SignUp = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="hd-input"
-                  placeholder="you@example.com"
+                  placeholder="tu@correo.com"
                 />
               </div>
               <div>
                 <label htmlFor="password" className="hd-label">
-                  Password
+                  Contraseña
                 </label>
                 <input
                   id="password"
@@ -174,7 +174,7 @@ const SignUp = () => {
               </div>
               <div>
                 <label htmlFor="confirmPassword" className="hd-label">
-                  Confirm Password
+                  Confirma la contraseña
                 </label>
                 <input
                   id="confirmPassword"
@@ -191,13 +191,13 @@ const SignUp = () => {
             </div>
 
             <p className="hd-help">
-              By creating an account you accept the{' '}
-              <a href={TERMS_URL} target="_blank" rel="noreferrer" className="hd-link">terms</a> and the{' '}
-              <a href={PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">privacy notice</a>.
+              Al crear la cuenta aceptas los{' '}
+              <a href={TERMS_URL} target="_blank" rel="noreferrer" className="hd-link">términos de uso</a> y el{' '}
+              <a href={PRIVACY_URL} target="_blank" rel="noreferrer" className="hd-link">aviso de privacidad</a>.
             </p>
 
             <button type="submit" disabled={loading} className="hd-btn w-full">
-              {loading ? 'Creating Account...' : 'Sign Up'}
+              {loading ? 'Creando la cuenta...' : 'Crear cuenta'}
             </button>
 
             <div className="relative">
@@ -205,7 +205,7 @@ const SignUp = () => {
                 <div className="w-full border-t-2 border-dashed border-ink-soft/50"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-ink-soft">Or continue with</span>
+                <span className="px-2 bg-white text-ink-soft">O continúa con</span>
               </div>
             </div>
 
@@ -216,13 +216,13 @@ const SignUp = () => {
               className="hd-btn hd-btn-secondary w-full"
             >
               <FcGoogle className="h-5 w-5" aria-hidden="true" />
-              Sign up with Google
+              Registrarme con Google
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <button onClick={() => navigate('/')} className="hd-link">
-              Go back
+              Volver
             </button>
           </div>
         </div>

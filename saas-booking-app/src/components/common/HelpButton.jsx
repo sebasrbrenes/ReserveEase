@@ -17,24 +17,24 @@ const HelpButton = () => {
             className="absolute bottom-16 right-0 mb-2 hd-card p-4 w-72 max-w-[calc(100vw-3rem)] text-ink"
           >
             <div className="flex justify-between items-start mb-3">
-              <h3 className="hd-title text-3xl">Need Help?</h3>
+              <h3 className="hd-title text-3xl">¿Necesitas ayuda?</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                aria-label="Close"
+                aria-label="Cerrar"
                 className="p-1 text-ink-soft hover:text-ink hover:bg-paper-deep rounded-full transition-colors"
               >
                 <FiX aria-hidden="true" />
               </button>
             </div>
             <p className="text-ink-soft text-sm mb-4">
-              Our support team is here to help! Send us an email to help@reservease.com and we&apos;ll get back to you as soon as possible.
+              Escríbenos a help@reservease.com y te respondemos lo antes posible.
             </p>
             <a
               href="mailto:help@reservease.com"
               className="hd-btn w-full"
             >
               <FiMail aria-hidden="true" />
-              <span>Contact Support</span>
+              <span>Escribir a soporte</span>
             </a>
           </motion.div>
         )}
@@ -42,7 +42,7 @@ const HelpButton = () => {
 
       <button
         onClick={() => setIsOpen(!isOpen)}
-        aria-label="Help"
+        aria-label="Ayuda"
         aria-expanded={isOpen}
         className="hd-btn !rounded-full !p-0 w-12 h-12"
       >

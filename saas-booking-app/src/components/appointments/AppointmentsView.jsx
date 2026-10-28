@@ -76,11 +76,11 @@ const AppointmentsView = ({
           >
             <div className="flex justify-between items-center mb-5">
               <h2 className="hd-title text-4xl">
-                All Appointments
+                Todas las citas
               </h2>
               <button
                 onClick={onClose}
-                aria-label="Close"
+                aria-label="Cerrar"
                 className="p-1 text-ink-soft hover:text-ink hover:bg-paper-deep rounded-full transition-colors"
               >
                 <FiX className="w-6 h-6" aria-hidden="true" />
@@ -93,8 +93,8 @@ const AppointmentsView = ({
                   <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" aria-hidden="true" />
                   <input
                     type="text"
-                    aria-label="Search appointments"
-                    placeholder="Search by client name, email, or phone..."
+                    aria-label="Buscar citas"
+                    placeholder="Buscar por nombre, correo o teléfono..."
                     className="hd-input !mt-0 pl-10"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -103,36 +103,36 @@ const AppointmentsView = ({
               </div>
 
               <select
-                aria-label="Filter by date"
+                aria-label="Filtrar por fecha"
                 className="hd-input !mt-0 flex-1 min-w-[140px] sm:flex-none sm:w-auto"
                 value={filters.dateRange}
                 onChange={(e) => handleFilterChange("dateRange", e.target.value)}
               >
-                <option key="all" value="all">All Dates</option>
-                <option key="today" value="day">Today</option>
-                <option key="week" value="week">This Week</option>
-                <option key="month" value="month">This Month</option>
+                <option key="all" value="all">Todas las fechas</option>
+                <option key="today" value="day">Hoy</option>
+                <option key="week" value="week">Esta semana</option>
+                <option key="month" value="month">Este mes</option>
               </select>
 
               <select
-                aria-label="Filter by status"
+                aria-label="Filtrar por estado"
                 className="hd-input !mt-0 flex-1 min-w-[140px] sm:flex-none sm:w-auto"
                 value={filters.status}
                 onChange={(e) => handleFilterChange("status", e.target.value)}
               >
-                <option key="all" value="all">All Statuses</option>
+                <option key="all" value="all">Todos los estados</option>
                 {Object.entries(STATUS).map(([value, { label }]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
 
               <select
-                aria-label="Filter by staff"
+                aria-label="Filtrar por persona"
                 className="hd-input !mt-0 flex-1 min-w-[140px] sm:flex-none sm:w-auto"
                 value={filters.staff}
                 onChange={(e) => handleFilterChange("staff", e.target.value)}
               >
-                <option key="all" value="all">All Staff</option>
+                <option key="all" value="all">Todo el personal</option>
                 {staffMembers.map((staff) => (
                   <option key={staff} value={staff}>
                     {staff}
@@ -141,12 +141,12 @@ const AppointmentsView = ({
               </select>
 
               <select
-                aria-label="Filter by service"
+                aria-label="Filtrar por servicio"
                 className="hd-input !mt-0 flex-1 min-w-[140px] sm:flex-none sm:w-auto"
                 value={filters.service}
                 onChange={(e) => handleFilterChange("service", e.target.value)}
               >
-                <option key="all" value="all">All Services</option>
+                <option key="all" value="all">Todos los servicios</option>
                 {services.map((service) => (
                   <option key={service} value={service}>
                     {service}
@@ -159,7 +159,7 @@ const AppointmentsView = ({
               {filteredAppointments.length === 0 && (
                 <div className="text-center py-8">
                   <Scribble className="mx-auto w-24 h-10 text-sun mb-2" />
-                  <p className="text-ink-soft">No appointments match these filters.</p>
+                  <p className="text-ink-soft">Ninguna cita coincide con estos filtros.</p>
                 </div>
               )}
               {filteredAppointments.map((appointment) => (
@@ -173,7 +173,7 @@ const AppointmentsView = ({
                         {appointment.client?.name}
                       </h3>
                       <p className="text-ink">
-                        {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} at {formatTime(appointment.startsAt, timezone)}
+                        {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} a las {formatTime(appointment.startsAt, timezone)}
                       </p>
                       <p className="text-ink-soft">{appointment.serviceSnapshot?.name}</p>
                       <p className="text-sm text-ink-soft">
@@ -192,7 +192,7 @@ const AppointmentsView = ({
                         {editingStatus === appointment.id ? (
                           <select
                             autoFocus
-                            aria-label="Change status"
+                            aria-label="Cambiar estado"
                             value=""
                             onChange={(e) => {
                               onStatusChange(appointment, e.target.value);
@@ -221,7 +221,7 @@ const AppointmentsView = ({
                               onClose();
                             }}
                             className="p-1.5 rounded-lg text-marker hover:bg-marker-light transition-colors"
-                            aria-label="Edit appointment"
+                            aria-label="Editar cita"
                           >
                             <FiEdit2 className="w-4 h-4" aria-hidden="true" />
                           </button>
@@ -229,7 +229,7 @@ const AppointmentsView = ({
                             <button
                               onClick={() => onCancel(appointment)}
                               className="p-1.5 rounded-lg text-ink-soft hover:text-coral hover:bg-coral-light transition-colors"
-                              aria-label="Cancel appointment"
+                              aria-label="Cancelar cita"
                             >
                               <FiXCircle className="w-4 h-4" aria-hidden="true" />
                             </button>

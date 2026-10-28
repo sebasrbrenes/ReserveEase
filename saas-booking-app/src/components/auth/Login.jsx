@@ -24,7 +24,7 @@ const Login = () => {
       const { user } = await signInWithEmailAndPassword(auth, formData.email, formData.password);
       
       if (!user.emailVerified) {
-        toast.error('Please verify your email before logging in');
+        toast.error('Verifica tu correo antes de entrar');
         // Stay signed in so the verification screen can resend the email.
         navigate('/verify-email', { 
           state: { 
@@ -35,27 +35,28 @@ const Login = () => {
         return;
       }
 
-      toast.success('Welcome back!');
+      toast.success('¡Bienvenido de nuevo!');
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
-      let errorMessage = 'Failed to log in';
+      let errorMessage = 'No pudimos iniciar sesión';
       
       switch (error.code) {
         case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
+          errorMessage = 'El correo no es válido';
           break;
         case 'auth/user-disabled':
-          errorMessage = 'This account has been disabled';
+          errorMessage = 'Esta cuenta está desactivada';
           break;
         case 'auth/user-not-found':
-          errorMessage = 'No account found with this email';
+          errorMessage = 'No hay ninguna cuenta con este correo';
           break;
+        case 'auth/invalid-credential':
         case 'auth/wrong-password':
-          errorMessage = 'Incorrect password';
+          errorMessage = 'El correo o la contraseña no son correctos';
           break;
         default:
-          errorMessage = 'Failed to log in';
+          errorMessage = 'No pudimos iniciar sesión';
       }
       
       toast.error(errorMessage);
@@ -68,11 +69,11 @@ const Login = () => {
     try {
       setLoading(true);
       await signInWithGoogle();
-      toast.success('Welcome!');
+      toast.success('¡Bienvenido!');
       navigate('/dashboard');
     } catch (error) {
       console.error('Google sign in error:', error);
-      toast.error('Failed to sign in with Google');
+      toast.error('No pudimos entrar con Google');
     } finally {
       setLoading(false);
     }
@@ -95,21 +96,21 @@ const Login = () => {
         <div className="hd-card p-6 sm:p-8">
           <div className="text-center">
             <h2 className="relative inline-block">
-              <span className="hd-title text-4xl sm:text-5xl">Welcome back</span>
+              <span className="hd-title text-4xl sm:text-5xl">Hola de nuevo</span>
               <Underline className="absolute -bottom-3 left-0 w-full h-4 text-sun" />
               <Star className="hidden sm:block absolute -right-9 -top-2 w-6 h-6 text-marker rotate-12" />
             </h2>
             <p className="mt-5 hd-help">
-              Don&apos;t have an account?{' '}
+              ¿No tienes cuenta?{' '}
               <Link to="/signup" className="hd-link">
-                Sign up
+                Crea una
               </Link>
             </p>
           </div>
           <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email-address" className="hd-label">
-                Email address
+                Correo electrónico
               </label>
               <input
                 id="email-address"
@@ -120,12 +121,12 @@ const Login = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="hd-input"
-                placeholder="Email address"
+                placeholder="tu@correo.com"
               />
             </div>
             <div>
               <label htmlFor="password" className="hd-label">
-                Password
+                Contraseña
               </label>
               <input
                 id="password"
@@ -136,18 +137,18 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className="hd-input"
-                placeholder="Password"
+                placeholder="Contraseña"
               />
             </div>
 
             <div className="text-sm">
               <Link to="/forgot-password" className="hd-link">
-                Forgot your password?
+                ¿Olvidaste tu contraseña?
               </Link>
             </div>
 
             <button type="submit" disabled={loading} className="hd-btn w-full">
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? 'Entrando...' : 'Entrar'}
             </button>
 
             <button
@@ -157,7 +158,7 @@ const Login = () => {
               className="hd-btn hd-btn-secondary w-full"
             >
               <FcGoogle className="w-5 h-5" aria-hidden="true" />
-              Sign in with Google
+              Entrar con Google
             </button>
           </form>
         </div>

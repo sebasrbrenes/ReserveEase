@@ -28,7 +28,7 @@ import {
 } from '../../services/api';
 import NotificationStatus from '../appointments/NotificationStatus';
 import { statusActionsFor, statusClass, statusLabel } from '../appointments/status';
-import { formatLocalDate, formatMoney, formatTime, shiftDate, todayIn } from '../../utils/datetime';
+import { capitalize, formatLocalDate, formatMoney, formatTime, shiftDate, todayIn } from '../../utils/datetime';
 
 // Appointments loaded around today; the API is the only source.
 const PAST_DAYS = 60;
@@ -107,7 +107,7 @@ const Dashboard = () => {
     setAppointmentToCancel(null);
     await runChange(
       () => cancelAppointment(businessId, apt.id, { expectedVersion: apt.version }),
-      'Appointment cancelled. The time is free again.'
+      'Cita cancelada. La hora quedó libre.'
     );
   };
 
@@ -120,13 +120,13 @@ const Dashboard = () => {
     }
     await runChange(
       () => transitionAppointment(businessId, appointment.id, { expectedVersion: appointment.version, to: action }),
-      'Status updated'
+      'Estado actualizado'
     );
   };
 
   const handleRetryEmail = (appointment) => runChange(
     () => retryNotifications(businessId, appointment.id),
-    'Email queued again'
+    'Correo en cola otra vez'
   );
 
   const selectedLocalDate = selectedDate?.format('YYYY-MM-DD');
@@ -153,8 +153,8 @@ const Dashboard = () => {
   const metricsReady = !business.loading && !(businessId && isLoading);
   const canBook = businessReady && business.data.status === 'published';
   const newAppointmentHint = business.loading
-    ? 'Loading your business...'
-    : !canBook ? 'Finish your settings to take bookings' : undefined;
+    ? 'Cargando tu negocio...'
+    : !canBook ? 'Completa la configuración para recibir reservas' : undefined;
 
   const staffList = business.data?.staff || [];
   const activeStaff = staffList.filter((staff) => staff.active);
@@ -172,20 +172,20 @@ const Dashboard = () => {
       {
         id: 'todayAppointments',
         value: todayAppointments.length,
-        title: "Today's appointments",
-        subtext: diff === 0 ? 'Same as yesterday' : diff > 0 ? `${diff} more than yesterday` : `${-diff} fewer than yesterday`,
+        title: 'Citas de hoy',
+        subtext: diff === 0 ? 'Igual que ayer' : diff > 0 ? `${diff} más que ayer` : `${-diff} menos que ayer`,
         type: diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative',
         icon: FiCalendar
       },
       {
         id: 'activeStaff',
         value: activeStaff.length,
-        title: 'Active staff',
+        title: 'Personal activo',
         subtext: !staffList.length
-          ? 'No staff members'
+          ? 'Sin personal'
           : activeStaff.length === staffList.length
-          ? 'All staff active'
-          : `${staffList.length - activeStaff.length} staff inactive`,
+          ? 'Todo el personal activo'
+          : `${staffList.length - activeStaff.length} inactivo${staffList.length - activeStaff.length === 1 ? '' : 's'}`,
         type: 'neutral',
         icon: FiUsers
       },
@@ -194,8 +194,8 @@ const Dashboard = () => {
         value: currency
           ? formatMoney(todayAppointments.reduce((total, apt) => total + (apt.serviceSnapshot?.priceMinor || 0), 0), currency)
           : '—',
-        title: "Today's booked value",
-        subtext: `${completedToday.length} of ${todayAppointments.length} completed`,
+        title: 'Valor reservado hoy',
+        subtext: `${completedToday.length} de ${todayAppointments.length} completadas`,
         type: 'neutral',
         icon: FiDollarSign
       }
@@ -211,7 +211,7 @@ const Dashboard = () => {
               <Logo />
               <Sparkle className="absolute -right-7 -top-2 w-6 h-6 text-marker" />
             </h1>
-            <p className="text-ink-soft mt-1">Manage your appointments and schedule</p>
+            <p className="text-ink-soft mt-1">Administra tus citas y tu agenda</p>
           </div>
           <nav className="flex flex-wrap items-center sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
             <button
@@ -219,21 +219,21 @@ const Dashboard = () => {
               className="hd-btn hd-btn-secondary !px-3 !py-1.5 text-sm"
             >
               <FiMessageSquare className="w-4 h-4" aria-hidden="true" />
-              <span>Feedback</span>
+              <span>Comentarios</span>
             </button>
             <Link
               to="/settings"
               className="hd-btn hd-btn-secondary !px-3 !py-1.5 text-sm"
             >
               <FiSettings className="w-4 h-4" aria-hidden="true" />
-              <span>Settings</span>
+              <span>Configuración</span>
             </Link>
             <button
               onClick={() => signOut(auth)}
               className="hd-btn hd-btn-secondary !px-3 !py-1.5 text-sm"
             >
               <FiLogOut className="w-4 h-4" aria-hidden="true" />
-              <span>Logout</span>
+              <span>Salir</span>
             </button>
           </nav>
         </header>
@@ -242,8 +242,8 @@ const Dashboard = () => {
           <div className="hd-alert mb-6 border-ink bg-sun-light text-ink">
             {business.error
               ? errorMessage(business.error)
-              : 'Your booking page is not live yet. Finish your services, staff and hours in '}
-            {!business.error && <Link to="/settings" className="hd-link">Settings</Link>}
+              : 'Tu página de reservas todavía no está publicada. Completa tus servicios, personal y horario en '}
+            {!business.error && <Link to="/settings" className="hd-link">Configuración</Link>}
           </div>
         )}
 
@@ -268,7 +268,7 @@ const Dashboard = () => {
                     <span className="text-2xl font-extrabold text-ink">{business.data ? metric.value : '—'}</span>
                   ) : (
                     <span className="block h-8 w-20 my-0.5 rounded-md bg-paper-deep animate-pulse motion-reduce:animate-none">
-                      <span className="sr-only">Loading</span>
+                      <span className="sr-only">Cargando</span>
                     </span>
                   )}
                   <p className={`text-sm ${
@@ -293,7 +293,7 @@ const Dashboard = () => {
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
                 <h2 className="relative inline-block self-start">
                   <span className="hd-title text-4xl">
-                    {selectedDate ? formatLocalDate(selectedLocalDate, { weekday: 'long', month: 'long', day: 'numeric' }) : 'Upcoming Appointments'}
+                    {selectedDate ? capitalize(formatLocalDate(selectedLocalDate, { weekday: 'long', month: 'long', day: 'numeric' })) : 'Próximas citas'}
                   </span>
                   <Underline className="absolute -bottom-2 left-0 w-full h-3 text-sun" />
                 </h2>
@@ -303,7 +303,7 @@ const Dashboard = () => {
                       onClick={() => setSelectedDate(null)}
                       className="hd-btn hd-btn-secondary !px-4 !py-2 text-sm flex-1 sm:flex-none"
                     >
-                      Show upcoming
+                      Ver próximas
                     </button>
                   )}
                   <button
@@ -311,7 +311,7 @@ const Dashboard = () => {
                     className="hd-btn hd-btn-secondary !px-4 !py-2 text-sm flex-1 sm:flex-none"
                   >
                     <FiCalendar className="w-4 h-4" aria-hidden="true" />
-                    View All
+                    Ver todas
                   </button>
                   <button
                     onClick={() => {
@@ -323,7 +323,7 @@ const Dashboard = () => {
                     className="hd-btn !px-4 !py-2 text-sm flex-1 sm:flex-none"
                   >
                     <FiPlus className="w-4 h-4" aria-hidden="true" />
-                    New Appointment
+                    Nueva cita
                   </button>
                 </div>
               </div>
@@ -335,13 +335,14 @@ const Dashboard = () => {
               ) : currentViewAppointments.length === 0 ? (
                 <div className="text-center py-8">
                   <Star className="mx-auto w-8 h-8 text-sun mb-2" />
-                  <p className="hd-title text-3xl text-ink">{selectedDate ? 'No appointments scheduled for this date' : 'No upcoming appointments'}</p>
+                  <p className="hd-title text-3xl text-ink">{selectedDate ? 'No hay citas para este día' : 'No hay próximas citas'}</p>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar" data-testid="day-list">
                   {currentViewAppointments.map((appointment) => (
                     <motion.div
                       key={`appointment-${appointment.id}`}
+                      data-starts-at={appointment.startsAt}
                       layout
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -352,7 +353,7 @@ const Dashboard = () => {
                         <div className="min-w-0 break-words">
                           <h3 className="text-lg font-bold text-ink">{appointment.client?.name}</h3>
                           <p className="text-ink text-sm">
-                            {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} at {formatTime(appointment.startsAt, timezone)}
+                            {formatLocalDate(appointment.localDate, { month: 'long', day: 'numeric', year: 'numeric' })} a las {formatTime(appointment.startsAt, timezone)}
                           </p>
                           <p className="text-ink-soft text-sm">{appointment.serviceSnapshot?.name}</p>
                           <NotificationStatus notification={appointment.notification} onRetry={() => handleRetryEmail(appointment)} />
@@ -363,7 +364,7 @@ const Dashboard = () => {
                             {editingStatus === appointment.id ? (
                               <select
                                 autoFocus
-                                aria-label="Change status"
+                                aria-label="Cambiar estado"
                                 className="hd-input !mt-0 !w-auto !py-1 text-xs"
                                 value=""
                                 onChange={(e) => handleStatusChange(appointment, e.target.value)}
@@ -378,7 +379,7 @@ const Dashboard = () => {
                               <button
                                 onClick={() => appointment.status === 'confirmed' && setEditingStatus(appointment.id)}
                                 className={`hd-badge ${statusClass(appointment.status)} ${appointment.status === 'confirmed' ? 'hover:opacity-80' : 'cursor-default'}`}
-                                title={appointment.status === 'confirmed' ? 'Change status' : undefined}
+                                title={appointment.status === 'confirmed' ? 'Cambiar estado' : undefined}
                               >
                                 {statusLabel(appointment.status)}
                               </button>
@@ -387,7 +388,7 @@ const Dashboard = () => {
                               <button
                                 onClick={() => handleEditAppointment(appointment)}
                                 className="p-1.5 rounded-lg text-marker hover:bg-marker-light transition-colors"
-                                aria-label="Edit appointment"
+                                aria-label="Editar cita"
                               >
                                 <FiEdit2 className="w-4 h-4" aria-hidden="true" />
                               </button>
@@ -395,7 +396,7 @@ const Dashboard = () => {
                                 <button
                                   onClick={() => setAppointmentToCancel(appointment)}
                                   className="p-1.5 rounded-lg text-ink-soft hover:text-coral hover:bg-coral-light transition-colors"
-                                  aria-label="Cancel appointment"
+                                  aria-label="Cancelar cita"
                                 >
                                   <FiXCircle className="w-4 h-4" aria-hidden="true" />
                                 </button>
@@ -474,10 +475,10 @@ const Dashboard = () => {
                   className="hd-card mx-auto w-full max-w-sm p-6 font-sans text-ink"
                 >
                   <Dialog.Title className="hd-title text-3xl mb-3">
-                    Cancel appointment
+                    Cancelar cita
                   </Dialog.Title>
                   <Dialog.Description className="text-ink-soft mb-6">
-                    Cancel {appointmentToCancel.client?.name}&apos;s appointment? The time becomes available to other clients.
+                    ¿Cancelar la cita de {appointmentToCancel.client?.name}? La hora queda libre para otros clientes.
                   </Dialog.Description>
 
                   <div className="flex flex-wrap justify-end gap-3">
@@ -485,13 +486,13 @@ const Dashboard = () => {
                       className={`hd-btn hd-btn-secondary !px-4 ${dialogFocus}`}
                       onClick={() => setAppointmentToCancel(null)}
                     >
-                      Keep it
+                      Mantenerla
                     </button>
                     <button
                       className={`hd-btn !bg-coral !px-4 ${dialogFocus}`}
                       onClick={handleConfirmCancel}
                     >
-                      Cancel appointment
+                      Cancelar cita
                     </button>
                   </div>
                 </Dialog.Panel>
