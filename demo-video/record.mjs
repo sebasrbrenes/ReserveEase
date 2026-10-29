@@ -9,7 +9,16 @@ import { chromium } from '@playwright/test';
 const APP = process.env.APP_URL || 'http://localhost:3000';
 const OUT = process.env.OUT_DIR || `demo-video/out/${process.env.DEMO_LANG || 'en'}`;
 const OWNER = { email: 'barberia@demo.test', password: 'demo1234' };
-const VIEWPORT = { width: 1280, height: 720 };
+// The page is laid out as a 1280x720 window and drawn at 1.5x (CSS zoom on the
+// root): screencast frames come at the viewport's size, so this is what gives
+// the camera full-resolution 1920x1080 frames to zoom into. Coordinates in this
+// script are viewport pixels (1920x1080).
+const ZOOM = 1.5;
+const VIEWPORT = { width: 1920, height: 1080 };
+const zoomPage = (zoom) => {
+  const apply = () => { document.documentElement.style.zoom = String(zoom); };
+  if (document.documentElement) apply(); else addEventListener('DOMContentLoaded', apply);
+};
 
 // One take per language (DEMO_LANG=en|es). The interface texts the script
 // clicks on come from the app's own copy, so they follow its wording.
@@ -56,10 +65,12 @@ const CURSOR = () => {
     const ring = document.createElement('div');
     Object.assign(ring.style, { position: 'fixed', width: '34px', height: '34px', marginLeft: '-17px', marginTop: '-17px', borderRadius: '50%', border: '3px solid #2450B8', zIndex: 2147483646, pointerEvents: 'none', opacity: 0, transform: 'scale(.4)', transition: 'opacity 350ms, transform 350ms' });
     document.documentElement.appendChild(ring);
-    addEventListener('mousemove', (e) => { c.style.left = `${e.clientX - 2}px`; c.style.top = `${e.clientY - 2}px`; }, true);
+    // Event coordinates are viewport pixels; the pointer lives inside the zoomed root.
+    const z = () => parseFloat(document.documentElement.style.zoom) || 1;
+    addEventListener('mousemove', (e) => { c.style.left = `${e.clientX / z() - 2}px`; c.style.top = `${e.clientY / z() - 2}px`; }, true);
     addEventListener('mousedown', (e) => {
       c.style.transform = 'scale(.85)';
-      Object.assign(ring.style, { left: `${e.clientX}px`, top: `${e.clientY}px`, transition: 'none', opacity: 1, transform: 'scale(.4)' });
+      Object.assign(ring.style, { left: `${e.clientX / z()}px`, top: `${e.clientY / z()}px`, transition: 'none', opacity: 1, transform: 'scale(.4)' });
       requestAnimationFrame(() => requestAnimationFrame(() => Object.assign(ring.style, { transition: 'opacity 350ms, transform 350ms', opacity: 0, transform: 'scale(1.3)' })));
     }, true);
     addEventListener('mouseup', () => { c.style.transform = ''; }, true);
@@ -115,8 +126,9 @@ class Recorder {
     this.session = null;
   }
 
-  mark(type) {
-    if (this.session) this.events.push({ type, t: this.now(), segment: this.segments.length - 1 });
+  // x, y: where it happened, and box: the element clicked, in viewport pixels (for the camera).
+  mark(type, x, y, box) {
+    if (this.session) this.events.push({ type, t: this.now(), segment: this.segments.length - 1, x, y, box });
   }
 
   // Frame times and events relative to the start of the video.
@@ -132,7 +144,8 @@ class Recorder {
       duration: offset,
       segments: this.segments.map((s, i) => ({ start: startOf[i], duration: s.end - s.start })),
       frames: this.frames.map((f) => ({ file: f.file, t: rel(f) })),
-      events: this.events.map((e) => ({ type: e.type, t: rel(e) })),
+      scale: 1,
+      events: this.events.map((e) => ({ type: e.type, t: rel(e), x: e.x, y: e.y, box: e.box })),
     };
   }
 }
@@ -153,23 +166,26 @@ const glide = async (page, x, y) => {
 };
 
 const scrollTo = async (locator, block = 'center') => {
+  rec.mark('scroll');
   await locator.evaluate((el, b) => el.scrollIntoView({ behavior: 'smooth', block: b }), block);
   await sleep(900);
 };
 
 const pointAt = async (page, locator) => {
   let box = await locator.boundingBox();
-  if (box.y < 70 || box.y + box.height > VIEWPORT.height - 20) {
+  if (box.y < 70 * ZOOM || box.y + box.height > VIEWPORT.height - 20 * ZOOM) {
     await scrollTo(locator);
     box = await locator.boundingBox();
   }
   await glide(page, box.x + box.width / 2, box.y + box.height / 2);
   await sleep(180);
+  return box;
 };
 
 const click = async (page, locator, pause = 450) => {
-  await pointAt(page, locator);
-  rec.mark('click');
+  const box = await pointAt(page, locator);
+  const at = pointers.get(page);
+  rec.mark('click', at.x, at.y, box);
   await page.mouse.down();
   await sleep(70);
   await page.mouse.up();
@@ -201,13 +217,14 @@ const main = async () => {
   mkdirSync(join(OUT, 'frames'), { recursive: true });
 
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
-  const options = { viewport: VIEWPORT, deviceScaleFactor: 1.5, locale: TAKE.locale, timezoneId: TAKE.business.timezone };
+  const options = { viewport: VIEWPORT, deviceScaleFactor: 1, locale: TAKE.locale, timezoneId: TAKE.business.timezone };
   // The owner's interface language (the app's EN/ES switch keeps it here).
   const setLanguage = (lang) => { try { localStorage.setItem('reserveease.language', lang); } catch { /* ignore */ } };
 
   // Off camera: the owner signs in and sets up the business for this take.
   const owner = await browser.newContext(options);
   await owner.addInitScript(CURSOR);
+  await owner.addInitScript(zoomPage, ZOOM);
   await owner.addInitScript(setLanguage, LANG);
   const barber = await owner.newPage();
   await barber.goto(`${APP}/login`);
@@ -241,8 +258,8 @@ const main = async () => {
   await sleep(1200);
   await barber.evaluate(() => document.getElementById('horario').scrollIntoView({ block: 'start' }));
   await barber.evaluate(() => window.scrollBy(0, -16));
-  await barber.mouse.move(900, 560);
-  pointers.set(barber, { x: 900, y: 560 });
+  await barber.mouse.move(900 * ZOOM, 560 * ZOOM);
+  pointers.set(barber, { x: 900 * ZOOM, y: 560 * ZOOM });
   await sleep(500);
 
   // 1. The barber opens Sundays and adds a service.
@@ -274,20 +291,21 @@ const main = async () => {
   const dayLabel = TAKE.dayLabel(day);
   if (day.getMonth() !== new Date().getMonth()) await barber.getByRole('button', { name: ui.calendar.next }).click();
   await barber.locator(`.grid-cols-7 > button:is([aria-label="${dayLabel}"], [aria-label^="${dayLabel},"])`).click();
-  await barber.mouse.move(1000, 640);
-  pointers.set(barber, { x: 1000, y: 640 });
+  await barber.mouse.move(1000 * ZOOM, 640 * ZOOM);
+  pointers.set(barber, { x: 1000 * ZOOM, y: 640 * ZOOM });
   await sleep(1200);
 
   // 2–4. A client opens the booking link and books.
   const visitor = await browser.newContext(options);
   await visitor.addInitScript(CURSOR);
+  await visitor.addInitScript(zoomPage, ZOOM);
   await visitor.addInitScript(setLanguage, LANG);
   const client = await visitor.newPage();
   await client.goto(`${APP}/book/barberia-demo`);
   await client.getByText(BUSINESS_NAME, { exact: true }).waitFor();
   await sleep(1000);
-  await client.mouse.move(640, 600);
-  pointers.set(client, { x: 640, y: 600 });
+  await client.mouse.move(640 * ZOOM, 600 * ZOOM);
+  pointers.set(client, { x: 640 * ZOOM, y: 600 * ZOOM });
 
   await rec.start(client);
   await sleep(1300);
@@ -310,7 +328,8 @@ const main = async () => {
   await click(client, client.getByRole('button', { name: TAKE.book }), 0);
   await client.waitForURL(/\/booking\/success\//);
   await client.getByText(TAKE.confirmed).waitFor();
-  rec.mark('success');
+  const card = await client.getByText(TAKE.confirmed).boundingBox();
+  rec.mark('success', card.x + card.width / 2, card.y + card.height / 2 + 90 * ZOOM);
   await sleep(2600);
   await rec.stop();
 
@@ -319,7 +338,8 @@ const main = async () => {
   await sleep(900);
   await barber.evaluate(() => window.dispatchEvent(new Event('focus')));
   await barber.getByText(CLIENT.name).first().waitFor();
-  rec.mark('pop');
+  const row = await barber.getByText(CLIENT.name).first().boundingBox();
+  rec.mark('pop', row.x + 220 * ZOOM, row.y + 20 * ZOOM);
   await sleep(700);
   await pointAt(barber, barber.getByText(CLIENT.name).first());
   await sleep(2600);

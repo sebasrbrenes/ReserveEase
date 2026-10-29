@@ -129,10 +129,10 @@ const es = {
     unavailable: 'El video no está disponible en este momento.',
     steps: [
       [0, 'El barbero abre los domingos y agrega un servicio'],
-      [17.5, 'Su clienta abre el enlace de reservas'],
-      [19.2, 'Elige servicio, barbero, día y hora'],
-      [33.0, 'La cita queda confirmada'],
-      [36.1, 'Y aparece sola en la agenda del barbero'],
+      [18.8, 'Su clienta abre el enlace de reservas'],
+      [20.7, 'Elige servicio, barbero, día y hora'],
+      [35.0, 'La cita queda confirmada'],
+      [38.2, 'Y aparece sola en la agenda del barbero'],
     ],
   },
   ticket: {

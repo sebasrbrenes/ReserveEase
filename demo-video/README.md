@@ -13,6 +13,12 @@ What it shows, in about 40 seconds:
 4. The booking is confirmed.
 5. The barber's dashboard, already open on that day, refreshes and shows it.
 
+The camera work (eased zooms that follow each click and frame the whole field,
+a closer look at the confirmation and at the new appointment) is rendered by
+[screenstudio-alt](https://github.com/connerkward/screenstudio-alternative-skill)'s
+`render.py`, vendored in `vendor/screenstudio-alt/` (MIT). The page is drawn at
+1.5x, so the frames are 1920x1080 and the zooms stay sharp in the 1280x720 video.
+
 There is one take per language, `reserveease-demo-en.mp4` and
 `reserveease-demo-es.mp4`, each with its poster. The English take renames the
 seeded services and uses dollars and New York time off camera; the Spanish one
@@ -21,7 +27,7 @@ language.
 
 ## Re-recording
 
-Needs ffmpeg (with libx264) and Python with numpy.
+Needs ffmpeg (with libx264) and Python with numpy and Pillow.
 
 ```sh
 npm run emulators                     # terminal 1, from the repo root

@@ -127,10 +127,10 @@ const en = {
     unavailable: 'The video isn’t available right now.',
     steps: [
       [0, 'The barber opens on Sundays and adds a service'],
-      [17.5, 'A client opens his booking link'],
-      [19.2, 'She picks the service, the barber, the day and the time'],
-      [32.8, 'The appointment is confirmed'],
-      [36.0, 'And it shows up on the barber’s calendar by itself'],
+      [18.6, 'A client opens his booking link'],
+      [20.5, 'She picks the service, the barber, the day and the time'],
+      [34.6, 'The appointment is confirmed'],
+      [37.8, 'And it shows up on the barber’s calendar by itself'],
     ],
   },
   ticket: {
