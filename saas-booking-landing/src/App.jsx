@@ -18,6 +18,8 @@ import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import PrivacyPolicyEn from './pages/legal/PrivacyPolicyEn';
 import Terms from './pages/legal/Terms';
 import TermsEn from './pages/legal/TermsEn';
+import Refunds from './pages/legal/Refunds';
+import RefundsEn from './pages/legal/RefundsEn';
 import About from './pages/company/About';
 
 function App() {
@@ -54,6 +56,8 @@ function App() {
           <Route path="/privacy-policy/en" element={<PrivacyPolicyEn />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/terms/en" element={<TermsEn />} />
+          <Route path="/refunds" element={<Refunds />} />
+          <Route path="/refunds/en" element={<RefundsEn />} />
 
           {/* Company Pages */}
           <Route path="/about" element={<About />} />

@@ -27,7 +27,7 @@ app.disable('x-powered-by');
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  methods: ['GET', 'POST', 'PATCH'],
+  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   credentials: true
 }));
 // Paddle signs the raw body, so its webhook is read before the JSON parser.

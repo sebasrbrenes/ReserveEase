@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiHelpCircle, FiMail, FiX } from 'react-icons/fi';
 import { useLanguage } from '../../i18n/LanguageContext';
 
-const SUPPORT_EMAIL = 'help@reservease.com';
+// Set VITE_SUPPORT_EMAIL to a mailbox you read.
+const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'help@reserveease.com';
 
 const HelpButton = () => {
   const [isOpen, setIsOpen] = useState(false);

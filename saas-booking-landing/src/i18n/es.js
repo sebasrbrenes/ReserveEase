@@ -30,6 +30,7 @@ const es = {
     contact: 'Contacto',
     privacy: 'Privacidad',
     terms: 'Términos',
+    refunds: 'Reembolsos',
   },
   // The hour written in the red margin of each scene.
   times: {

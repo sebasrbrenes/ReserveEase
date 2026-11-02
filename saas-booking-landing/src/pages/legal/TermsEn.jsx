@@ -6,7 +6,7 @@ import { LegalPage, List, Section } from '../../components/common/LegalPage';
 const TermsEn = () => (
   <LegalPage
     title="Terms of use"
-    updated="October 28, 2026"
+    updated="November 2, 2026"
     lang="en"
     other={{ to: '/terms', lang: 'es', label: 'Leer en español' }}
   >
@@ -24,7 +24,8 @@ const TermsEn = () => (
         payment is handled by Paddle.com, our online reseller and Merchant of Record, which processes the payment
         and issues the invoice; by paying you also accept its buyer terms. The subscription renews every month
         until you cancel it. If you cancel, you keep access until the end of the period you already paid for.
-        We never charge you unless you expressly subscribe.
+        We never charge you unless you expressly subscribe. You can ask for a refund within 14 days of any charge,
+        as the <Link to="/refunds/en" className="hd-link">refund policy</Link> explains.
       </p>
       <p>
         The service may change or have errors or interruptions. We keep improving it, but we
@@ -37,7 +38,7 @@ const TermsEn = () => (
         <li>You must be of legal age and authorized to register the business.</li>
         <li>The business information (services, prices, hours) must be true; it is what your clients see.</li>
         <li>Keep your password safe. You are responsible for what is done with your account and must tell us if you think someone else got in.</li>
-        <li>You can close your account at any time by writing to us.</li>
+        <li>You can delete your account at any time from your settings, or by writing to us. Before that, you can download your appointments as a CSV file.</li>
       </List>
     </Section>
 

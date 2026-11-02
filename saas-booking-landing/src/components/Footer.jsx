@@ -22,6 +22,7 @@ const Footer = () => {
             <li><a href={`mailto:${CONTACT_EMAIL}`} className={linkClass}>{t.footer.contact}</a></li>
             <li><Link to={`/privacy-policy${suffix}`} className={linkClass}>{t.footer.privacy}</Link></li>
             <li><Link to={`/terms${suffix}`} className={linkClass}>{t.footer.terms}</Link></li>
+            <li><Link to={`/refunds${suffix}`} className={linkClass}>{t.footer.refunds}</Link></li>
           </ul>
         </nav>
       </div>
