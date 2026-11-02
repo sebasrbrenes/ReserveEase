@@ -195,9 +195,35 @@ cuándo empieza. Sin Paddle configurado nunca se bloquea.
 
 Sin esas variables la app dice que los pagos todavía no están disponibles y no ofrece checkout.
 
+### Recordatorios por SMS (Telnyx)
+
+Solo se envían recordatorios, nunca mensajes promocionales. Cada condición se revisa cuando el recordatorio vence:
+
+1. **Consentimiento.** El formulario público muestra una casilla sin marcar, separada de la reserva, solo si el negocio
+   puede enviar SMS. El texto lo arma el servidor (`src/messaging/smsConsent.js`, versionado) y la cita guarda como
+   evidencia la versión, el texto, el número, la fecha, el user agent y un hash de la IP. Si el negocio cambia el
+   teléfono de la cita, el consentimiento se pierde. Las citas creadas desde el panel nunca tienen consentimiento.
+2. **Negocio aprobado.** Las operadoras de EE. UU. exigen registrar a cada negocio (10DLC: su marca, su campaña y su
+   número; Telnyx no permite compartir un número entre negocios). El dueño envía sus datos desde Configuración
+   (`POST .../messaging/sms/request`), el registro se hace en el portal de Telnyx y el resultado se guarda con
+   `node scripts/sms-status.js <businessId> approved +1NUMERO [brandId] [campaignId]` (o `rejected`/`suspended`).
+3. **Complemento activo** y recordatorios encendidos.
+4. **Sin baja.** Un STOP al número del negocio (webhook `message.received`) lo guarda en
+   `businesses/{id}/smsOptOuts/{hash del teléfono}`; START lo quita. HELP lo responde la autorrespuesta del número en Telnyx.
+5. **Cuota.** 100 por ciclo, descontados en una transacción junto con la tarea: dos workers no pueden pasarse ni
+   contar dos veces. Si Telnyx rechaza el mensaje, la unidad se devuelve.
+
+El SMS se programa 24 horas antes, movido a la franja de 8:00 a 21:00 en la zona del negocio y sin texto con tildes
+(cabe en un segmento de 160 caracteres). Cada envío queda en `smsMessages/{tarea}` con el estado y el costo que
+reporta Telnyx en `message.sent`/`message.finalized` (webhook firmado con Ed25519, eventos repetidos ignorados).
+
+Configuración: ver `SMS_MODE` y `TELNYX_*` en `saas-booking-backend/.env.example`. Mientras `SMS_MODE` no sea
+`live`, todo funciona igual pero los SMS quedan como `simulated`.
+
 ## Limitaciones conocidas
 
-- Sin Resend configurado (`NOTIFICATIONS_MODE=live`) los correos solo se simulan. No hay SMS.
+- Sin Resend configurado (`NOTIFICATIONS_MODE=live`) los correos solo se simulan. Sin `SMS_MODE=live` los SMS también.
+- Telnyx no tiene clave de idempotencia: si el worker se detiene justo después de que Telnyx acepta un SMS y antes de guardarlo, ese SMS podría salir dos veces. El lease de la tarea deja esa ventana en segundos y el id de la tarea viaja como `tag`.
 - Plan gratis de Resend: 100 correos al día (UTC) y 3.000 al mes para todos los negocios juntos. Al agotarse la cuota diaria el worker espera al día siguiente sin gastar intentos (máximo 7 esperas); un recordatorio que llega tarde a la cita se descarta.
 - El id de cada tarea se envía como clave de idempotencia a Resend (la guarda 24 horas), así que un worker que se detiene después de enviar y antes de guardar el resultado no duplica el correo al reintentarse.
 - Las citas guardadas con el modelo anterior (colección raíz `appointments`) no aparecen en el panel; no hay migración.

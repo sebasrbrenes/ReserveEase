@@ -6,6 +6,7 @@ import {
 } from '../../services/api';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { isPaddleReady, openCheckout } from '../../utils/paddle';
+import SmsRegistrationForm from './SmsRegistrationForm';
 
 // How long to wait for Paddle's webhook after a completed checkout or an add-on change.
 const CONFIRM_ATTEMPTS = 15;
@@ -24,6 +25,7 @@ const SubscriptionSection = ({ businessId, email }) => {
   const [billing, setBilling] = useState({ loading: true, data: null, error: null });
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(null); // null | 'checkout' | 'addon'
+  const [registering, setRegistering] = useState(false);
   const mounted = useRef(true);
 
   const load = useCallback(async () => {
@@ -241,14 +243,23 @@ const SubscriptionSection = ({ businessId, email }) => {
                 {data.sms.status === 'not_requested' && (
                   <>
                     <p className="hd-help mt-2">{smsCopy.approvalNeeded}</p>
-                    <button
-                      type="button"
-                      onClick={() => act(() => requestSms(businessId), smsCopy.requested)}
-                      disabled={busy}
-                      className="hd-btn hd-btn-secondary mt-3 w-full sm:w-auto"
-                    >
-                      {smsCopy.request}
-                    </button>
+                    {registering ? (
+                      <SmsRegistrationForm
+                        busy={busy}
+                        defaultEmail={email}
+                        onCancel={() => setRegistering(false)}
+                        onSubmit={(body) => act(() => requestSms(businessId, body), smsCopy.requested)}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setRegistering(true)}
+                        disabled={busy}
+                        className="hd-btn hd-btn-secondary mt-3 w-full sm:w-auto"
+                      >
+                        {smsCopy.request}
+                      </button>
+                    )}
                   </>
                 )}
                 {['pending', 'rejected', 'suspended'].includes(data.sms.status) && (

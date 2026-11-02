@@ -18,8 +18,9 @@ import {
   accessFor, canChangeItems, enforcementFromEnv, hasAddon, itemsWithAddon, LIVE_STATUSES, subscriptionRef, toBillingView,
 } from '../billing/subscription.js';
 import {
-  readSmsUsage, requestSms, smsAccountOf, smsAccountRef, SmsAccountError, updateSmsSettings,
+  readSmsUsage, requestSms, smsAccountOf, smsAccountRef, SmsAccountError, smsRegistrationSchema, updateSmsSettings,
 } from '../messaging/smsAccount.js';
+import { SMS_CONSENT_VERSION, smsConsentText } from '../messaging/smsConsent.js';
 import { getAuth } from 'firebase-admin/auth';
 import firebaseApp from '../../config/firebase.js';
 import { requireAuth, requireMember } from './auth.js';
@@ -57,6 +58,13 @@ const accessOf = async (businessId) => {
   const snap = await subscriptionRef(db, businessId).get();
   return accessFor(snap.data(), { enforcement: enforcementFromEnv(process.env, { billingConfigured: isBillingConfigured() }) });
 };
+// SMS reminders are offered to clients when the add-on is active, the
+// business is approved and its reminders are on.
+const smsOffered = async (businessId) => {
+  const [sub, sms] = await db.getAll(subscriptionRef(db, businessId), smsAccountRef(db, businessId));
+  const account = smsAccountOf(sms.data());
+  return hasAddon(sub.data(), 'sms') && account.status === 'approved' && account.remindersEnabled;
+};
 const bookingsPaused = () => new ApiError(403, 'BOOKINGS_PAUSED', 'This business is not taking online bookings right now');
 
 // Public profile and catalog of a published business (section 13.2).
@@ -66,7 +74,11 @@ router.get('/public/businesses/:slug', validate(slugParams, 'params'), async (re
     if (!business) throw new ApiError(404, 'BUSINESS_NOT_FOUND', 'Business not found');
     // status is internal; only published businesses reach this point.
     const { status, ...publicFields } = business;
-    res.json({ data: publicFields, requestId: req.requestId });
+    // The booking form offers SMS reminders only when the business can send them.
+    const sms = await smsOffered(business.businessId)
+      ? { version: SMS_CONSENT_VERSION, text: smsConsentText(business.name, business.language) }
+      : null;
+    res.json({ data: { ...publicFields, smsConsent: sms }, requestId: req.requestId });
   } catch (error) {
     next(error);
   }
@@ -142,6 +154,7 @@ router.post(
         businessId: published.businessId,
         command: req.validated.body,
         idempotencyKey: req.validated.headers['idempotency-key'],
+        requestContext: { ip: req.ip, userAgent: req.get('user-agent') },
       });
       res.status(created ? 201 : 200).json({ data: result, requestId: req.requestId });
     } catch (error) {
@@ -316,8 +329,10 @@ priv.get('/availability', validate(privateAvailabilityQuery, 'query'), handle(as
 }));
 
 // Administrative booking: same rules, locks and idempotency as a public one.
+// SMS consent must come from the client on the public form, never from the business.
 const adminBookingSchema = publicBookingRequestSchema.extend({
   privacyNoticeVersion: z.string().max(40).default('admin'),
+  smsConsent: z.literal(false).default(false),
 });
 priv.post(
   '/appointments',
@@ -523,9 +538,9 @@ priv.delete('/billing/addons/sms', requireOwner, changeSmsAddon(false));
 const fromSmsAccount = (error) => (error instanceof SmsAccountError ? new ApiError(409, error.code, error.message) : error);
 
 // The owner asks for SMS: the business is queued for carrier registration.
-priv.post('/messaging/sms/request', requireOwner, handle(async (req, res) => {
+priv.post('/messaging/sms/request', requireOwner, validate(smsRegistrationSchema, 'body'), handle(async (req, res) => {
   try {
-    await requestSms(db, { businessId: req.member.businessId, actorUid: req.user.uid });
+    await requestSms(db, { businessId: req.member.businessId, actorUid: req.user.uid, registration: req.validated.body });
   } catch (error) {
     throw fromSmsAccount(error);
   }

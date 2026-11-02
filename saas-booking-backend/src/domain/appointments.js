@@ -7,7 +7,7 @@ import { computeAvailability, DomainError, occupancyOf } from './availability.js
 import { lockIdsFor, readExceptions } from './booking.js';
 import { businessSchema, staffSchema } from './schemas.js';
 import { localDateOf, MINUTE } from './time.js';
-import { cancelJobs, queueNotifications, readPendingJobs } from '../notifications/jobs.js';
+import { cancelJobs, queueNotifications, readPendingJobs, wantsSms } from '../notifications/jobs.js';
 
 // A no-show can be recorded once this long has passed since the start.
 export const NO_SHOW_GRACE_MINUTES = 15;
@@ -131,6 +131,7 @@ export const rescheduleAppointment = (db, {
     cancelJobs(tx, jobs);
     queueNotifications(tx, db, {
       businessId, appointmentId, version, template: 'reschedule_email', startsAtMs, nowMs: clock(),
+      smsReminder: wantsSms(current) ? { timeZone: business.timezone } : null,
     });
     const update = {
       staffId: staff.id,
@@ -161,6 +162,10 @@ export const updateAppointmentDetails = (db, { businessId, appointmentId, expect
     const current = await readAppointment(tx, ref, expectedVersion);
     const update = { version: current.version + 1, updatedAt: FieldValue.serverTimestamp() };
     if (changes.client) update.client = { ...current.client, ...changes.client };
+    // SMS consent was given for one number; a new number has none.
+    if (changes.client?.phoneE164 !== undefined && changes.client.phoneE164 !== current.client?.phoneE164 && current.smsConsent) {
+      update.smsConsent = false;
+    }
     if (changes.notes !== undefined) update.notes = changes.notes;
     tx.update(ref, update);
     audit(tx, base, 'appointment.updated', appointmentId, actorUid, { fields: Object.keys(changes) });

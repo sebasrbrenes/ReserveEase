@@ -120,6 +120,7 @@ const ERROR_MESSAGES = {
     RATE_LIMITED: 'Demasiados intentos. Espera un momento e inténtalo de nuevo.',
     SUBSCRIPTION_REQUIRED: 'Tu suscripción no está activa. Suscríbete en Configuración para seguir usando ReserveEase.',
     BOOKINGS_PAUSED: 'Este negocio no está recibiendo reservas en línea por ahora.',
+    CONSENT_TEXT_OUTDATED: 'El texto de autorización de SMS cambió. Recarga la página e inténtalo de nuevo.',
     NETWORK: 'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
     DEFAULT: 'Algo salió mal. Inténtalo de nuevo.',
   },
@@ -136,6 +137,7 @@ const ERROR_MESSAGES = {
     RATE_LIMITED: 'Too many attempts. Please wait a moment and try again.',
     SUBSCRIPTION_REQUIRED: 'Your subscription is not active. Subscribe in Settings to keep using ReserveEase.',
     BOOKINGS_PAUSED: 'This business is not taking online bookings right now.',
+    CONSENT_TEXT_OUTDATED: 'The SMS consent text changed. Reload the page and try again.',
     NETWORK: 'Could not reach the server. Check your connection and try again.',
     DEFAULT: 'Something went wrong. Please try again.',
   },
@@ -170,7 +172,7 @@ export const openBillingPortal = (businessId) => request('POST', biz(businessId,
 // SMS add-on ($10 USD/month on the same subscription) and its settings.
 export const addSmsAddon = (businessId) => request('POST', biz(businessId, '/billing/addons/sms'), { signedIn: true });
 export const removeSmsAddon = (businessId) => request('DELETE', biz(businessId, '/billing/addons/sms'), { signedIn: true });
-export const requestSms = (businessId) => request('POST', biz(businessId, '/messaging/sms/request'), { signedIn: true });
+export const requestSms = (businessId, registration) => request('POST', biz(businessId, '/messaging/sms/request'), { body: registration, signedIn: true });
 export const updateSmsSettings = (businessId, body) => request('PATCH', biz(businessId, '/messaging/sms'), { body, signedIn: true });
 
 // The owner's account: every appointment as a CSV file, and deleting the account.

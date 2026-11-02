@@ -54,6 +54,8 @@ export default function PublicBookingForm() {
   const [business, setBusiness] = useState(null);
   const [form, setForm] = useState({ serviceId: '', staffId: '', date: '', startsAt: '', clientName: '', email: '', phone: '', notes: '' });
   const [countryCode, setCountryCode] = useState('+1');
+  // Separate, unchecked consent to SMS reminders (offered only when the business sends them).
+  const [smsConsent, setSmsConsent] = useState(false);
   // Errors shown next to their field: { clientName, email, phone, notes }.
   const [errors, setErrors] = useState({});
   const fieldRefs = { clientName: useRef(null), email: useRef(null), phone: useRef(null), notes: useRef(null) };
@@ -145,7 +147,8 @@ export default function PublicBookingForm() {
         client: { name: form.clientName.trim(), email: form.email.trim(), phoneE164: phone },
         notes: form.notes,
         privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
-        smsConsent: false,
+        smsConsent: Boolean(business.smsConsent && phone && smsConsent),
+        ...(business.smsConsent && phone && smsConsent ? { smsConsentVersion: business.smsConsent.version } : {}),
       }, idempotencyKey);
       const service = business.services.find((s) => s.id === form.serviceId);
       const staff = business.staff.find((s) => s.id === form.staffId);
@@ -332,6 +335,18 @@ export default function PublicBookingForm() {
                 </div>
                 <FieldError id="phone-error" message={errors.phone} />
                 {!errors.phone && <p id="phone-help" className="mt-1 hd-help">{t.phoneHelp}</p>}
+                {/* The text comes from the server, which stores the same version as evidence. */}
+                {business.smsConsent && form.phone && (
+                  <label className="mt-3 flex items-start gap-3" data-testid="sms-consent">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-5 w-5 shrink-0 accent-marker"
+                      checked={smsConsent}
+                      onChange={(e) => setSmsConsent(e.target.checked)}
+                    />
+                    <span className="text-sm text-ink">{business.smsConsent.text}</span>
+                  </label>
+                )}
               </div>
 
               <div>

@@ -111,6 +111,8 @@ export const publicBookingRequestSchema = z.object({
   notes: z.string().max(500).default(''),
   privacyNoticeVersion: z.string().min(1).max(40),
   smsConsent: z.boolean().default(false),
+  // Version of the consent text the client saw (messaging/smsConsent.js).
+  smsConsentVersion: z.string().max(40).optional(),
 }).strict();
 
 // Public projection stored at publicBusinesses/{slug}: an allow-list of fields

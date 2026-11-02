@@ -10,6 +10,13 @@ import { MINUTE } from '../domain/time.js';
 import { isKnownTemplate, renderEmail } from './templates.js';
 import { SendError } from './adapters.js';
 import { manageUrlFor } from '../domain/manageLink.js';
+import { channelOf, wantsSms } from './jobs.js';
+import { hasAddon, subscriptionRef } from '../billing/subscription.js';
+import { ADDONS } from '../billing/catalog.js';
+import { cycleKeyOf, smsAccountOf, smsAccountRef, smsUsageRef } from '../messaging/smsAccount.js';
+import { hashValue } from '../messaging/smsConsent.js';
+import { renderSms } from '../messaging/smsTemplates.js';
+import { createMockSmsAdapter } from '../messaging/telnyx.js';
 
 export const LEASE_MS = 2 * MINUTE;
 export const MAX_ATTEMPTS = 5;
@@ -24,6 +31,7 @@ const STATUS_FOR_TEMPLATE = {
   reschedule_email: 'confirmed',
   reminder_email: 'confirmed',
   cancellation_email: 'cancelled',
+  reminder_sms: 'confirmed',
 };
 
 // Due jobs: queued with runAt reached, or processing with an expired lease
@@ -64,9 +72,10 @@ const finish = (db, ref, { workerId, job, outcome }) => db.runTransaction(async 
   const now = FieldValue.serverTimestamp();
   tx.update(ref, { ...outcome, leaseUntil: FieldValue.delete(), updatedAt: now });
   // A skipped job is an old one: the appointment's summary belongs to its current job.
+  // Email and SMS each keep their own summary.
   if (apt.exists && outcome.status !== 'skipped') {
     tx.update(aptRef, {
-      notification: {
+      [channelOf(job.template) === 'sms' ? 'smsNotification' : 'notification']: {
         template: job.template,
         status: outcome.status,
         lastErrorCode: outcome.lastErrorCode ?? null,
@@ -77,7 +86,100 @@ const finish = (db, ref, { workerId, job, outcome }) => db.runTransaction(async 
   return true;
 });
 
-const processJob = async (db, ref, { adapter, nowMs, workerId }) => {
+// ---------------------------------------------------------------------------
+// SMS reminders. Every condition is checked when the reminder is due, so a
+// change of add-on, approval, settings or an opt-out applies at once.
+
+export const optOutRef = (db, businessId, phoneE164) => db.doc(`businesses/${businessId}/smsOptOuts/${hashValue(phoneE164)}`);
+
+// Takes one SMS from the business's quota for this cycle, in a transaction
+// together with the job, so concurrent workers can never exceed it and a
+// retried job never counts twice.
+const reserveSms = (db, ref, { job, workerId, subscription }) => db.runTransaction(async (tx) => {
+  const key = cycleKeyOf(subscription);
+  if (!key) return 'NO_CYCLE';
+  const usageRef = smsUsageRef(db, job.businessId, key);
+  const [jobSnap, usageSnap] = await tx.getAll(ref, usageRef);
+  const current = jobSnap.data();
+  if (current?.status !== 'processing' || current.workerId !== workerId) return 'LOST_LEASE';
+  if (current.quotaCycle === key) return 'OK';
+  const limit = ADDONS.sms.entitlements.smsPerCycle;
+  const used = usageSnap.data()?.used ?? 0;
+  if (used >= limit) return 'QUOTA_EXCEEDED';
+  tx.set(usageRef, {
+    used: used + 1, limit, cycleStart: subscription.currentPeriodStart, cycleEnd: subscription.currentPeriodEnd ?? null,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  tx.update(ref, { quotaCycle: key });
+  return 'OK';
+});
+
+// A message that never left gives its unit back.
+const releaseSms = (db, ref, job) => db.runTransaction(async (tx) => {
+  const snap = await tx.get(ref);
+  const key = snap.data()?.quotaCycle;
+  if (!key) return;
+  tx.update(smsUsageRef(db, job.businessId, key), { used: FieldValue.increment(-1) });
+  tx.update(ref, { quotaCycle: FieldValue.delete() });
+});
+
+const processSms = async (db, ref, { job, apt, business, smsAdapter, nowMs, workerId }) => {
+  const done = async (status, lastErrorCode) => {
+    await finish(db, ref, { workerId, job, outcome: { status, lastErrorCode } });
+    return status;
+  };
+  if (!wantsSms(apt)) return done('disabled', 'NO_CONSENT');
+  const [subSnap, smsSnap, optOut] = await db.getAll(
+    subscriptionRef(db, job.businessId), smsAccountRef(db, job.businessId), optOutRef(db, job.businessId, apt.client.phoneE164),
+  );
+  const subscription = subSnap.data();
+  const account = smsAccountOf(smsSnap.data());
+  if (!hasAddon(subscription, 'sms')) return done('disabled', 'ADDON_INACTIVE');
+  if (account.status !== 'approved') return done('disabled', 'NOT_APPROVED');
+  if (!account.remindersEnabled) return done('disabled', 'REMINDERS_OFF');
+  if (!smsSnap.data()?.fromNumber) return done('disabled', 'NO_NUMBER');
+  if (optOut.exists) return done('opted_out', null);
+
+  const reserved = await reserveSms(db, ref, { job, workerId, subscription });
+  if (reserved === 'LOST_LEASE') return null;
+  if (reserved !== 'OK') return done('disabled', reserved);
+
+  let outcome;
+  try {
+    const message = renderSms({ appointment: apt, businessName: business?.name ?? '', language: business?.language });
+    const result = await smsAdapter.send({ ...message, from: smsSnap.data().fromNumber }, { idempotencyKey: job.id });
+    outcome = {
+      status: result.status, providerMessageId: result.providerMessageId ?? null, lastErrorCode: null,
+      cost: result.cost ?? null, sentAt: FieldValue.serverTimestamp(),
+    };
+    // Log per message: delivery updates from Telnyx's webhook land here too.
+    await db.doc(`smsMessages/${job.id}`).set({
+      businessId: job.businessId,
+      appointmentId: job.appointmentId,
+      template: job.template,
+      provider: smsAdapter.name,
+      providerMessageId: outcome.providerMessageId,
+      status: outcome.status,
+      toLast4: apt.client.phoneE164.slice(-4),
+      cost: outcome.cost,
+      cycle: cycleKeyOf(subscription),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  } catch (error) {
+    const code = error instanceof SendError ? error.code : 'SEND_ERROR';
+    const permanent = error instanceof SendError && error.permanent;
+    outcome = permanent || job.attempts >= MAX_ATTEMPTS
+      ? { status: 'failed', lastErrorCode: code }
+      : { status: 'queued', lastErrorCode: code, runAt: Timestamp.fromMillis(nowMs + backoffMs(job.attempts)) };
+    if (outcome.status === 'failed') await releaseSms(db, ref, job);
+    if (!(error instanceof SendError)) console.error(`[sms] ${job.id} failed`, error.message);
+  }
+  await finish(db, ref, { workerId, job, outcome });
+  return outcome.status;
+};
+
+const processJob = async (db, ref, { adapter, smsAdapter, nowMs, workerId }) => {
   const job = await claim(db, ref, { nowMs, workerId });
   if (!job) return null;
 
@@ -89,7 +191,7 @@ const processJob = async (db, ref, { adapter, nowMs, workerId }) => {
   // A job for an older version (the appointment was moved or cancelled since)
   // or for a state the appointment is no longer in never sends (T28).
   const current = apt
-    && isKnownTemplate(job.template)
+    && (isKnownTemplate(job.template) || job.template === 'reminder_sms')
     && (apt.notificationVersion ?? apt.version) === job.appointmentVersion
     && apt.status === STATUS_FOR_TEMPLATE[job.template];
   if (!current) {
@@ -101,6 +203,10 @@ const processJob = async (db, ref, { adapter, nowMs, workerId }) => {
   if (job.template.startsWith('reminder_') && apt.startsAt.toMillis() <= nowMs) {
     await finish(db, ref, { workerId, job, outcome: { status: 'skipped', lastErrorCode: 'TOO_LATE' } });
     return 'skipped';
+  }
+
+  if (channelOf(job.template) === 'sms') {
+    return processSms(db, ref, { job, apt, business: bizSnap.data(), smsAdapter, nowMs, workerId });
   }
 
   // The business turned client emails off (T29): nothing is sent, and the
@@ -147,13 +253,13 @@ const processJob = async (db, ref, { adapter, nowMs, workerId }) => {
  *        businessId limits the run to one business (tests).
  */
 export const processDueJobs = async (db, {
-  adapter, clock = Date.now, limit = 20, workerId = crypto.randomUUID(), businessId,
+  adapter, smsAdapter = createMockSmsAdapter(), clock = Date.now, limit = 20, workerId = crypto.randomUUID(), businessId,
 }) => {
   const nowMs = clock();
   const refs = await findDueJobs(db, Timestamp.fromMillis(nowMs), limit, businessId);
   const counts = {};
   for (const ref of refs) {
-    const status = await processJob(db, ref, { adapter, nowMs, workerId });
+    const status = await processJob(db, ref, { adapter, smsAdapter, nowMs, workerId });
     if (status) counts[status] = (counts[status] ?? 0) + 1;
   }
   return counts;
@@ -179,13 +285,13 @@ export const retryFailedJobs = (db, { businessId, appointmentId }) => db.runTran
 });
 
 // Runs the worker on an interval inside the API process.
-export const startNotificationWorker = (db, { adapter, intervalMs = 30 * 1000 }) => {
+export const startNotificationWorker = (db, { adapter, smsAdapter, intervalMs = 30 * 1000 }) => {
   let running = false;
   const tick = async () => {
     if (running) return;
     running = true;
     try {
-      await processDueJobs(db, { adapter });
+      await processDueJobs(db, { adapter, smsAdapter });
     } catch (error) {
       console.error('[notifications] worker tick failed', error.message);
     } finally {
