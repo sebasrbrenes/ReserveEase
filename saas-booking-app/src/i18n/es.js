@@ -373,6 +373,29 @@ const es = {
       BILLING_PROVIDER_ERROR: 'El proveedor de pagos no respondió. Inténtalo en un momento.',
     },
   },
+  account: {
+    title: 'Tu cuenta',
+    exportTitle: 'Descargar tus citas',
+    exportHelp: 'Un archivo CSV con todas las citas y clientes, que puedes abrir en Excel o Google Sheets.',
+    export: 'Descargar CSV',
+    exporting: 'Preparando el archivo...',
+    deleteTitle: 'Borrar tu cuenta',
+    deleteHelp: 'Borra tu negocio, tu página de reservas, todas las citas y clientes, y tu acceso. No se puede deshacer.',
+    delete: 'Borrar mi cuenta...',
+    deleteWarning: 'Tu página de reservas deja de funcionar en el acto y los clientes con citas próximas no reciben aviso. Si quieres conservarlas, descarga tus citas antes.',
+    confirmWord: 'BORRAR',
+    typeWord: (word) => `Escribe ${word} para confirmar`,
+    password: 'Tu contraseña',
+    googleAgain: 'Google te pedirá iniciar sesión de nuevo.',
+    deleteForever: 'Borrar mi cuenta para siempre',
+    deleting: 'Borrando...',
+    cancel: 'Cancelar',
+    reauthFailed: 'No pudimos confirmar que eres tú. Revisa tu contraseña e inténtalo de nuevo.',
+    errors: {
+      SUBSCRIPTION_ACTIVE: 'Primero cancela tu suscripción (Administrar suscripción, arriba). Después puedes borrar la cuenta.',
+      RECENT_SIGN_IN_REQUIRED: 'Por seguridad, inicia sesión de nuevo y vuelve a intentarlo.',
+    },
+  },
 };
 
 export default es;

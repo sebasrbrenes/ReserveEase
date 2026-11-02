@@ -14,7 +14,7 @@ export const requireAuth = async (req, res, next) => {
     if (!token.email_verified) {
       return next(new ApiError(403, 'EMAIL_NOT_VERIFIED', 'Verify your email to continue'));
     }
-    req.user = { uid: token.uid, email: token.email };
+    req.user = { uid: token.uid, email: token.email, authTime: token.auth_time };
     return next();
   } catch {
     return next(new ApiError(401, 'UNAUTHENTICATED', 'Session expired or invalid'));

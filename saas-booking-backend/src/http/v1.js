@@ -7,6 +7,7 @@ import {
   cancelAppointment, listAppointments, rescheduleAppointment, toApi, transitionAppointment, updateAppointmentDetails,
 } from '../domain/appointments.js';
 import { syncLegacyBusiness } from '../domain/legacySync.js';
+import { AccountError, allAppointments, appointmentsCsv, deleteAccount } from '../domain/account.js';
 import { isManageKeyValid } from '../domain/manageLink.js';
 import { MINUTE } from '../domain/time.js';
 import { retryFailedJobs } from '../notifications/worker.js';
@@ -14,6 +15,8 @@ import {
   createCheckoutTransaction, createPortalSession, isBillingConfigured, paddleConfig, PaddleError,
 } from '../billing/paddle.js';
 import { LIVE_STATUSES, subscriptionRef, toBillingView } from '../billing/subscription.js';
+import { getAuth } from 'firebase-admin/auth';
+import firebaseApp from '../../config/firebase.js';
 import { requireAuth, requireMember } from './auth.js';
 import { createRateLimiter } from '../../middleware/rateLimit.js';
 import {
@@ -368,14 +371,27 @@ priv.post('/appointments/:appointmentId/notifications/retry', validate(appointme
     res.json({ data: { requeued }, requestId: req.requestId });
   }));
 
+// Every appointment of the business as a CSV file, for the owner to keep.
+priv.get('/appointments/export', requireOwner, handle(async (req, res) => {
+  const appointments = (await allAppointments(db, req.member.businessId)).map(toApi);
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', 'attachment; filename="reserveease-appointments.csv"');
+  res.set('Cache-Control', 'no-store');
+  // The byte order mark makes Excel read accents correctly.
+  res.send(`\uFEFF${appointmentsCsv(appointments)}`);
+}));
+
 // ---------------------------------------------------------------------------
 // Subscription ($15 USD/month through Paddle). The browser only asks for a
 // checkout or a portal link; the subscription itself changes only through the
 // signed webhook (http/paddleWebhook.js).
 
-const requireOwner = (req, res, next) => (req.member.role === 'owner'
-  ? next()
-  : next(new ApiError(403, 'FORBIDDEN', 'Only the owner can manage the subscription')));
+// A function declaration so routes defined above can use it.
+function requireOwner(req, res, next) {
+  return req.member.role === 'owner'
+    ? next()
+    : next(new ApiError(403, 'FORBIDDEN', 'Only the owner can do this'));
+}
 
 const billingUnavailable = () => new ApiError(503, 'BILLING_NOT_CONFIGURED', 'Payments are not available yet');
 const fromPaddle = (error) => {
@@ -428,5 +444,24 @@ router.post('/me/business/sync', requireAuth, handle(async (req, res) => {
   const business = await syncLegacyBusiness(db, req.user.uid);
   res.json({ data: business, requestId: req.requestId });
 }));
+
+// Deleting the account needs a sign-in from the last few minutes, so a
+// session left open on another device cannot do it.
+const RECENT_SIGN_IN_SECONDS = 10 * 60;
+
+router.delete('/me/account', requireAuth, validate(z.object({ confirm: z.literal(true) }).strict(), 'body'),
+  handle(async (req, res) => {
+    if (!(Date.now() / 1000 - Number(req.user.authTime) <= RECENT_SIGN_IN_SECONDS)) {
+      throw new ApiError(401, 'RECENT_SIGN_IN_REQUIRED', 'Sign in again to delete the account');
+    }
+    try {
+      await deleteAccount(db, getAuth(firebaseApp), req.user.uid);
+    } catch (error) {
+      if (error instanceof AccountError) throw new ApiError(409, error.code, error.message);
+      throw error;
+    }
+    console.log('Account deleted', { requestId: req.requestId });
+    res.json({ data: { deleted: true }, requestId: req.requestId });
+  }));
 
 export default router;

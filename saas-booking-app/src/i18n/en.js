@@ -371,6 +371,29 @@ const en = {
       BILLING_PROVIDER_ERROR: 'The payment provider didn’t respond. Try again in a moment.',
     },
   },
+  account: {
+    title: 'Your account',
+    exportTitle: 'Download your appointments',
+    exportHelp: 'A CSV file with every appointment and client, which you can open in Excel or Google Sheets.',
+    export: 'Download CSV',
+    exporting: 'Preparing the file...',
+    deleteTitle: 'Delete your account',
+    deleteHelp: 'Deletes your business, your booking page, every appointment and client, and your login. It can’t be undone.',
+    delete: 'Delete my account...',
+    deleteWarning: 'Your booking page stops working right away, and clients with upcoming appointments are not notified. Download your appointments first if you want to keep them.',
+    confirmWord: 'DELETE',
+    typeWord: (word) => `Type ${word} to confirm`,
+    password: 'Your password',
+    googleAgain: 'Google will ask you to sign in again.',
+    deleteForever: 'Delete my account forever',
+    deleting: 'Deleting...',
+    cancel: 'Cancel',
+    reauthFailed: 'We couldn’t confirm it’s you. Check your password and try again.',
+    errors: {
+      SUBSCRIPTION_ACTIVE: 'Cancel your subscription first (Manage subscription, above). Then you can delete the account.',
+      RECENT_SIGN_IN_REQUIRED: 'For your security, sign in again and retry.',
+    },
+  },
 };
 
 export default en;

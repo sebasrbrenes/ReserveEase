@@ -163,3 +163,23 @@ export const retryNotifications = (businessId, id) =>
 export const getBilling = (businessId) => request('GET', biz(businessId, '/billing'), { signedIn: true });
 export const startCheckout = (businessId) => request('POST', biz(businessId, '/billing/checkout'), { signedIn: true });
 export const openBillingPortal = (businessId) => request('POST', biz(businessId, '/billing/portal'), { signedIn: true });
+
+// The owner's account: every appointment as a CSV file, and deleting the account.
+export const downloadAppointmentsCsv = async (businessId) => {
+  const user = auth.currentUser;
+  if (!user) throw new ApiError(401, 'UNAUTHENTICATED', 'Inicia sesión para continuar');
+  let response;
+  try {
+    response = await fetch(`${BACKEND_URL}/api/v1${biz(businessId, '/appointments/export')}`, {
+      headers: { Authorization: `Bearer ${await user.getIdToken()}` },
+    });
+  } catch {
+    throw new ApiError(0, 'NETWORK', 'No pudimos conectar con el servidor.');
+  }
+  if (!response.ok) {
+    const error = (await response.json().catch(() => ({}))).error || {};
+    throw new ApiError(response.status, error.code || 'UNKNOWN', error.message || 'Algo salió mal');
+  }
+  return response.blob();
+};
+export const deleteMyAccount = () => request('DELETE', '/me/account', { body: { confirm: true }, signedIn: true });

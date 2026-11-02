@@ -8,6 +8,7 @@ import { CLIENT_LANGUAGES, clientLanguage } from '../../i18n/clientCopy';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import SubscriptionSection from '../billing/SubscriptionSection';
+import AccountSection from './AccountSection';
 import { formatMoney } from '../../utils/datetime';
 
 // Businesses saved before the language setting existed show their pages in
@@ -840,6 +841,7 @@ const Settings = () => {
 
         <div className="mt-6">
           <SubscriptionSection businessId={business.data?.businessId} email={user?.email} />
+          <AccountSection businessId={business.data?.businessId} />
         </div>
       </div>
     </div>

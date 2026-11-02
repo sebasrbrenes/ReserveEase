@@ -36,7 +36,7 @@ const Terms = () => (
         <li>Debes ser mayor de edad y tener autorización para registrar el negocio.</li>
         <li>La información del negocio (servicios, precios, horarios) debe ser verdadera; es la que ven tus clientes.</li>
         <li>Cuida tu contraseña. Eres responsable de lo que se haga con tu cuenta y debes avisarnos si crees que alguien más entró.</li>
-        <li>Puedes cerrar tu cuenta cuando quieras escribiéndonos.</li>
+        <li>Puedes borrar tu cuenta cuando quieras desde la configuración, o escribiéndonos. Antes puedes descargar tus citas en un archivo CSV.</li>
       </List>
     </Section>
 

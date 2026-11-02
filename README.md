@@ -127,11 +127,13 @@ Rutas privadas del panel: requieren `Authorization: Bearer <ID token de Firebase
 | Método y ruta | Estado |
 | --- | --- |
 | `POST /api/v1/me/business/sync` | Disponible: reconstruye el negocio v2 del usuario a partir de su configuración (servicios, personal, horario, zona horaria y moneda) y devuelve su enlace público. Lo publica cuando tiene nombre, un servicio, alguien que lo atienda y un día abierto. La app lo llama al cargar y al guardar la configuración |
+| `DELETE /api/v1/me/account` | Disponible: borra el negocio, su página pública, sus avisos pendientes, la configuración y el acceso. Pide `{ "confirm": true }`, un inicio de sesión de los últimos 10 minutos y que la suscripción no se vaya a renovar |
 | `GET /api/v1/businesses/:businessId/availability?serviceId=&staffId=&date=&excludeAppointmentId=` | Disponible: horarios libres para el panel; al reprogramar, la propia cita no bloquea su horario |
 | `GET /api/v1/businesses/:businessId/appointments?from=&to=` | Disponible: citas del negocio entre dos fechas locales |
 | `POST /api/v1/businesses/:businessId/appointments` | Disponible: reserva creada desde el panel, con las mismas reglas que la pública e `Idempotency-Key` |
 | `PATCH /api/v1/businesses/:businessId/appointments/:id` | Disponible: edita contacto o notas sin tocar estado, horario ni fecha de creación |
 | `POST /api/v1/businesses/:businessId/appointments/:id/reschedule` | Disponible: mueve la cita (y opcionalmente cambia de profesional) en una sola operación; si el horario nuevo está ocupado la original queda intacta |
+| `GET /api/v1/businesses/:businessId/appointments/export` | Disponible: todas las citas del negocio en CSV (solo el dueño) |
 | `POST /api/v1/businesses/:businessId/appointments/:id/cancel` | Disponible: cancela, libera el horario y detiene los avisos pendientes; repetirla es seguro |
 | `POST /api/v1/businesses/:businessId/appointments/:id/transition` | Disponible: marca `completed` (desde la hora de inicio) o `no_show` (15 minutos después) |
 

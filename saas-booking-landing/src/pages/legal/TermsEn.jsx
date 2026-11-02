@@ -38,7 +38,7 @@ const TermsEn = () => (
         <li>You must be of legal age and authorized to register the business.</li>
         <li>The business information (services, prices, hours) must be true; it is what your clients see.</li>
         <li>Keep your password safe. You are responsible for what is done with your account and must tell us if you think someone else got in.</li>
-        <li>You can close your account at any time by writing to us.</li>
+        <li>You can delete your account at any time from your settings, or by writing to us. Before that, you can download your appointments as a CSV file.</li>
       </List>
     </Section>
 
