@@ -6,7 +6,7 @@ import { LegalPage, List, Section } from '../../components/common/LegalPage';
 const TermsEn = () => (
   <LegalPage
     title="Terms of use"
-    updated="October 28, 2026"
+    updated="November 2, 2026"
     lang="en"
     other={{ to: '/terms', lang: 'es', label: 'Leer en español' }}
   >
@@ -24,7 +24,8 @@ const TermsEn = () => (
         payment is handled by Paddle.com, our online reseller and Merchant of Record, which processes the payment
         and issues the invoice; by paying you also accept its buyer terms. The subscription renews every month
         until you cancel it. If you cancel, you keep access until the end of the period you already paid for.
-        We never charge you unless you expressly subscribe.
+        We never charge you unless you expressly subscribe. You can ask for a refund within 14 days of any charge,
+        as the <Link to="/refunds/en" className="hd-link">refund policy</Link> explains.
       </p>
       <p>
         The service may change or have errors or interruptions. We keep improving it, but we

@@ -30,6 +30,7 @@ const en = {
     contact: 'Contact',
     privacy: 'Privacy',
     terms: 'Terms',
+    refunds: 'Refunds',
   },
   times: {
     hero: '8:00', race: '9:15', chat: '11:40', business: '2:00', demo: '4:00',

@@ -154,7 +154,7 @@ La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobacione
 | App | Vercel | `vercel.json` reescribe todas las rutas a la SPA; definir `VITE_BACKEND_URL` y las `VITE_FIREBASE_*` de `.env.example` en las variables del proyecto |
 | Backend | Render | Variables de `saas-booking-backend/.env.example` |
 | Reglas de Firestore | Firebase | `npx firebase deploy --only firestore:rules,firestore:indexes --project <id-del-proyecto>` desde la raíz |
-| Landing | Vercel | Proyecto con raíz `saas-booking-landing/`; definir `VITE_APP_URL` y `VITE_CONTACT_EMAIL` |
+| Landing | Vercel | Proyecto con raíz `saas-booking-landing/`; definir `VITE_APP_URL`, `VITE_CONTACT_EMAIL` y `VITE_SITE_URL` (URL pública de la landing, para las vistas previas al compartir, `robots.txt` y `sitemap.xml`) |
 
 ### Suscripción ($15 USD/mes con Paddle)
 

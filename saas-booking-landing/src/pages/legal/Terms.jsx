@@ -5,7 +5,7 @@ import { LegalPage, List, Section } from '../../components/common/LegalPage';
 const Terms = () => (
   <LegalPage
     title="Términos de uso"
-    updated="28 de octubre de 2026"
+    updated="2 de noviembre de 2026"
     other={{ to: '/terms/en', lang: 'en', label: 'Read in English' }}
   >
     <Section title="1. Qué es ReserveEase">
@@ -22,7 +22,8 @@ const Terms = () => (
         cobra Paddle.com, nuestro revendedor en línea y comerciante registrado (Merchant of Record), que procesa
         el pago y emite la factura; al pagar también aceptas sus términos para compradores. La suscripción se renueva cada mes hasta que la canceles. Si la cancelas,
         sigues teniendo acceso hasta el final del período ya pagado. Nunca cobramos sin que contrates el plan de
-        forma expresa.
+        forma expresa. Puedes pedir un reembolso dentro de los 14 días siguientes a cualquier cobro, como explica la{' '}
+        <Link to="/refunds" className="hd-link">política de reembolsos</Link>.
       </p>
       <p>
         El servicio puede cambiar, tener errores o interrupciones. Lo mejoramos
