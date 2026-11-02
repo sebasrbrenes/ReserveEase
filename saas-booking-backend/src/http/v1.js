@@ -12,9 +12,14 @@ import { isManageKeyValid } from '../domain/manageLink.js';
 import { MINUTE } from '../domain/time.js';
 import { retryFailedJobs } from '../notifications/worker.js';
 import {
-  createCheckoutTransaction, createPortalSession, isBillingConfigured, paddleConfig, PaddleError,
+  createCheckoutTransaction, createPortalSession, isBillingConfigured, paddleConfig, PaddleError, updateSubscriptionItems,
 } from '../billing/paddle.js';
-import { LIVE_STATUSES, subscriptionRef, toBillingView } from '../billing/subscription.js';
+import {
+  accessFor, canChangeItems, enforcementFromEnv, hasAddon, itemsWithAddon, LIVE_STATUSES, subscriptionRef, toBillingView,
+} from '../billing/subscription.js';
+import {
+  readSmsUsage, requestSms, smsAccountOf, smsAccountRef, SmsAccountError, updateSmsSettings,
+} from '../messaging/smsAccount.js';
 import { getAuth } from 'firebase-admin/auth';
 import firebaseApp from '../../config/firebase.js';
 import { requireAuth, requireMember } from './auth.js';
@@ -46,6 +51,13 @@ const toApiError = (error) => (error instanceof DomainError
   : error);
 
 const slugParams = z.object({ slug: slugSchema });
+
+// Whether a business may take bookings and use the dashboard (billing/subscription.js).
+const accessOf = async (businessId) => {
+  const snap = await subscriptionRef(db, businessId).get();
+  return accessFor(snap.data(), { enforcement: enforcementFromEnv(process.env, { billingConfigured: isBillingConfigured() }) });
+};
+const bookingsPaused = () => new ApiError(403, 'BOOKINGS_PAUSED', 'This business is not taking online bookings right now');
 
 // Public profile and catalog of a published business (section 13.2).
 router.get('/public/businesses/:slug', validate(slugParams, 'params'), async (req, res, next) => {
@@ -92,6 +104,7 @@ router.get(
     try {
       const published = await getPublishedBusinessBySlug(db, req.validated.params.slug);
       if (!published) throw new ApiError(404, 'BUSINESS_NOT_FOUND', 'Business not found');
+      if (!(await accessOf(published.businessId)).allowed) throw bookingsPaused();
       const data = await availabilityFor(published.businessId, req.validated.query);
       res.json({ data, requestId: req.requestId });
     } catch (error) {
@@ -123,6 +136,7 @@ router.post(
     try {
       const published = await getPublishedBusinessBySlug(db, req.validated.params.slug);
       if (!published) throw new ApiError(404, 'BUSINESS_NOT_FOUND', 'Business not found');
+      if (!(await accessOf(published.businessId)).allowed) throw bookingsPaused();
 
       const { created, result } = await createBooking(db, {
         businessId: published.businessId,
@@ -268,6 +282,21 @@ const handle = (fn) => async (req, res, next) => {
   }
 };
 
+// Without an active subscription (once enforcement has started) the
+// dashboard only reaches what is needed to subscribe or to take the data away.
+const OPEN_WITHOUT_SUBSCRIPTION = [/^\/billing(\/|$)/, /^\/messaging(\/|$)/, /^\/appointments\/export$/];
+priv.use(async (req, res, next) => {
+  try {
+    if (OPEN_WITHOUT_SUBSCRIPTION.some((re) => re.test(req.path))) return next();
+    if (!(await accessOf(req.member.businessId)).allowed) {
+      return next(new ApiError(402, 'SUBSCRIPTION_REQUIRED', 'An active subscription is required'));
+    }
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+});
+
 const listQuery = z.object({ from: localDateSchema, to: localDateSchema })
   .refine((q) => q.from <= q.to, { message: 'from must not be after to', path: ['to'] });
 
@@ -400,9 +429,26 @@ const fromPaddle = (error) => {
   return new ApiError(502, 'BILLING_PROVIDER_ERROR', 'The payment provider did not answer. Try again in a moment.');
 };
 
+const billingViewFor = async (businessId) => {
+  const config = paddleConfig();
+  const available = isBillingConfigured(config);
+  const [subSnap, smsSnap] = await db.getAll(subscriptionRef(db, businessId), smsAccountRef(db, businessId));
+  const subscription = subSnap.data();
+  const view = toBillingView(subscription, {
+    available,
+    addonsAvailable: { sms: available && Boolean(config.catalog.addons.sms.priceId) },
+    enforcement: enforcementFromEnv(process.env, { billingConfigured: available }),
+  });
+  const account = smsAccountOf(smsSnap.data());
+  view.sms = {
+    ...account,
+    usage: view.addons.sms.active ? await readSmsUsage(db, businessId, subscription) : null,
+  };
+  return view;
+};
+
 priv.get('/billing', handle(async (req, res) => {
-  const snap = await subscriptionRef(db, req.member.businessId).get();
-  res.json({ data: toBillingView(snap.data(), { available: isBillingConfigured() }), requestId: req.requestId });
+  res.json({ data: await billingViewFor(req.member.businessId), requestId: req.requestId });
 }));
 
 priv.post('/billing/checkout', requireOwner, handle(async (req, res) => {
@@ -437,6 +483,60 @@ priv.post('/billing/portal', requireOwner, handle(async (req, res) => {
     throw fromPaddle(error);
   }
 }));
+
+// SMS add-on ($10/month on top of Basic). It is added to the same Paddle
+// subscription, so it renews on the plan's date; Paddle charges the rest of
+// the current cycle now. The stored state changes only when Paddle's signed
+// webhook confirms it, so the app polls GET /billing after these calls.
+const changeSmsAddon = (add) => handle(async (req, res) => {
+  const config = paddleConfig();
+  const smsPriceId = config.catalog.addons.sms.priceId;
+  if (!isBillingConfigured(config) || !smsPriceId) throw billingUnavailable();
+  const businessId = req.member.businessId;
+  const [subSnap, smsSnap] = await db.getAll(subscriptionRef(db, businessId), smsAccountRef(db, businessId));
+  const subscription = subSnap.data();
+  if (!subscription || !LIVE_STATUSES.includes(subscription.status)) {
+    throw new ApiError(409, 'NO_SUBSCRIPTION', 'Subscribe to Basic before adding SMS');
+  }
+  if (!canChangeItems(subscription)) {
+    throw new ApiError(409, 'SUBSCRIPTION_NOT_CHANGEABLE', 'The subscription cannot change right now');
+  }
+  const active = hasAddon(subscription, 'sms');
+  if (add && active) throw new ApiError(409, 'ADDON_ALREADY_ACTIVE', 'SMS is already active');
+  if (!add && !active) throw new ApiError(409, 'ADDON_NOT_ACTIVE', 'SMS is not active');
+  // No charge before the carriers approve the business: it could not send anything.
+  if (add && smsAccountOf(smsSnap.data()).status !== 'approved') {
+    throw new ApiError(409, 'SMS_NOT_APPROVED', 'SMS needs carrier approval for this business first');
+  }
+  try {
+    await updateSubscriptionItems(config, subscription.subscriptionId, itemsWithAddon(subscription, smsPriceId, { add }));
+  } catch (error) {
+    throw fromPaddle(error);
+  }
+  console.log(`[${req.requestId}] sms add-on ${add ? 'added' : 'removed'}`, { businessId });
+  res.status(202).json({ data: { pending: true }, requestId: req.requestId });
+});
+
+priv.post('/billing/addons/sms', requireOwner, changeSmsAddon(true));
+priv.delete('/billing/addons/sms', requireOwner, changeSmsAddon(false));
+
+const fromSmsAccount = (error) => (error instanceof SmsAccountError ? new ApiError(409, error.code, error.message) : error);
+
+// The owner asks for SMS: the business is queued for carrier registration.
+priv.post('/messaging/sms/request', requireOwner, handle(async (req, res) => {
+  try {
+    await requestSms(db, { businessId: req.member.businessId, actorUid: req.user.uid });
+  } catch (error) {
+    throw fromSmsAccount(error);
+  }
+  res.json({ data: await billingViewFor(req.member.businessId), requestId: req.requestId });
+}));
+
+priv.patch('/messaging/sms', requireOwner, validate(z.object({ remindersEnabled: z.boolean() }).strict(), 'body'),
+  handle(async (req, res) => {
+    await updateSmsSettings(db, { businessId: req.member.businessId, ...req.validated.body });
+    res.json({ data: await billingViewFor(req.member.businessId), requestId: req.requestId });
+  }));
 
 // The signed-in owner's business, rebuilt from the settings screen (see
 // domain/legacySync.js). Called by the app after loading or saving settings.

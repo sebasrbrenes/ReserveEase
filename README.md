@@ -158,19 +158,37 @@ La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta estas comprobacione
 | Reglas de Firestore | Firebase | `npx firebase deploy --only firestore:rules,firestore:indexes --project <id-del-proyecto>` desde la raíz |
 | Landing | Vercel | Proyecto con raíz `saas-booking-landing/`; definir `VITE_APP_URL`, `VITE_CONTACT_EMAIL` y `VITE_SITE_URL` (URL pública de la landing, para las vistas previas al compartir, `robots.txt` y `sitemap.xml`) |
 
-### Suscripción ($15 USD/mes con Paddle)
+### Suscripción: Basic $15/mes + SMS Add-on $10/mes (Paddle)
 
 Paddle es el comerciante registrado (Merchant of Record): cobra, emite la factura y declara impuestos. El
-servidor crea el checkout con el precio y el negocio (`POST /api/v1/businesses/:id/billing/checkout`) y la app
-lo abre con Paddle.js. La suscripción solo cambia con el webhook firmado
-`POST /api/v1/billing/paddle/webhook`, que guarda el estado en `businesses/{id}/billing/subscription`
-(las reglas de Firestore no dejan escribirlo desde el navegador). `POST .../billing/portal` abre el portal de
-Paddle para cambiar la tarjeta, ver facturas o cancelar.
+servidor crea el checkout de Basic (`POST /api/v1/businesses/:id/billing/checkout`) y la app lo abre con
+Paddle.js. La suscripción solo cambia con el webhook firmado `POST /api/v1/billing/paddle/webhook`, que
+guarda en `businesses/{id}/billing/subscription` todos los ítems, el plan y los complementos (las reglas de
+Firestore no dejan escribirlo desde el navegador). Los eventos repetidos (mismo `event_id`) o viejos se ignoran.
+`POST .../billing/portal` abre el portal de Paddle para cambiar la tarjeta, ver facturas o cancelar.
 
-1. En una cuenta sandbox de Paddle: crear el producto y su precio de $15 USD mensuales, una API key, un
-   client-side token y un destino de notificaciones con la URL del webhook y los eventos `subscription.*`.
+Planes y complementos están en `saas-booking-backend/src/billing/catalog.js`: cada uno es una clave y un
+price id por variable de entorno, así que uno nuevo no cambia los datos guardados.
+
+**SMS Add-on.** El dueño solicita SMS (`POST .../messaging/sms/request`) y el negocio queda `pending` en
+`businesses/{id}/messaging/sms` hasta que su registro 10DLC con las operadoras esté aprobado; entonces se
+marca `status: "approved"` en ese documento. Solo con Basic activo y el registro aprobado se puede agregar
+(`POST .../billing/addons/sms`): se suma a la misma suscripción con prorrateo inmediato, así que renueva con
+Basic. `DELETE .../billing/addons/sms` lo quita sin tocar Basic (Paddle acredita lo no usado). Paddle no
+deja cambiar ítems con un pago pendiente (`past_due`) ni con la cancelación programada. El uso se cuenta en
+`businesses/{id}/smsUsage/{inicio del ciclo}`, así que empieza de cero en cada renovación.
+
+**Bloqueo sin suscripción.** Desde `BILLING_ENFORCEMENT_DATE`, un negocio sin suscripción activa (`past_due`
+conserva acceso mientras Paddle reintenta) recibe `402 SUBSCRIPTION_REQUIRED` en el panel, salvo suscripción,
+SMS y exportar citas, y su página pública responde `403 BOOKINGS_PAUSED`. Antes de esa fecha el panel avisa
+cuándo empieza. Sin Paddle configurado nunca se bloquea.
+
+1. En una cuenta sandbox de Paddle: producto "ReserveEase Basic" con precio de $15 USD mensuales, producto
+   "SMS Reminders" con precio de $10 USD mensuales (mismo intervalo), una API key, un client-side token y un
+   destino de notificaciones con la URL del webhook y los eventos `subscription.*`.
 2. En Checkout settings, poner como enlace de pago por defecto la URL de la app (Paddle exige un dominio aprobado).
-3. Render: `PADDLE_ENV=sandbox`, `PADDLE_API_KEY`, `PADDLE_PRICE_ID`, `PADDLE_WEBHOOK_SECRET`. Vercel (app):
+3. Render: `PADDLE_ENV=sandbox`, `PADDLE_API_KEY`, `PADDLE_PRICE_ID_BASIC`, `PADDLE_PRICE_ID_SMS`,
+   `PADDLE_WEBHOOK_SECRET` y, cuando se decida, `BILLING_ENFORCEMENT_DATE`. Vercel (app):
    `VITE_PADDLE_CLIENT_TOKEN`. Probar con la tarjeta `4242 4242 4242 4242`.
 4. Para cobrar de verdad: verificar la cuenta live, aprobar el dominio, repetir el paso 1 en live y cambiar a
    `PADDLE_ENV=production` con las claves live.

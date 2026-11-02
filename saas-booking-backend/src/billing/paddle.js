@@ -4,6 +4,7 @@
 // becomes active only from a signed webhook (see subscription.js).
 
 import crypto from 'crypto';
+import { catalogFromEnv } from './catalog.js';
 
 const API_URL = {
   sandbox: 'https://sandbox-api.paddle.com',
@@ -15,10 +16,13 @@ const SIGNATURE_TOLERANCE_SECONDS = 5 * 60;
 
 export const paddleConfig = (env = process.env) => {
   const environment = env.PADDLE_ENV === 'production' ? 'production' : 'sandbox';
+  const catalog = catalogFromEnv(env);
   return {
     environment,
     apiKey: env.PADDLE_API_KEY || '',
-    priceId: env.PADDLE_PRICE_ID || '',
+    catalog,
+    // Price of the main plan (Basic), the one a checkout sells.
+    priceId: catalog.plans.basic.priceId,
     webhookSecret: env.PADDLE_WEBHOOK_SECRET || '',
     apiUrl: API_URL[environment],
   };
@@ -87,4 +91,22 @@ export const createCheckoutTransaction = (config, { businessId, customerId }) =>
 export const createPortalSession = (config, { customerId, subscriptionId }) => call(
   config, 'POST', `/customers/${encodeURIComponent(customerId)}/portal-sessions`,
   subscriptionId ? { subscription_ids: [subscriptionId] } : {},
+);
+
+export const getSubscription = (config, subscriptionId) => call(config, 'GET', `/subscriptions/${encodeURIComponent(subscriptionId)}`);
+
+/**
+ * Replaces the recurring items of a subscription. Paddle expects the full list
+ * after the change: items left out are removed. Every item shares the
+ * subscription's billing cycle, so an add-on renews together with the plan.
+ * prorated_immediately charges (or credits) the part of the current cycle now.
+ * A past_due subscription, or one renewing within 30 minutes, cannot change.
+ */
+export const updateSubscriptionItems = (config, subscriptionId, items) => call(
+  config, 'PATCH', `/subscriptions/${encodeURIComponent(subscriptionId)}`,
+  {
+    items: items.map(({ priceId, quantity }) => ({ price_id: priceId, quantity: quantity ?? 1 })),
+    proration_billing_mode: 'prorated_immediately',
+    on_payment_failure: 'prevent_change',
+  },
 );

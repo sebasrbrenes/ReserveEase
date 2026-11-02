@@ -137,7 +137,7 @@ const en = {
   ticket: {
     kicker: 'closing out the register',
     title: ['What does it cost? ', '$15', ' a month.'],
-    lead: 'One plan, with everything on the receipt. It’s billed monthly in dollars through Paddle, our payment provider, and you can cancel anytime from your account settings.',
+    lead: 'One plan, ReserveEase Basic, with everything on the receipt. It’s billed monthly in dollars through Paddle, our payment provider, and you can cancel anytime from your account settings.',
     cta: 'Subscribe for $15 a month',
     edition: 'Monthly plan',
     lines: [
@@ -146,10 +146,15 @@ const en = {
       ['Team, services and hours', 'included'],
       ['Dashboard with your week', 'included'],
       ['Phone and computer', 'included'],
-      ['Email reminders', 'soon', true],
+      ['Email notifications', 'included'],
     ],
     total: '$15',
     noCard: 'USD per month',
+    addon: {
+      label: 'Optional add-on',
+      title: 'SMS Reminders — +$10/month',
+      text: 'Up to 100 text reminders a month for clients who opt in. Available once your business is approved by US carriers. Your plan stays $15 a month without it.',
+    },
     thanks: 'Thanks for stopping by!',
     stamp: 'Monthly',
   },
@@ -171,7 +176,7 @@ const en = {
       },
       {
         q: 'Does it send emails or texts?',
-        a: 'Email confirmations, change notices and day-before reminders are built and being connected. Text messages aren’t available yet.',
+        a: 'Yes. Email confirmations, change and cancellation notices and day-before reminders are included in the $15 plan. Text reminders are an optional add-on for $10 more a month (up to 100 texts), available once your business passes US carrier registration.',
       },
       {
         q: 'Who sees my appointments?',
