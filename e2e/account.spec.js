@@ -38,3 +38,15 @@ test('an owner deletes their account after typing the word and their password', 
   await page.click('button[type=submit]');
   await expect(page).not.toHaveURL(/\/dashboard/);
 });
+
+test('the owner sees Basic with email included and requests SMS, which waits for carrier approval', async ({ page }) => {
+  await login(page, 'barberia@demo.test');
+  await page.goto('/settings#suscripcion');
+  const sms = page.getByTestId('sms-addon');
+  await expect(sms).toContainText('+$10 USD al mes · hasta 100 mensajes por ciclo de facturación');
+  await expect(sms).toContainText('Complemento SMS: desactivado');
+  await sms.getByRole('button', { name: 'Solicitar SMS' }).click();
+  await expect(sms.getByTestId('sms-status')).toContainText('Pendiente de aprobación');
+  // Nothing promises immediate texts or offers a charge before approval.
+  await expect(sms.getByRole('button', { name: /Activar SMS/ })).toHaveCount(0);
+});
