@@ -2,6 +2,7 @@ import app from './app.js';
 import { db } from './config/firebase.js';
 import { adapterFromEnv } from './src/notifications/adapters.js';
 import { startNotificationWorker } from './src/notifications/worker.js';
+import { smsAdapterFromEnv } from './src/messaging/telnyx.js';
 
 const port = process.env.PORT || 3001;
 
@@ -13,6 +14,7 @@ app.listen(port, () => {
 // disables it (for example, when a separate worker runs).
 if (process.env.NOTIFICATIONS_WORKER !== 'off') {
   const adapter = adapterFromEnv();
-  startNotificationWorker(db, { adapter });
-  console.log(`Notification worker started (${adapter.name})`);
+  const smsAdapter = smsAdapterFromEnv();
+  startNotificationWorker(db, { adapter, smsAdapter });
+  console.log(`Notification worker started (email: ${adapter.name}, sms: ${smsAdapter.name})`);
 }

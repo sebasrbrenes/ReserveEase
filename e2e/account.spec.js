@@ -46,6 +46,16 @@ test('the owner sees Basic with email included and requests SMS, which waits for
   await expect(sms).toContainText('+$10 USD al mes · hasta 100 mensajes por ciclo de facturación');
   await expect(sms).toContainText('Complemento SMS: desactivado');
   await sms.getByRole('button', { name: 'Solicitar SMS' }).click();
+  const form = sms.getByTestId('sms-registration');
+  await form.getByLabel('Nombre legal del negocio').fill('Barbería Demo LLC');
+  await form.getByLabel('EIN (identificación fiscal federal)').fill('12-3456789');
+  await form.getByLabel('Dirección').fill('100 Main St');
+  await form.getByLabel('Ciudad').fill('Austin');
+  await form.getByLabel('Estado').fill('TX');
+  await form.getByLabel('Código postal (ZIP)').fill('78701');
+  await form.getByLabel('Nombre de contacto').fill('Demo Owner');
+  await form.getByLabel('Celular de contacto').fill('+15125550100');
+  await form.getByRole('button', { name: 'Enviar solicitud' }).click();
   await expect(sms.getByTestId('sms-status')).toContainText('Pendiente de aprobación');
   // Nothing promises immediate texts or offers a charge before approval.
   await expect(sms.getByRole('button', { name: /Activar SMS/ })).toHaveCount(0);

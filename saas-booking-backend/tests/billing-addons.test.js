@@ -138,7 +138,14 @@ describe.skipIf(!hasEmulators)('SMS add-on and enforcement API', () => {
     expect(refused.body.error.code).toBe('SMS_NOT_APPROVED');
     expect(paddleCalls).toHaveLength(before);
 
-    const requested = await api(BIZ, '/messaging/sms/request', 'post');
+    const missing = await api(BIZ, '/messaging/sms/request', 'post').send({ legalName: 'Joe LLC', entityType: 'company' });
+    expect(missing.status).toBe(400);
+    const requested = await api(BIZ, '/messaging/sms/request', 'post').send({
+      legalName: 'Fade Lab LLC', entityType: 'company', ein: '12-3456789', street: '100 Main St', city: 'Austin',
+      state: 'tx', postalCode: '78701', website: 'https://fadelab.example.com', contactName: 'Joe Doe',
+      contactEmail: 'joe@example.com', contactPhone: '+15125550100',
+    });
+    expect((await db.doc(`businesses/${BIZ}/messaging/sms`).get()).data().registration).toMatchObject({ state: 'TX', ein: '12-3456789' });
     expect(requested.body.data.sms.status).toBe('pending');
     // Approval is recorded by ReserveEase once the registration is accepted.
     await db.doc(`businesses/${BIZ}/messaging/sms`).update({ status: 'approved' });

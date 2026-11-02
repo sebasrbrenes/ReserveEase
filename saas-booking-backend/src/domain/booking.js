@@ -19,6 +19,7 @@ import { businessSchema, SCHEMA_VERSION, serviceSchema, staffSchema } from './sc
 import { localDateOf, MINUTE } from './time.js';
 import { queueNotifications } from '../notifications/jobs.js';
 import { managePathFor, newManageKey } from './manageLink.js';
+import { consentEvidence, SMS_CONSENT_VERSION } from '../messaging/smsConsent.js';
 
 const BLOCK_MS = 5 * MINUTE;
 const IDEMPOTENCY_TTL_MS = 7 * 24 * 60 * MINUTE;
@@ -66,7 +67,9 @@ const parseSnap = (schema, snap, code, message) => {
  * @param {() => number} [p.clock]  server clock, injectable for tests
  * @returns {Promise<{ created: boolean, result: object }>}
  */
-export const createBooking = async (db, { businessId, command, idempotencyKey, source = 'public', clock = Date.now }) => {
+export const createBooking = async (db, {
+  businessId, command, idempotencyKey, source = 'public', clock = Date.now, requestContext = {},
+}) => {
   const base = db.doc(`businesses/${businessId}`);
   const keyRef = base.collection('idempotency').doc(sha256(`createBooking:${idempotencyKey}`));
   const intentHash = sha256(canonical(command));
@@ -94,6 +97,12 @@ export const createBooking = async (db, { businessId, command, idempotencyKey, s
     const service = parseSnap(serviceSchema, serviceSnap, 'SERVICE_NOT_FOUND', 'Service not found');
     const staff = parseSnap(staffSchema, staffSnap, 'STAFF_NOT_FOUND', 'Staff member not found');
     if (business.status !== 'published') throw new DomainError('BUSINESS_NOT_FOUND', 'Business not found');
+
+    // SMS consent counts only with a number and the consent text currently shown.
+    const smsConsent = Boolean(command.smsConsent && command.client.phoneE164);
+    if (smsConsent && command.smsConsentVersion !== SMS_CONSENT_VERSION) {
+      throw new DomainError('CONSENT_TEXT_OUTDATED', 'The SMS consent text changed. Reload the page and try again.');
+    }
 
     const startsAtMs = Date.parse(command.startsAt);
     const localDate = localDateOf(startsAtMs, business.timezone);
@@ -141,7 +150,14 @@ export const createBooking = async (db, { businessId, command, idempotencyKey, s
       staffSnapshot: { displayName: staff.displayName },
       notes: command.notes,
       privacyNoticeVersion: command.privacyNoticeVersion,
-      smsConsent: command.smsConsent,
+      smsConsent,
+      smsConsentEvidence: smsConsent
+        ? consentEvidence({
+          businessName: business.name, language: business.language, phoneE164: command.client.phoneE164,
+          ip: requestContext.ip, userAgent: requestContext.userAgent, version: command.smsConsentVersion,
+          nowIso: new Date(clock()).toISOString(),
+        })
+        : null,
       manageKey,
       version: 1,
       // Version whose notifications are current; contact or note edits keep it.
@@ -159,6 +175,7 @@ export const createBooking = async (db, { businessId, command, idempotencyKey, s
       template: 'confirmation_email',
       startsAtMs,
       nowMs: clock(),
+      smsReminder: smsConsent ? { timeZone: business.timezone } : null,
     });
     tx.create(base.collection('auditEvents').doc(), {
       type: 'appointment.created',

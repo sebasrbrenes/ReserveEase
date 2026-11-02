@@ -68,6 +68,7 @@ const PrivacyPolicyEn = () => (
         <li>Render: the server that creates bookings and sends notices.</li>
         <li>Vercel: hosts the web pages.</li>
         <li>Resend: sends the emails.</li>
+        <li>Telnyx: sends text reminders, only to clients who agreed to receive them.</li>
       </List>
       <p>
         These providers may store data outside your country. We would only hand data to an authority when the

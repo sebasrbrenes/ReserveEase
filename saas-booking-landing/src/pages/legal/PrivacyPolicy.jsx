@@ -68,6 +68,7 @@ const PrivacyPolicy = () => (
         <li>Render: el servidor que crea las reservas y envía los avisos.</li>
         <li>Vercel: aloja las páginas web.</li>
         <li>Resend: envía los correos.</li>
+        <li>Telnyx: envía los recordatorios por SMS, solo a los clientes que aceptaron recibirlos.</li>
       </List>
       <p>
         Estos proveedores pueden guardar los datos fuera de tu país. Solo entregaríamos datos a una autoridad

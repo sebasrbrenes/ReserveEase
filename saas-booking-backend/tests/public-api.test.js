@@ -48,6 +48,7 @@ describe.skipIf(!hasEmulator)('GET /api/v1/public/businesses/:slug', () => {
       language: 'es',
       services: [{ id: 'svc-1', name: 'Corte', description: '', durationMinutes: 30, priceMinor: 600000, currency: 'CRC' }],
       staff: [{ id: 'staff-1', displayName: 'Ana', serviceIds: ['svc-1'] }],
+      smsConsent: null,
     });
   });
 

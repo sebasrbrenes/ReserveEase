@@ -63,6 +63,8 @@ test('the settings page shows the public booking link', async ({ page }) => {
 
 test('T22: each date in the month calendar sits under its own weekday', async ({ page }) => {
   await login(page, 'salon@demo.test');
+  // allTextContents does not wait: let the calendar render first.
+  await expect(page.locator('.grid-cols-7 > div')).toHaveCount(7);
   const headers = await page.locator('.grid-cols-7 > div').allTextContents();
   expect(headers).toEqual(['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']);
   const days = page.locator('.grid-cols-7 > button');
