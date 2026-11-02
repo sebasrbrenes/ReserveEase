@@ -96,7 +96,7 @@ export default function StyleGuide() {
           <div className="space-y-3">
             <p className="hd-alert border-leaf bg-leaf-light text-ink" role="status">Booking saved. The confirmation email is on its way.</p>
             <p className="hd-alert border-coral bg-coral-light text-ink" role="alert">That time was just taken. Pick another one.</p>
-            <p className="hd-alert border-ink bg-sun-light text-ink">Email simulated: SendGrid is not connected yet.</p>
+            <p className="hd-alert border-ink bg-sun-light text-ink">Email simulated: Resend is not connected yet.</p>
           </div>
         </Section>
 
