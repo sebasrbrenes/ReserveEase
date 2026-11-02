@@ -15,6 +15,9 @@ export const LEASE_MS = 2 * MINUTE;
 export const MAX_ATTEMPTS = 5;
 // Wait before attempt n+1: 1, 5, 25, 125 minutes.
 export const backoffMs = (attempts) => 5 ** (attempts - 1) * MINUTE;
+// A provider quota (Resend's 100 emails a day on the free plan) defers a job
+// without spending an attempt, at most this many times.
+export const MAX_DEFERRALS = 7;
 
 const STATUS_FOR_TEMPLATE = {
   confirmation_email: 'confirmed',
@@ -94,6 +97,12 @@ const processJob = async (db, ref, { adapter, nowMs, workerId }) => {
     return 'skipped';
   }
 
+  // A reminder held back (provider down, quota) is useless once the appointment has started.
+  if (job.template.startsWith('reminder_') && apt.startsAt.toMillis() <= nowMs) {
+    await finish(db, ref, { workerId, job, outcome: { status: 'skipped', lastErrorCode: 'TOO_LATE' } });
+    return 'skipped';
+  }
+
   // The business turned client emails off (T29): nothing is sent, and the
   // dashboard says so instead of showing a pending email.
   if (bizSnap.data()?.clientEmails === false) {
@@ -107,14 +116,24 @@ const processJob = async (db, ref, { adapter, nowMs, workerId }) => {
       appointment: apt, businessName: bizSnap.data()?.name ?? '', manageUrl: manageUrlFor(apt),
       language: bizSnap.data()?.language,
     });
+    message.fromName = bizSnap.data()?.name;
     const result = await adapter.send(message, { idempotencyKey: job.id });
     outcome = { status: result.status, providerMessageId: result.providerMessageId ?? null, lastErrorCode: null, sentAt: FieldValue.serverTimestamp() };
   } catch (error) {
     const code = error instanceof SendError ? error.code : 'SEND_ERROR';
     const permanent = error instanceof SendError && error.permanent;
-    outcome = permanent || job.attempts >= MAX_ATTEMPTS
-      ? { status: 'failed', lastErrorCode: code }
-      : { status: 'queued', lastErrorCode: code, runAt: Timestamp.fromMillis(nowMs + backoffMs(job.attempts)) };
+    const deferrals = job.deferrals ?? 0;
+    if (error instanceof SendError && error.retryAt && deferrals < MAX_DEFERRALS) {
+      // Not this message's fault: give the attempt back and wait for the quota.
+      outcome = {
+        status: 'queued', lastErrorCode: code, attempts: job.attempts - 1, deferrals: deferrals + 1,
+        runAt: Timestamp.fromMillis(Math.max(error.retryAt, nowMs + MINUTE)),
+      };
+    } else {
+      outcome = permanent || job.attempts >= MAX_ATTEMPTS || error?.retryAt
+        ? { status: 'failed', lastErrorCode: code }
+        : { status: 'queued', lastErrorCode: code, runAt: Timestamp.fromMillis(nowMs + backoffMs(job.attempts)) };
+    }
     if (!(error instanceof SendError)) console.error(`[notifications] ${job.id} failed`, error.message);
   }
   await finish(db, ref, { workerId, job, outcome });
@@ -152,7 +171,7 @@ export const retryFailedJobs = (db, { businessId, appointmentId }) => db.runTran
     .where('appointmentVersion', '==', version)
     .where('status', '==', 'failed'));
   const now = FieldValue.serverTimestamp();
-  failed.docs.forEach((d) => tx.update(d.ref, { status: 'queued', attempts: 0, runAt: now, lastErrorCode: null, updatedAt: now }));
+  failed.docs.forEach((d) => tx.update(d.ref, { status: 'queued', attempts: 0, deferrals: 0, runAt: now, lastErrorCode: null, updatedAt: now }));
   if (failed.size) {
     tx.update(aptRef, { 'notification.status': 'queued', 'notification.lastErrorCode': null, 'notification.updatedAt': now });
   }

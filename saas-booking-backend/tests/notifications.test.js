@@ -6,7 +6,7 @@ import { cancelAppointment, rescheduleAppointment, updateAppointmentDetails } fr
 import { localDateOf, MINUTE, shiftLocalDate, zonedToUtc } from '../src/domain/time.js';
 import { createMockAdapter, SendError } from '../src/notifications/adapters.js';
 import { renderEmail } from '../src/notifications/templates.js';
-import { LEASE_MS, MAX_ATTEMPTS, processDueJobs, retryFailedJobs } from '../src/notifications/worker.js';
+import { LEASE_MS, MAX_ATTEMPTS, MAX_DEFERRALS, processDueJobs, retryFailedJobs } from '../src/notifications/worker.js';
 
 const hasEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const TZ = 'America/Costa_Rica';
@@ -123,6 +123,45 @@ describe.skipIf(!hasEmulator)('notification worker', () => {
     const id = await book(at('11:30'));
     await run(createMockAdapter({ fail: async () => { throw new SendError('INVALID_RECIPIENT', { permanent: true }); } }));
     expect(await job(`${id}_v1_confirmation_email`)).toMatchObject({ status: 'failed', attempts: 1, lastErrorCode: 'INVALID_RECIPIENT' });
+  });
+
+  it('a provider quota defers the job without spending attempts, up to a limit', async () => {
+    const id = await book(at('19:00'));
+    let now = Date.now();
+    const retryAt = () => now + 10 * HOUR;
+    const quota = createMockAdapter({ fail: async () => { throw new SendError('RESEND_DAILY_QUOTA_EXCEEDED', { retryAt: retryAt() }); } });
+    const expected = retryAt();
+    await run(quota, () => now);
+    const first = await job(`${id}_v1_confirmation_email`);
+    expect(first).toMatchObject({ status: 'queued', attempts: 0, deferrals: 1, lastErrorCode: 'RESEND_DAILY_QUOTA_EXCEEDED' });
+    expect(first.runAt.toMillis()).toBe(expected);
+    for (let i = 1; i < MAX_DEFERRALS; i += 1) {
+      now += 11 * HOUR;
+      await run(quota, () => now);
+    }
+    expect(await job(`${id}_v1_confirmation_email`)).toMatchObject({ status: 'queued', deferrals: MAX_DEFERRALS });
+    now += 11 * HOUR;
+    await run(quota, () => now);
+    expect(await job(`${id}_v1_confirmation_email`)).toMatchObject({ status: 'failed' });
+  });
+
+  it('a reminder still queued when the appointment starts is skipped, not sent late', async () => {
+    const id = await book(at('19:30'));
+    const adapter = createMockAdapter();
+    await run(adapter, () => Date.parse(at('19:30')) + MINUTE);
+    expect(await job(`${id}_v1_reminder_email`)).toMatchObject({ status: 'skipped', lastErrorCode: 'TOO_LATE' });
+    expect(adapter.sent.some((m) => m.idempotencyKey === `${id}_v1_reminder_email`)).toBe(false);
+  });
+
+  it('sends as the business, with a branded HTML layout', async () => {
+    const id = await book(at('20:00'));
+    const adapter = createMockAdapter();
+    await run(adapter);
+    const [msg] = adapter.sent.filter((m) => m.idempotencyKey === `${id}_v1_confirmation_email`);
+    expect(msg.fromName).toBe('Barbería & Co');
+    expect(msg.html).toMatch(/^<!DOCTYPE html>/);
+    expect(msg.html).toContain('max-width:600px');
+    expect(msg.html).toContain('Reservas gestionadas con ReserveEase');
   });
 
   it('T27: a job left processing by a stopped worker is taken over after its lease, with the same idempotency key', async () => {

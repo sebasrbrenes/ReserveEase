@@ -67,7 +67,7 @@ const PrivacyPolicy = () => (
         <li>Google Firebase: cuentas y base de datos.</li>
         <li>Render: el servidor que crea las reservas y envía los avisos.</li>
         <li>Vercel: aloja las páginas web.</li>
-        <li>Twilio SendGrid: envía los correos.</li>
+        <li>Resend: envía los correos.</li>
       </List>
       <p>
         Estos proveedores pueden guardar los datos fuera de tu país. Solo entregaríamos datos a una autoridad

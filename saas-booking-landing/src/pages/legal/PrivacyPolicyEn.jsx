@@ -67,7 +67,7 @@ const PrivacyPolicyEn = () => (
         <li>Google Firebase: accounts and database.</li>
         <li>Render: the server that creates bookings and sends notices.</li>
         <li>Vercel: hosts the web pages.</li>
-        <li>Twilio SendGrid: sends the emails.</li>
+        <li>Resend: sends the emails.</li>
       </List>
       <p>
         These providers may store data outside your country. We would only hand data to an authority when the

@@ -2,14 +2,14 @@
 
 Agenda de reservas para negocios de servicios (barberías, salones y profesionales que atienden con cita). El negocio configura sus servicios, personal y horarios, comparte un enlace público de reservas y administra las citas desde un panel.
 
-> **Estado:** listo para pruebas con negocios reales. Las reservas pasan por la API en transacciones (dos personas no pueden tomar la misma hora) y cada negocio solo ve sus datos. Falta cerrar el despliegue de producción: SendGrid con remitente verificado, dominios autorizados en Firebase Auth y reglas publicadas. El plan de trabajo está en el documento maestro del proyecto.
+> **Estado:** listo para pruebas con negocios reales. Las reservas pasan por la API en transacciones (dos personas no pueden tomar la misma hora) y cada negocio solo ve sus datos. Falta cerrar el despliegue de producción: Resend con dominio verificado, dominios autorizados en Firebase Auth y reglas publicadas. El plan de trabajo está en el documento maestro del proyecto.
 
 ## Estructura
 
 | Carpeta | Qué es | Stack |
 | --- | --- | --- |
 | `saas-booking-app/` | Panel del negocio y página pública de reservas (`/book/:slug`), ambos sobre la API v1 | React 18, Vite, Tailwind, Firebase Auth y Firestore |
-| `saas-booking-backend/` | API v1 de reservas y proceso que envía los correos a los clientes | Node, Express, firebase-admin, SendGrid |
+| `saas-booking-backend/` | API v1 de reservas y proceso que envía los correos a los clientes | Node, Express, firebase-admin, Resend |
 | `saas-booking-landing/` | Web promocional | React 18, Vite, Tailwind |
 | `Logos/` | Identidad visual | PNG y SVG |
 
@@ -65,7 +65,7 @@ npm run dev                  # http://localhost:3000
 
 Sin `VITE_USE_EMULATORS=true`, la app usa la configuración web de Firebase de las variables `VITE_FIREBASE_*` (ver `.env.example`). Esos valores son públicos por diseño; la protección real depende de las reglas de Firestore (`firestore.rules`): el navegador solo lee y escribe el perfil y la configuración de su propia cuenta, y todo lo relacionado con reservas pasa por la API.
 
-Por defecto `NOTIFICATIONS_MODE=mock`: los correos solo se marcan como simulados y nada sale hacia SendGrid. Para enviarlos de verdad hay que poner `NOTIFICATIONS_MODE=live`, `SENDGRID_API_KEY` y `FROM_EMAIL`.
+Por defecto `NOTIFICATIONS_MODE=mock`: los correos solo se marcan como simulados y nada sale hacia Resend. Para enviarlos de verdad hay que poner `NOTIFICATIONS_MODE=live`, `RESEND_API_KEY` y `EMAIL_FROM` (con un dominio verificado en Resend).
 
 Los correos de las reservas no salen del navegador. Cada reserva, cambio de hora o cancelación deja una tarea en `notificationJobs` dentro de la misma transacción, y el proceso del backend (`server.js`) las envía:
 
@@ -73,7 +73,7 @@ Los correos de las reservas no salen del navegador. Cada reserva, cambio de hora
 - Recordatorio 24 horas antes. Si la reserva se hace dentro de esas 24 horas, solo se envía la confirmación.
 - Un recordatorio de una hora anterior o de una cita cancelada nunca se envía.
 - Si el proveedor falla, se reintenta a los 1, 5, 25 y 125 minutos; después queda como fallido y el panel ofrece reintentar.
-- En modo `mock` las tareas quedan como `simulated` y el panel lo dice ("Correo simulado"); con `live`, `SENDGRID_API_KEY` y `FROM_EMAIL` se envían por SendGrid y quedan como `accepted` (aceptado por el proveedor, que no es lo mismo que entregado).
+- En modo `mock` las tareas quedan como `simulated` y el panel lo dice ("Correo simulado"); con `live`, `RESEND_API_KEY` y `EMAIL_FROM` se envían por Resend y quedan como `accepted` (aceptado por el proveedor, que no es lo mismo que entregado).
 - Si el negocio apaga "Correos a clientes" en Configuración, sus tareas quedan como `disabled` y no se envía nada; el panel muestra "Correos a clientes apagados".
 - `NOTIFICATIONS_WORKER=off` desactiva el envío en ese proceso.
 
@@ -179,7 +179,8 @@ Sin esas variables la app dice que los pagos todavía no están disponibles y no
 
 ## Limitaciones conocidas
 
-- Sin SendGrid configurado (`NOTIFICATIONS_MODE=live`) los correos solo se simulan. No hay SMS.
-- Si el proceso se detiene justo después de que el proveedor acepta un correo y antes de guardarlo, ese correo puede enviarse dos veces: SendGrid no deduplica por clave. El id de la tarea viaja en `custom_args` para poder conciliarlo.
+- Sin Resend configurado (`NOTIFICATIONS_MODE=live`) los correos solo se simulan. No hay SMS.
+- Plan gratis de Resend: 100 correos al día (UTC) y 3.000 al mes para todos los negocios juntos. Al agotarse la cuota diaria el worker espera al día siguiente sin gastar intentos (máximo 7 esperas); un recordatorio que llega tarde a la cita se descarta.
+- El id de cada tarea se envía como clave de idempotencia a Resend (la guarda 24 horas), así que un worker que se detiene después de enviar y antes de guardar el resultado no duplica el correo al reintentarse.
 - Las citas guardadas con el modelo anterior (colección raíz `appointments`) no aparecen en el panel; no hay migración.
 - Tener o no una suscripción activa todavía no limita el uso de la app: solo se registra y se muestra.
