@@ -139,7 +139,7 @@ const es = {
   ticket: {
     kicker: 'cierre de caja',
     title: ['¿Cuánto cuesta? ', '$15', ' al mes.'],
-    lead: 'Un solo plan, con todo lo que ves en el recibo. Se cobra en dólares cada mes a través de Paddle, nuestro proveedor de pagos, y cancelas cuando quieras desde la configuración de tu cuenta.',
+    lead: 'Un solo plan, ReserveEase Basic, con todo lo que ves en el recibo. Se cobra en dólares cada mes a través de Paddle, nuestro proveedor de pagos, y cancelas cuando quieras desde la configuración de tu cuenta.',
     cta: 'Suscribirme por $15 al mes',
     edition: 'Plan mensual',
     lines: [
@@ -148,10 +148,15 @@ const es = {
       ['Equipo, servicios y horario', 'incluido'],
       ['Panel con tu semana', 'incluido'],
       ['Teléfono y compu', 'incluido'],
-      ['Recordatorios por correo', 'pronto', true],
+      ['Avisos por correo', 'incluido'],
     ],
     total: '$15',
     noCard: 'USD al mes',
+    addon: {
+      label: 'Complemento opcional',
+      title: 'Recordatorios por SMS — +$10/mes',
+      text: 'Hasta 100 recordatorios por mensaje de texto al mes, para los clientes que acepten recibirlos. Disponible cuando las operadoras de EE. UU. aprueben tu negocio. Sin él, tu plan sigue costando $15 al mes.',
+    },
     thanks: '¡Gracias por tu visita!',
     stamp: 'Mensual',
   },
@@ -173,7 +178,7 @@ const es = {
       },
       {
         q: '¿Manda correos o mensajes de texto?',
-        a: 'Las confirmaciones, los avisos de cambio y los recordatorios del día anterior por correo ya están hechos y se están conectando. Los mensajes de texto todavía no.',
+        a: 'Sí. Las confirmaciones, los avisos de cambio y cancelación y los recordatorios del día anterior por correo están incluidos en el plan de $15. Los recordatorios por SMS son un complemento opcional de $10 más al mes (hasta 100 mensajes), disponible cuando tu negocio pase el registro con las operadoras de EE. UU.',
       },
       {
         q: '¿Quién ve mis citas?',

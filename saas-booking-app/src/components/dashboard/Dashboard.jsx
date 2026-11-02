@@ -22,6 +22,7 @@ import { useSettings } from '../../context/SettingsContext';
 import MonthCalendar from '../calendar/MonthCalendar';
 import Feedback from '../feedback/Feedback';
 import HelpButton from '../common/HelpButton';
+import AccessNotice from '../billing/AccessNotice';
 import GettingStarted from './GettingStarted';
 import { Logo, Sparkle, Star, Underline } from '../ui/Doodles';
 import LanguageSwitch from '../common/LanguageSwitch';
@@ -66,8 +67,11 @@ const Dashboard = () => {
       const today = todayIn(timezone);
       setAppointments(await listAppointments(businessId, shiftDate(today, -PAST_DAYS), shiftDate(today, FUTURE_DAYS)));
     } catch (error) {
-      console.error('Error loading appointments:', error);
-      toast.error(errorMessage(error));
+      // Without a subscription the notice above the calendar explains it.
+      if (error?.code !== 'SUBSCRIPTION_REQUIRED') {
+        console.error('Error loading appointments:', error);
+        toast.error(errorMessage(error));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -247,6 +251,7 @@ const Dashboard = () => {
         {!business.loading && business.error && !business.data && (
           <div className="hd-alert mb-6 border-ink bg-sun-light text-ink">{errorMessage(business.error)}</div>
         )}
+        <AccessNotice businessId={businessId} />
         {/* Until the page is published, and afterwards until the first appointment arrives. */}
         {!business.loading && business.data && (business.data.status !== 'published' || (!isLoading && appointments.length === 0)) && (
           <GettingStarted business={business.data} />

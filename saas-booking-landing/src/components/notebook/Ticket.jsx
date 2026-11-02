@@ -21,6 +21,12 @@ const Ticket = () => {
           <p className="mt-6 max-w-xl text-lg text-ink-soft">
             {copy.lead}
           </p>
+          {/* The add-on sits beside the receipt, not on it: the plan's price stays $15. */}
+          <aside className="mt-6 max-w-xl rounded-xl border-2 border-dashed border-ink/50 bg-white/60 p-4" aria-labelledby="addon-title">
+            <p className="font-hand text-xl text-marker">{copy.addon.label}</p>
+            <p id="addon-title" className="mt-1 font-bold text-ink">{copy.addon.title}</p>
+            <p className="mt-1 text-ink-soft">{copy.addon.text}</p>
+          </aside>
           <a href={appLink('/signup')} className="hd-btn mt-8 px-7 py-3 text-lg">{copy.cta}</a>
         </div>
 

@@ -118,6 +118,8 @@ const ERROR_MESSAGES = {
     BUSINESS_NOT_FOUND: 'Esta página de reservas no está disponible.',
     EMAIL_NOT_VERIFIED: 'Verifica tu correo para continuar.',
     RATE_LIMITED: 'Demasiados intentos. Espera un momento e inténtalo de nuevo.',
+    SUBSCRIPTION_REQUIRED: 'Tu suscripción no está activa. Suscríbete en Configuración para seguir usando ReserveEase.',
+    BOOKINGS_PAUSED: 'Este negocio no está recibiendo reservas en línea por ahora.',
     NETWORK: 'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
     DEFAULT: 'Algo salió mal. Inténtalo de nuevo.',
   },
@@ -132,6 +134,8 @@ const ERROR_MESSAGES = {
     BUSINESS_NOT_FOUND: 'This booking page is not available.',
     EMAIL_NOT_VERIFIED: 'Verify your email to continue.',
     RATE_LIMITED: 'Too many attempts. Please wait a moment and try again.',
+    SUBSCRIPTION_REQUIRED: 'Your subscription is not active. Subscribe in Settings to keep using ReserveEase.',
+    BOOKINGS_PAUSED: 'This business is not taking online bookings right now.',
     NETWORK: 'Could not reach the server. Check your connection and try again.',
     DEFAULT: 'Something went wrong. Please try again.',
   },
@@ -163,6 +167,11 @@ export const retryNotifications = (businessId, id) =>
 export const getBilling = (businessId) => request('GET', biz(businessId, '/billing'), { signedIn: true });
 export const startCheckout = (businessId) => request('POST', biz(businessId, '/billing/checkout'), { signedIn: true });
 export const openBillingPortal = (businessId) => request('POST', biz(businessId, '/billing/portal'), { signedIn: true });
+// SMS add-on ($10 USD/month on the same subscription) and its settings.
+export const addSmsAddon = (businessId) => request('POST', biz(businessId, '/billing/addons/sms'), { signedIn: true });
+export const removeSmsAddon = (businessId) => request('DELETE', biz(businessId, '/billing/addons/sms'), { signedIn: true });
+export const requestSms = (businessId) => request('POST', biz(businessId, '/messaging/sms/request'), { signedIn: true });
+export const updateSmsSettings = (businessId, body) => request('PATCH', biz(businessId, '/messaging/sms'), { body, signedIn: true });
 
 // The owner's account: every appointment as a CSV file, and deleting the account.
 export const downloadAppointmentsCsv = async (businessId) => {
